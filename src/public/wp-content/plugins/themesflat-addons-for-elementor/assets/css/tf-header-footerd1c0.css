@@ -1,0 +1,25 @@
+/* Template Header Footer */
+header.tf-custom-header,
+footer.tf-custom-footer {
+    padding: 0 !important;
+    max-width: 100% !important;
+}
+
+.tf-container {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.tf-row {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+.tf-col {
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%;    
+}

@@ -1,0 +1,5 @@
+-- Добавление новых столбцов в таблицу users
+ALTER TABLE users 
+ADD COLUMN phone VARCHAR(13) NULL AFTER cnic,
+ADD COLUMN address TEXT NULL AFTER phone,
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at; 

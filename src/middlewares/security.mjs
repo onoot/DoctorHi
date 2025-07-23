@@ -8,7 +8,7 @@ import path from 'path';
 // Ограничение количества запросов
 export const limiter = rateLimit({
   windowMs: 2 * 60 * 1000, // 15 minutes
-  max: 300, // Maximum 300 requests from one IP
+  max: 3000, // Maximum 300 requests from one IP
   message: 'Too many requests from this IP, please try again later'
 });
 
@@ -29,7 +29,7 @@ export const securityHeaders = helmet({
   },
   xssFilter: true,
   noSniff: true,
-  referrerPolicy: { policy: 'no-referrer' },
+  // referrerPolicy: { policy: 'no-referrer' },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,

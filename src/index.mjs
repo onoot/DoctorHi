@@ -196,6 +196,9 @@ app.get('/.well-known/acme-challenge/:token', (req, res) => {
   const filePath = path.join("C:/Users/PROger/Desktop/DoctorHi-main/src/.well-known/acme-challenge", token);
   res.sendFile(filePath);
 });
+app.get('/robots', (req, res) => {
+  res.sendFile('./public/robots.txt');
+});
 app.get('*', (req, res) => {
   const token = req?.params?.token||"пряник";
   const filePath = path.join("C:/Users/PROger/Desktop/DoctorHi-main/src/.well-known/acme-challenge", token);

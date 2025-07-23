@@ -75,15 +75,6 @@ npm start
 - PUT /api/v1/admin/transactions/:transactionId - Обновить статус сделки
 - POST /api/v1/admin/transactions/history/clear - Очистить историю сделок
 
-## Структура проекта
-
-```
-src/
-├── config/         # Конфигурация приложения
-├── controllers/    # Контроллеры
-├── middlewares/    # Промежуточное ПО
-├── routes/         # Маршруты
-└── index.mjs       # Точка входа
 ```
 
 ## Безопасность

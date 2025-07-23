@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Главная страница -->
+  <url>
+    <loc>https://doctor-height.online/</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Страницы из папки "about" -->
+  <url>
+    <loc>https://doctor-height.online/about/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Страницы из папки "amenities" -->
+  <url>
+    <loc>https://doctor-height.online/amenities/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Страницы из папки "blog" -->
+  <url>
+    <loc>https://doctor-height.online/blog/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Страницы из папки "gallery" -->
+  <url>
+    <loc>https://doctor-height.online/gallery/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Страницы из папки "plans" -->
+  <url>
+    <loc>https://doctor-height.online/plans/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Другие важные страницы -->
+  <url>
+    <loc>https://doctor-height.online/contact/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://doctor-height.online/doctor-heights-a-new-standard-in-luxury/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Пример для страницы комментариев -->
+  <url>
+    <loc>https://doctor-height.online/comments/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+  <!-- Пример для страницы feed -->
+  <url>
+    <loc>https://doctor-height.online/feed/index.html</loc>
+    <lastmod>2024-05-21</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

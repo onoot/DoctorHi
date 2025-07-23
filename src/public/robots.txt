@@ -1,0 +1,40 @@
+User-agent: *
+# Запрещаем индексацию служебных каталогов WordPress и других
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-content/themes/
+# Запрещаем индексацию других потенциально ненужных каталогов
+Disallow: /cgi-bin/
+Disallow: /tmp/
+# Предполагая, что логи и файлы конфигурации тоже не нужны в индексе
+Disallow: /logs/
+Disallow: /admin-panel.html
+Disallow: /login.html
+Disallow: /config/
+
+# Разрешаем индексацию основных разрешенных каталогов
+# Разрешаем индексацию файлов загрузок (часто внутри /wp-content/, но содержимое нужно)
+Allow: /wp-content/uploads/
+
+# Разрешаем индексацию всего остального сайта (корня и всех остальных папок, кроме запрещенных выше)
+Allow: /
+
+# Указываем путь к файлу карты сайта
+Sitemap: https://doctor-height.online/sitemap.xml
+
+# Для Yandex (у Yandex более строгая обработка правил, поэтому повторяем)
+User-agent: Yandex
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-content/themes/
+Disallow: /cgi-bin/
+Disallow: /tmp/
+Disallow: /logs/
+Disallow: /config/
+# Allow для Yandex аналогично
+Allow: /wp-content/uploads/
+Allow: /
+Sitemap: https://doctor-height.online/sitemap.xml
+Host: https://doctor-height.online

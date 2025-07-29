@@ -199,10 +199,18 @@ app.get('/.well-known/acme-challenge/:token', (req, res) => {
 app.get('/robots', (req, res) => {
   res.sendFile('./public/robots.txt');
 });
-app.get('*', (req, res) => {
-  const token = req?.params?.token||"пряник";
-  const filePath = path.join("C:/Users/PROger/Desktop/DoctorHi-main/src/.well-known/acme-challenge", token);
-  res.sendFile(filePath);
+app.get('/.well-known/acme-challenge/:token', (req, res) => {
+   const token = req.params.token; 
+   if (!token || token.includes('..') || token.includes('/') || token.includes('\\')) {
+       return res.status(400).send('Invalid token');
+   }
+   const filePath = path.join("C:/Users/PROger/Desktop/DoctorHi-main/src/.well-known/acme-challenge", token);
+   res.sendFile(filePath, (err) => {
+       if (err) {
+           console.error(`ACME Challenge file not found or error: ${filePath}`, err);
+           res.status(404).send('Challenge file not found');
+       }
+   });
 });
 
 // wacs.exe --target manual --host doctor-height.online --store pemfiles --pemfilespath "C:/ProgramData/win-acme/https-acme-site/doctor-height.online" --validation filesystem --webroot "C:/Users/PROger/Desktop/DoctorHi-main/src/"
@@ -227,7 +235,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Настройка CORS
 app.use(cors({
-  origin: '*', // Разрешаем все домены
+  origin: 'doctor-height.online', // Разрешаем домены
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Разрешенные методы
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'], // Разрешенные заголовки
   credentials: true // Разрешаем отправку куков и заголовков авторизации

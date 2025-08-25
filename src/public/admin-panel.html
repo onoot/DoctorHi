@@ -9,7 +9,41 @@
         media='all' />
 
     <style>
-       
+        
+        /* Стили для статусов */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-blocked {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-archived {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* Стили для кнопок действий */
+        .action-btn {
+            margin: 0 2px;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            display: inline-flex;
+            align-items: center;
+        }
 
         .btn-archive {
             background-color: #e2e3e5;
@@ -24,7 +58,6 @@
         .actions-cell {
             white-space: nowrap;
         }
-
 
         :root {
             --primary-color: #007bff;
@@ -2107,13 +2140,13 @@
                     attachActionHandlers3();
                 }
                 function renderUsersTable(users) {
-                    const tbody = document.getElementById('usersTableBody');
-                    tbody.innerHTML = '';
-
-                    users.forEach(user => {
-                        const row = document.createElement('tr');
-
-                        row.innerHTML = `
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+  
+  users.forEach(user => {
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
       <td>${user.id}</td>
       <td>${user.name}</td>
       <td>${user.login}</td>
@@ -2123,19 +2156,19 @@
       <td>${new Date(user.created_at).toLocaleDateString()}</td>
       <td class="actions-cell"></td>
     `;
-
-                        const actionsCell = row.querySelector('.actions-cell');
-
-                        if (user.status === 'archived') {
-                            // Для архивных пользователей показываем кнопку восстановления
-                            actionsCell.innerHTML = `
+    
+    const actionsCell = row.querySelector('.actions-cell');
+    
+    if (user.status === 'archived') {
+      // Для архивных пользователей показываем кнопку восстановления
+      actionsCell.innerHTML = `
         <button class="action-btn btn-restore" data-id="${user.id}">
           <i class="fas fa-undo"></i> Restore
         </button>
       `;
-                        } else {
-                            // Для активных пользователей показываем кнопку архивации
-                            actionsCell.innerHTML = `
+    } else {
+      // Для активных пользователей показываем кнопку архивации
+      actionsCell.innerHTML = `
         <button class="action-btn btn-block" data-id="${user.id}" data-status="${user.status === 'active' ? 'blocked' : 'active'}">
           <i class="fas ${user.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${user.status === 'active' ? 'Block' : 'Activate'}
         </button>
@@ -2143,25 +2176,25 @@
           <i class="fas fa-archive"></i> Archive
         </button>
       `;
-                        }
-
-                        tbody.appendChild(row);
-                    });
-
-                    // Привязываем обработчики событий
-                    document.querySelectorAll('.btn-archive').forEach(button => {
-                        button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
-                    });
-
-                    document.querySelectorAll('.btn-restore').forEach(button => {
-                        button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
-                    });
-
-                    document.querySelectorAll('.btn-block').forEach(button => {
-                        button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
-                    });
-                }
-                // Архивация пользователя
+    }
+    
+    tbody.appendChild(row);
+  });
+  
+  // Привязываем обработчики событий
+  document.querySelectorAll('.btn-archive').forEach(button => {
+    button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
+  });
+  
+  document.querySelectorAll('.btn-restore').forEach(button => {
+    button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
+  });
+  
+  document.querySelectorAll('.btn-block').forEach(button => {
+    button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
+  });
+}
+// Архивация пользователя
                 async function archiveUser(userId) {
                     if (!confirm('Are you sure you want to archive this user?')) {
                         return;
@@ -2209,29 +2242,29 @@
                     }
                 }
                 async function loadUsers(status = 'active') {
-                    const section = document.getElementById('users');
-                    section.classList.add('loading');
-                    const searchInput = section.querySelector('.search-input');
-                    const searchParams = new URLSearchParams({
-                        page: currentPage,
-                        limit: itemsPerPage
-                    });
-
-                    if (status !== 'all') {
-                        searchParams.append('status', status);
-                    }
-
-                    if (searchInput.value) {
-                        searchParams.append('search', searchInput.value);
-                    }
-
-                    console.log('Loading users with params:', searchParams.toString());
-                    const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
-
-                    // Создаем таблицу с классами из старой версии
-                    const table = document.createElement('table');
-                    table.className = 'table table-striped'; // Используем классы из старой версии
-                    table.innerHTML = `
+  const section = document.getElementById('users');
+  section.classList.add('loading');
+  const searchInput = section.querySelector('.search-input');
+  const searchParams = new URLSearchParams({
+    page: currentPage,
+    limit: itemsPerPage
+  });
+  
+  if (status !== 'all') {
+    searchParams.append('status', status);
+  }
+  
+  if (searchInput.value) {
+    searchParams.append('search', searchInput.value);
+  }
+  
+  console.log('Loading users with params:', searchParams.toString());
+  const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
+  
+  // Создаем таблицу с классами из старой версии
+  const table = document.createElement('table');
+  table.className = 'table table-striped'; // Используем классы из старой версии
+  table.innerHTML = `
     <thead>
       <tr>
         <th>ID</th>
@@ -2246,26 +2279,26 @@
     </thead>
     <tbody id="usersTableBody"></tbody>
   `;
-
-                    // Очищаем и добавляем таблицу
-                    section.innerHTML = '';
-                    section.appendChild(table);
-
-                    // Рендерим данные с использованием старой структуры
-                    if (data && Array.isArray(data.users)) {
-                        renderUsersTable(data.users);
-                    } else {
-                        console.error('Invalid users data format:', data);
-                        const tbody = document.getElementById('usersTableBody');
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Error loading users data</td></tr>';
-                    }
-
-                    // Добавляем пагинацию
-                    if (data) {
-                        section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
-                    }
-                }
-                function attachActionHandlers3() {
+  
+  // Очищаем и добавляем таблицу
+  section.innerHTML = '';
+  section.appendChild(table);
+  
+  // Рендерим данные с использованием старой структуры
+  if (data && Array.isArray(data.users)) {
+    renderUsersTable(data.users);
+  } else {
+    console.error('Invalid users data format:', data);
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Error loading users data</td></tr>';
+  }
+  
+  // Добавляем пагинацию
+  if (data) {
+    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
+  }
+}
+function attachActionHandlers3() {
                     document.body.addEventListener('click', function (e) {
                         const button = e.target.closest('.action-btn');
                         if (!button) return;

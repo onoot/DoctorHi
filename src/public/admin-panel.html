@@ -9,56 +9,6 @@
         media='all' />
 
     <style>
-        
-        /* Стили для статусов */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-blocked {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-archived {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-
-        /* Стили для кнопок действий */
-        .action-btn {
-            margin: 0 2px;
-            padding: 4px 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8em;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .btn-archive {
-            background-color: #e2e3e5;
-            color: #383d41;
-        }
-
-        .btn-restore {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .actions-cell {
-            white-space: nowrap;
-        }
-
         :root {
             --primary-color: #007bff;
             --secondary-color: #6c757d;
@@ -1303,36 +1253,36 @@
 
         <!-- Секция пользователей -->
         <div id="users" class="section">
-            <div class="section-header">
-                <h2 class="section-title">All Users</h2>
-                <button class="action-btn btn-edit" id="openAddUserModal">
-                    <i class="fas fa-user-plus"></i>
-                    Add User
-                </button>
-            </div>
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search users...">
-                <button class="search-btn">
-                    <i class="fas fa-search"></i>
-                    Search
-                </button>
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>CNIC</th>
-                        <th>Email</th>
-                        <th>Properties</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersTableBody">
-                    <!-- Данные будут добавлены через JavaScript -->
-                </tbody>
-            </table>
-        </div>
+  <div class="section-header">
+    <h2 class="section-title">All Users</h2>
+    <button class="action-btn btn-edit" id="openAddUserModal">
+      <i class="fas fa-user-plus"></i> Add User
+    </button>
+  </div>
+  <div class="search-box">
+    <input type="text" class="search-input" placeholder="Search users...">
+    <button class="search-btn">
+      <i class="fas fa-search"></i> Search
+    </button>
+  </div>
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>CNIC</th>
+          <th>Email</th>
+          <th>Properties</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="usersTableBody">
+        <!-- Данные будут добавлены через JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
         <!-- Основной контент -->
         <div class="main-content">
             <!-- Модальное окно для просмотра пользователя -->
@@ -2139,9 +2089,26 @@
                     // Привязываем обработчики событий к динамическим кнопкам
                     attachActionHandlers3();
                 }
-                function renderUsersTable(users) {
+              function renderUsersTable(users) {
   const tbody = document.getElementById('usersTableBody');
+  if (!tbody) {
+    console.error('Users table body not found');
+    return;
+  }
+  
+  // Проверяем, что users - это массив
+  if (!Array.isArray(users)) {
+    console.error('Expected users to be an array, but got:', users);
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Invalid data format</td></tr>';
+    return;
+  }
+  
   tbody.innerHTML = '';
+  
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+    return;
+  }
   
   users.forEach(user => {
     const row = document.createElement('tr');
@@ -2149,30 +2116,29 @@
     row.innerHTML = `
       <td>${user.id}</td>
       <td>${user.name}</td>
-      <td>${user.login}</td>
       <td>${user.cnic}</td>
-      <td>${user.role}</td>
-      <td><span class="status-badge status-${user.status}">${user.status}</span></td>
-      <td>${new Date(user.created_at).toLocaleDateString()}</td>
+      <td>${user.email || user.login}</td>
+      <td>${user.properties_count || 0}</td>
       <td class="actions-cell"></td>
     `;
     
     const actionsCell = row.querySelector('.actions-cell');
     
     if (user.status === 'archived') {
-      // Для архивных пользователей показываем кнопку восстановления
       actionsCell.innerHTML = `
-        <button class="action-btn btn-restore" data-id="${user.id}">
+        <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
           <i class="fas fa-undo"></i> Restore
         </button>
       `;
     } else {
-      // Для активных пользователей показываем кнопку архивации
       actionsCell.innerHTML = `
-        <button class="action-btn btn-block" data-id="${user.id}" data-status="${user.status === 'active' ? 'blocked' : 'active'}">
+        <button class="action-btn btn-view" data-id="${user.id}" data-action="view">
+          <i class="fas fa-eye"></i> View
+        </button>
+        <button class="action-btn btn-edit" data-id="${user.id}" data-status="${user.status === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
           <i class="fas ${user.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${user.status === 'active' ? 'Block' : 'Activate'}
         </button>
-        <button class="action-btn btn-archive" data-id="${user.id}">
+        <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
           <i class="fas fa-archive"></i> Archive
         </button>
       `;
@@ -2182,16 +2148,20 @@
   });
   
   // Привязываем обработчики событий
-  document.querySelectorAll('.btn-archive').forEach(button => {
+  document.querySelectorAll('.btn-view').forEach(button => {
+    button.addEventListener('click', (e) => viewUser(e.target.dataset.id));
+  });
+  
+  document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
+    button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
+  });
+  
+  document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
     button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
   });
   
-  document.querySelectorAll('.btn-restore').forEach(button => {
+  document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
     button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
-  });
-  
-  document.querySelectorAll('.btn-block').forEach(button => {
-    button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
   });
 }
 // Архивация пользователя
@@ -2242,63 +2212,130 @@
                     }
                 }
                 async function loadUsers(status = 'active') {
-  const section = document.getElementById('users');
-  section.classList.add('loading');
-  const searchInput = section.querySelector('.search-input');
-  const searchParams = new URLSearchParams({
-    page: currentPage,
-    limit: itemsPerPage
-  });
-  
-  if (status !== 'all') {
-    searchParams.append('status', status);
-  }
-  
-  if (searchInput.value) {
-    searchParams.append('search', searchInput.value);
-  }
-  
-  console.log('Loading users with params:', searchParams.toString());
-  const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
-  
-  // Создаем таблицу с классами из старой версии
-  const table = document.createElement('table');
-  table.className = 'table table-striped'; // Используем классы из старой версии
-  table.innerHTML = `
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Login</th>
-        <th>CNIC</th>
-        <th>Role</th>
-        <th>Status</th>
-        <th>Created</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody id="usersTableBody"></tbody>
-  `;
-  
-  // Очищаем и добавляем таблицу
-  section.innerHTML = '';
-  section.appendChild(table);
-  
-  // Рендерим данные с использованием старой структуры
-  if (data && Array.isArray(data.users)) {
-    renderUsersTable(data.users);
-  } else {
-    console.error('Invalid users data format:', data);
-    const tbody = document.getElementById('usersTableBody');
-    tbody.innerHTML = '<tr><td colspan="8" class="text-center">Error loading users data</td></tr>';
-  }
-  
-  // Добавляем пагинацию
-  if (data) {
-    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
-  }
-}
-function attachActionHandlers3() {
+                    const section = document.getElementById('users');
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'loading-indicator';
+                    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
+
+                    // Удаляем предыдущий индикатор загрузки, если он есть
+                    const existingLoader = section.querySelector('.loading-indicator');
+                    if (existingLoader) {
+                        existingLoader.remove();
+                    }
+
+                    // Добавляем новый индикатор загрузки
+                    section.appendChild(loadingIndicator);
+
+                    try {
+                        const searchInput = section.querySelector('.search-input');
+                        const searchParams = new URLSearchParams({
+                            page: currentPage,
+                            limit: itemsPerPage
+                        });
+
+                        if (status !== 'all') {
+                            searchParams.append('status', status);
+                        }
+
+                        if (searchInput && searchInput.value) {
+                            searchParams.append('search', searchInput.value);
+                        }
+
+                        console.log('Loading users with params:', searchParams.toString());
+                        const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
+
+                        // Удаляем индикатор загрузки
+                        loadingIndicator.remove();
+
+                        // Находим или создаем таблицу
+                        let table = section.querySelector('.data-table');
+                        if (!table) {
+                            // Если таблицы нет, создаем новую структуру
+                            const tableContainer = document.createElement('div');
+                            tableContainer.className = 'table-container';
+
+                            table = document.createElement('table');
+                            table.className = 'data-table';
+                            table.innerHTML = `
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>CNIC</th>
+            <th>Email</th>
+            <th>Properties</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      `;
+
+                            tableContainer.appendChild(table);
+
+                            // Проверяем, есть ли уже пагинация
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                section.insertBefore(tableContainer, existingPagination);
+                            } else {
+                                section.appendChild(tableContainer);
+                            }
+                        }
+
+                        // Рендерим данные
+                        if (data && Array.isArray(data.users)) {
+                            renderUsersTable(data.users);
+
+                            // Добавляем или обновляем пагинацию
+                            const pagination = createPagination(data.total, currentPage, itemsPerPage);
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                existingPagination.replaceWith(pagination);
+                            } else {
+                                section.appendChild(pagination);
+                            }
+                        } else {
+                            console.error('Invalid users data format:', data);
+                            const tbody = document.getElementById('usersTableBody');
+                            if (tbody) {
+                                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found or error loading data</td></tr>';
+                            }
+                        }
+
+                        // Привязываем обработчики событий к динамическим кнопкам
+                        attachActionHandlers();
+                    } catch (error) {
+                        console.error('Error loading users:', error);
+
+                        // Удаляем индикатор загрузки
+                        loadingIndicator.remove();
+
+                        // Показываем сообщение об ошибке
+                        let errorContainer = section.querySelector('.error-message');
+                        if (!errorContainer) {
+                            errorContainer = document.createElement('div');
+                            errorContainer.className = 'error-message';
+                            errorContainer.style = 'color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 4px; margin: 10px 0;';
+                            section.appendChild(errorContainer);
+                        }
+
+                        errorContainer.innerHTML = `
+      <i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
+      <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+        Retry
+      </button>
+    `;
+
+                        // Добавляем обработчик для кнопки повторной попытки
+                        const retryBtn = errorContainer.querySelector('.retry-btn');
+                        if (retryBtn) {
+                            retryBtn.addEventListener('click', () => {
+                                errorContainer.remove();
+                                loadUsers(status);
+                            });
+                        }
+                    }
+                }
+                function attachActionHandlers3() {
                     document.body.addEventListener('click', function (e) {
                         const button = e.target.closest('.action-btn');
                         if (!button) return;

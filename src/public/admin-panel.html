@@ -58,6 +58,86 @@
             white-space: nowrap;
         }
 
+        /* Стили для таблицы из старой версии */
+        .table {
+            width: 100%;
+            margin-bottom: 1rem;
+            color: #212529;
+            border-collapse: collapse;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            vertical-align: top;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .table thead th {
+            vertical-align: bottom;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+        }
+
+        /* Стили для статусов из старой версии */
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-blocked {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-archived {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* Стили для кнопок действий */
+        .action-btn {
+            margin: 0 2px;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-archive {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .btn-restore {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .btn-block {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .actions-cell {
+            white-space: nowrap;
+        }
+
         :root {
             --primary-color: #007bff;
             --secondary-color: #6c757d;
@@ -2139,14 +2219,6 @@
                     attachActionHandlers3();
                 }
                 function renderUsersTable(users) {
-                    if (!Array.isArray(users)) {
-                        console.error('Expected users to be an array, but got:', users);
-                        const tbody = document.getElementById('usersTableBody');
-                        if (tbody) {
-                            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Invalid data format</td></tr>';
-                        }
-                        return;
-                    }
                     const tbody = document.getElementById('usersTableBody');
                     tbody.innerHTML = '';
 
@@ -2268,9 +2340,9 @@
                     console.log('Loading users with params:', searchParams.toString());
                     const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
 
-                    // Создаем таблицу
+                    // Создаем таблицу с классами из старой версии
                     const table = document.createElement('table');
-                    table.className = 'table table-striped';
+                    table.className = 'table table-striped'; // Используем классы из старой версии
                     table.innerHTML = `
     <thead>
       <tr>
@@ -2291,7 +2363,7 @@
                     section.innerHTML = '';
                     section.appendChild(table);
 
-                    // ИСПРАВЛЕНИЕ: Передаем data.users вместо data
+                    // Рендерим данные с использованием старой структуры
                     if (data && Array.isArray(data.users)) {
                         renderUsersTable(data.users);
                     } else {
@@ -2304,9 +2376,6 @@
                     if (data) {
                         section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
                     }
-
-                    // Привязываем обработчики событий к динамическим кнопкам
-                    attachActionHandlers();
                 }
                 function attachActionHandlers3() {
                     document.body.addEventListener('click', function (e) {

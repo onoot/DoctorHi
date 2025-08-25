@@ -452,31 +452,83 @@ const transactionController = {
   },
 
   // Обновление статуса транзакции
-  async update(req, res) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { status, reason } = req.body;
-      const transactionId = req.params.id;
-
-      const [result] = await pool.query(
-        'UPDATE transactions SET status = ?, notes = COALESCE(?, notes) WHERE id = ?',
-        [status, reason, transactionId]
-      );
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ message: 'Transaction not found' });
-      }
-
-      res.json({ message: 'Transaction updated successfully' });
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      res.status(500).json({ message: 'Internal server error' });
+  
+  // Обновление статуса транзакции
+async update(req, res) {
+  try {
+    const transactionId = parseInt(req.params.id);
+    const { status, admin_notes } = req.body;
+    
+    // Проверка прав доступа
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
     }
-  },
+    
+    // Валидация статуса
+    const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+    
+    // Обновление транзакции
+    const [result] = await pool.query(
+      'UPDATE transactions SET status = ?, admin_notes = ? WHERE id = ?',
+      [status, admin_notes, transactionId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+    
+    // Если транзакция одобрена, создаем запись в истории владения
+    if (status === 'approved') {
+      const [transaction] = await pool.query(
+        'SELECT * FROM transactions WHERE id = ?',
+        [transactionId]
+      );
+      
+      if (transaction.length > 0) {
+        // Проверяем, что у транзакции есть необходимые данные
+        if (transaction[0].property_id && transaction[0].new_owner_id) {
+          const newOwnership = {
+            property_id: transaction[0].property_id,
+            owner_id: transaction[0].new_owner_id,
+            from_date: new Date(),
+            to_date: null
+          };
+          
+          await pool.query(
+            'INSERT INTO ownership_history SET ?',
+            [newOwnership]
+          );
+        } else {
+          console.error('Transaction data incomplete for ownership history', transaction[0]);
+          return res.status(500).json({ 
+            message: 'Transaction data incomplete for ownership history' 
+          });
+        }
+      } else {
+        console.error('Transaction not found after update', transactionId);
+        return res.status(500).json({ 
+          message: 'Transaction not found after update' 
+        });
+      }
+    }
+    
+    res.json({ success: true, message: 'Transaction updated successfully' });
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    console.error('Request details:', {
+      params: req.params,
+      body: req.body,
+      user: req.user
+    });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      details: error.message 
+    });
+  }
+},
 
   // Загрузка файлов к сделке
   async uploadFiles(req, res) {
@@ -641,72 +693,150 @@ const transactionController = {
   },
 
   // Создание новой транзакции
-  async create(req, res) {
-    try {
-      console.log('Creating transaction with data:', req.body);
-      
-      // Проверяем валидацию
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        console.log('Validation errors:', errors.array());
-        return res.status(400).json({ message: 'Validation error', errors: errors.array() });
-      }
+async create(req, res) {
+  try {
+    const { property_id, new_owner_id, total_amount, witnesses } = req.body;
+    console.log('Parsed request data:', { 
+      property_id, 
+      new_owner_id, 
+      total_amount,
+      hasWitnesses: !!witnesses 
+    });
 
-      // Получаем данные из запроса
-      const { property_id, new_owner_id, total_amount } = req.body;
-      
-      console.log('Parsed request data:', {
-        property_id,
-        new_owner_id,
-        total_amount
-      });
-
-      // Проверяем существование объекта недвижимости
-      const property = getPropertyById(property_id);
-      if (!property) {
-        console.log('Property not found:', property_id);
-        return res.status(404).json({ message: 'Property not found' });
-      }
-      console.log('Found property:', property);
-
-      // Получаем предыдущего владельца
-      const previous_owner_id = await getPreviousOwner(property_id);
-      console.log('Previous owner:', previous_owner_id);
-
-      // Проверяем существование нового владельца
-      const [users] = await pool.query(
-        'SELECT id, status FROM users WHERE id = ?',
-        [new_owner_id]
-      );
-      console.log('Found users:', users);
-
-      if (!users.length) {
-        return res.status(404).json({ message: 'New owner not found' });
-      }
-
-      if (users[0].status === 'blocked') {
-        return res.status(400).json({ message: 'New owner account is blocked' });
-      }
-
-      // Создаем транзакцию
-      const [result] = await pool.query(`
-        INSERT INTO transactions 
-        (property_id, previous_owner_id, new_owner_id, status, total_amount, paid_amount) 
-        VALUES (?, ?, ?, 'pending', ?, 0)
-      `, [property_id, previous_owner_id, new_owner_id, total_amount]);
-
-      console.log('Transaction created:', result);
-
-      res.status(201).json({
-        message: 'Transaction created successfully',
-        transaction_id: result.insertId
-      });
-
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      res.status(500).json({ message: 'Error creating transaction' });
+    // Проверяем существование объекта недвижимости
+    const property = getPropertyById(property_id);
+    if (!property) {
+      console.log('Property not found:', property_id);
+      return res.status(404).json({ message: 'Property not found' });
     }
-  },
+    console.log('Found property:', property);
+
+    // Получаем предыдущего владельца
+    const previous_owner_id = await getPreviousOwner(property_id);
+    console.log('Previous owner:', previous_owner_id);
+
+    // Создаем транзакцию
+    const [result] = await pool.query(
+      `INSERT INTO transactions 
+       (property_id, previous_owner_id, new_owner_id, status, total_amount, paid_amount)
+       VALUES (?, ?, ?, 'pending', ?, 0)`,
+      [property_id, previous_owner_id, new_owner_id, total_amount]
+    );
+    console.log('Transaction created:', result);
+    
+    const transactionId = result.insertId;
+
+    // Обрабатываем данные о свидетелях, если они предоставлены
+    if (witnesses) {
+      try {
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+          
+          // Удаляем существующих свидетелей (на случай повторной попытки)
+          await connection.query(
+            'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
+            [transactionId]
+          );
+          
+          // Обработка первого свидетеля
+          if (witnesses.witness1) {
+            const { name, cnic, phone } = witnesses.witness1;
+            
+            // Пытаемся найти свидетеля по CNIC
+            let [existingWitnesses] = await connection.query(
+              'SELECT id, name, phone FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+              [cnic]
+            );
+            
+            let witnessData;
+            if (existingWitnesses.length > 0) {
+              // Используем данные из существующего свидетеля
+              witnessData = {
+                name: existingWitnesses[0].name,
+                cnic: cnic,
+                phone: existingWitnesses[0].phone || phone
+              };
+              console.log('Using existing witness1 data for CNIC:', cnic);
+            } else {
+              // Используем предоставленные данные
+              witnessData = {
+                name: name,
+                cnic: cnic,
+                phone: phone
+              };
+              console.log('Creating new witness1 for CNIC:', cnic);
+            }
+            
+            // Сохраняем свидетеля для этой транзакции
+            await connection.query(
+              `INSERT INTO transaction_witnesses 
+               (transaction_id, witness_type, name, cnic, phone) 
+               VALUES (?, 'witness1', ?, ?, ?)`,
+              [transactionId, witnessData.name, witnessData.cnic, witnessData.phone || null]
+            );
+          }
+          
+          // Аналогично для второго свидетеля
+          if (witnesses.witness2) {
+            const { name, cnic, phone } = witnesses.witness2;
+            
+            // Пытаемся найти свидетеля по CNIC
+            let [existingWitnesses] = await connection.query(
+              'SELECT id, name, phone FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+              [cnic]
+            );
+            
+            let witnessData;
+            if (existingWitnesses.length > 0) {
+              // Используем данные из существующего свидетеля
+              witnessData = {
+                name: existingWitnesses[0].name,
+                cnic: cnic,
+                phone: existingWitnesses[0].phone || phone
+              };
+              console.log('Using existing witness2 data for CNIC:', cnic);
+            } else {
+              // Используем предоставленные данные
+              witnessData = {
+                name: name,
+                cnic: cnic,
+                phone: phone
+              };
+              console.log('Creating new witness2 for CNIC:', cnic);
+            }
+            
+            // Сохраняем свидетеля для этой транзакции
+            await connection.query(
+              `INSERT INTO transaction_witnesses 
+               (transaction_id, witness_type, name, cnic, phone) 
+               VALUES (?, 'witness2', ?, ?, ?)`,
+              [transactionId, witnessData.name, witnessData.cnic, witnessData.phone || null]
+            );
+          }
+          
+          await connection.commit();
+          console.log('Witnesses added successfully for transaction:', transactionId);
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      } catch (witnessError) {
+        console.error('Error processing witnesses:', witnessError);
+      }
+    }
+
+    res.status(201).json({
+      message: 'Transaction created successfully',
+      transaction_id: transactionId
+    });
+  } catch (error) {
+    console.error('Error creating transaction:', error);
+    res.status(500).json({ message: 'Error creating transaction' });
+  }
+},
 
   // Запрос на создание транзакции от пользователя
   async requestTransaction(req, res) {

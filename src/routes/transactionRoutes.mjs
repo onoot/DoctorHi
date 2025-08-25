@@ -69,7 +69,7 @@ router.get('/:id', adminAuth, transactionController.getById);
 
 router.put('/:id', adminAuth, [
   body('status').isIn(['pending', 'approved', 'rejected', 'cancelled']).withMessage('Invalid status'),
-  body('reason').optional().isString()
+  body('admin_notes').optional().isString().withMessage('Notes must be a string')
 ], transactionController.update);
 
 // Загрузка документов и видео

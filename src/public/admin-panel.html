@@ -2139,6 +2139,14 @@
                     attachActionHandlers3();
                 }
                 function renderUsersTable(users) {
+                    if (!Array.isArray(users)) {
+                        console.error('Expected users to be an array, but got:', users);
+                        const tbody = document.getElementById('usersTableBody');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="8" class="text-center">Invalid data format</td></tr>';
+                        }
+                        return;
+                    }
                     const tbody = document.getElementById('usersTableBody');
                     tbody.innerHTML = '';
 
@@ -2283,16 +2291,23 @@
                     section.innerHTML = '';
                     section.appendChild(table);
 
-                    // Рендерим данные
-                    renderUsersTable(data);
+                    // ИСПРАВЛЕНИЕ: Передаем data.users вместо data
+                    if (data && Array.isArray(data.users)) {
+                        renderUsersTable(data.users);
+                    } else {
+                        console.error('Invalid users data format:', data);
+                        const tbody = document.getElementById('usersTableBody');
+                        tbody.innerHTML = '<tr><td colspan="8" class="text-center">Error loading users data</td></tr>';
+                    }
 
                     // Добавляем пагинацию
-                    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
+                    if (data) {
+                        section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
+                    }
 
                     // Привязываем обработчики событий к динамическим кнопкам
                     attachActionHandlers();
                 }
-
                 function attachActionHandlers3() {
                     document.body.addEventListener('click', function (e) {
                         const button = e.target.closest('.action-btn');

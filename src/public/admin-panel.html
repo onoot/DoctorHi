@@ -7,6 +7,54 @@
     <link rel='stylesheet' href='./wp-content/plugins/elementor/assets/lib/font-awesome/css/all.mind1c0.css' media='all' />
     
     <style>
+        /* Стили для статусов */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-blocked {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-archived {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+/* Стили для кнопок действий */
+.action-btn {
+  margin: 0 2px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-archive {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.btn-restore {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
         :root {
             --primary-color: #007bff;
             --secondary-color: #6c757d;
@@ -1195,7 +1243,12 @@
                     Users
                 </a>
                 </li>
-            </ul>
+                <li class="nav-item">
+                    <a class="nav-link" href="#users-archive">
+                        <i class="fas fa-users"></i> Users (Archive)
+                    </a>
+                </li>
+                </ul>
             </div>
                <!-- Секция сделок -->
             <div id="transactions" class="section active">
@@ -1400,11 +1453,11 @@
         </div>
         <div class="form-group">
           <label for="userCnic">CNIC*</label>
-          <input type="text" id="userCnic" required pattern="\d{5}-\d{7}-\d" placeholder="12345-1234567-1">
+          <input type="text" id="userCnic" required placeholder="12345-1234567-1">
         </div>
         <div class="form-group">
           <label for="userPhone">Phone Number*</label>
-          <input type="tel" id="userPhone" required pattern="\+92\d{10}" placeholder="+923001234567">
+          <input type="tel" id="userPhone" required placeholder="+923001234567">
         </div>
         <div class="form-group">
           <label for="userAddress">Address*</label>
@@ -1412,14 +1465,14 @@
         </div>
         <div class="form-group">
           <label for="userLogin">Login (generated)</label>
-          <input type="text" id="userLogin" readonly>
+          <input type="text" id="userLogin">
           <button type="button" class="action-btn btn-edit regenerate-login-btn">
             <i class="fas fa-sync"></i> Regenerate
           </button>
         </div>
         <div class="form-group">
           <label for="userPassword">Password (generated)</label>
-          <input type="text" id="userPassword" readonly>
+          <input type="text" id="userPassword">
           <button type="button" class="action-btn btn-edit regenerate-password-btn">
             <i class="fas fa-sync"></i> Regenerate
           </button>
@@ -1454,10 +1507,11 @@
             <!-- User options will be populated via JavaScript -->
           </select>
         </div>
-        <div class="form-group">
-          <label for="totalAmount">Total Amount</label>
-          <input type="number" id="totalAmount" class="form-control" name="total_amount" required min="0" step="0.01">
-        </div>
+    <div class="form-group">
+        <label for="totalAmount">Total Amount (PKR)</label>
+        <input type="number" id="totalAmount" name="total_amount" class="form-control" required min="0" step="0.01"
+            placeholder="0.00">
+    </div>
 
         <!-- Witnesses Information -->
         <div class="form-section">
@@ -1473,7 +1527,7 @@
             <div class="form-group">
               <label for="witness1CNIC">CNIC</label>
               <input type="text" id="witness1CNIC" name="witness1CNIC" class="form-control"
-                     pattern="\d{5}-\d{7}-\d" placeholder="12345-1234567-1" required>
+                     placeholder="12345-1234567-1" required>
             </div>
             <div class="form-group">
               <label for="witness1Phone">Phone</label>
@@ -1492,7 +1546,7 @@
             <div class="form-group">
               <label for="witness2CNIC">CNIC</label>
               <input type="text" id="witness2CNIC" name="witness2CNIC" class="form-control"
-                     pattern="\d{5}-\d{7}-\d" placeholder="12345-1234567-1" required>
+                     placeholder="12345-1234567-1" required>
             </div>
             <div class="form-group">
               <label for="witness2Phone">Phone</label>
@@ -1579,7 +1633,7 @@
                     <div class="form-group">
                         <label for="witness1CNIC">CNIC</label>
                         <input type="text" id="witness1CNIC" name="witness1CNIC" class="form-control" 
-                               pattern="\d{5}-\d{7}-\d" placeholder="12345-1234567-1" required>
+                               placeholder="12345-1234567-1" required>
                     </div>
                     <div class="form-group">
                         <label for="witness1Phone">Phone</label>
@@ -1598,7 +1652,7 @@
                     <div class="form-group">
                         <label for="witness2CNIC">CNIC</label>
                         <input type="text" id="witness2CNIC" name="witness2CNIC" class="form-control" 
-                               pattern="\d{5}-\d{7}-\d" placeholder="12345-1234567-1" required>
+                               placeholder="12345-1234567-1" required>
                     </div>
                     <div class="form-group">
                         <label for="witness2Phone">Phone</label>
@@ -1613,6 +1667,89 @@
     </div>
 
     <script>
+    let exchangeRateCache = null;
+        let lastFetchTime = 0;
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+
+        // Форматирование суммы в долларах
+        function formatUSD(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Получение курса обмена PKR к USD
+        async function getExchangeRatePKRtoUSD() {
+            try {
+
+                // Если внутренний API недоступен, используем внешний
+                const externalResponse = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
+                const data = await externalResponse.json();
+                return data.rates.USD;
+            } catch (error) {
+                console.error('Error fetching exchange rate:', error);
+                showNotification('error', 'Could not get current exchange rate. Using approximate value.');
+                // Приблизительный курс (актуален на момент написания)
+                return 0.0036;
+            }
+        }
+        async function getCachedExchangeRate() {
+            const now = Date.now();
+            if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
+                return exchangeRateCache;
+            }
+
+            exchangeRateCache = await getExchangeRatePKRtoUSD();
+            lastFetchTime = now;
+            return exchangeRateCache;
+        }
+
+
+        function openCreateTransactionModal() {
+            loadProperties();
+            openModal('createTransactionModal');
+    
+  // Небольшая задержка для гарантированной загрузки модального окна
+  setTimeout(() => {
+    const totalAmountInput = document.getElementById('totalAmount');
+    if (totalAmountInput) {
+      // Создаем элемент для отображения конвертации, если его нет
+      let conversionElement = totalAmountInput.parentNode.querySelector('.currency-conversion');
+      if (!conversionElement) {
+        conversionElement = document.createElement('div');
+        conversionElement.className = 'currency-conversion';
+        conversionElement.style.marginTop = '5px';
+        conversionElement.style.color = '#666';
+        conversionElement.style.fontSize = '0.9em';
+        totalAmountInput.parentNode.appendChild(conversionElement);
+      }
+      
+      // Добавляем обработчик для пересчета суммы
+      totalAmountInput.addEventListener('input', async function() {
+        const pkrAmount = parseFloat(this.value) || 0;
+        const exchangeRate = await getExchangeRatePKRtoUSD();
+        const usdAmount = pkrAmount * exchangeRate;
+        
+        conversionElement.innerHTML = `
+          <span>≈ ${formatUSD(usdAmount)} USD</span>
+          <span style="font-size: 0.8em; display: block; margin-top: 3px; opacity: 0.7">
+            (1 PKR = ${exchangeRate.toFixed(6)} USD)
+          </span>
+        `;
+      });
+      
+      // Имитируем событие для первоначального расчета
+      const event = new Event('input', { bubbles: true });
+      totalAmountInput.dispatchEvent(event);
+    }
+  }, 100);
+}
+// Затем используйте getCachedExchangeRate() вместо getExchangeRatePKRtoUSD() в обработчике
+
+
+
         const API_BASE_URL = `https://${window?.location?.host}/api`;
         let currentPage = 1;
         let itemsPerPage = 10;
@@ -1967,58 +2104,161 @@
     // Привязываем обработчики событий к динамическим кнопкам
     attachActionHandlers3();
 }
-        async function loadUsers() {
-    const section = document.getElementById('users');
-    section.classList.add('loading');
-
-    const searchInput = section.querySelector('.search-input');
-    const searchParams = new URLSearchParams({
-        page: currentPage,
-        limit: itemsPerPage
+  function renderUsersTable(users) {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+  
+  users.forEach(user => {
+    const row = document.createElement('tr');
+    
+    row.innerHTML = `
+      <td>${user.id}</td>
+      <td>${user.name}</td>
+      <td>${user.login}</td>
+      <td>${user.cnic}</td>
+      <td>${user.role}</td>
+      <td><span class="status-badge status-${user.status}">${user.status}</span></td>
+      <td>${new Date(user.created_at).toLocaleDateString()}</td>
+      <td class="actions-cell"></td>
+    `;
+    
+    const actionsCell = row.querySelector('.actions-cell');
+    
+    if (user.status === 'archived') {
+      // Для архивных пользователей показываем кнопку восстановления
+      actionsCell.innerHTML = `
+        <button class="action-btn btn-restore" data-id="${user.id}">
+          <i class="fas fa-undo"></i> Restore
+        </button>
+      `;
+    } else {
+      // Для активных пользователей показываем кнопку архивации
+      actionsCell.innerHTML = `
+        <button class="action-btn btn-block" data-id="${user.id}" data-status="${user.status === 'active' ? 'blocked' : 'active'}">
+          <i class="fas ${user.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${user.status === 'active' ? 'Block' : 'Activate'}
+        </button>
+        <button class="action-btn btn-archive" data-id="${user.id}">
+          <i class="fas fa-archive"></i> Archive
+        </button>
+      `;
+    }
+    
+    tbody.appendChild(row);
+  });
+  
+  // Привязываем обработчики событий
+  document.querySelectorAll('.btn-archive').forEach(button => {
+    button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
+  });
+  
+  document.querySelectorAll('.btn-restore').forEach(button => {
+    button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
+  });
+  
+  document.querySelectorAll('.btn-block').forEach(button => {
+    button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
+  });
+}     
+// Архивация пользователя
+async function archiveUser(userId) {
+  if (!confirm('Are you sure you want to archive this user?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(`/v1/admin/users/${userId}/archive`, {
+      method: 'POST'
     });
-
-    if (searchInput.value) {
-        searchParams.append('search', searchInput.value);
+    
+    if (response.success) {
+      showNotification('success', 'User archived successfully');
+      // Перезагружаем список пользователей
+      loadUsers('active');
+    } else {
+      showNotification('error', response.message || 'Error archiving user');
     }
-
-    console.log('Loading users with params:', searchParams.toString());
-    const data = await apiRequest(`/v1/admin/users?${searchParams}`);
-    console.log('Received users data:', data);
-    section.classList.remove('loading');
-
-    if (!data) return;
-
-    const tbody = document.getElementById('usersTableBody');
-    console.log('Updating users table with data:', data.users);
-    tbody.innerHTML = data.users.map(u => `
-        <tr>
-            <td>${u.id}</td>
-            <td>${u.name}</td>
-            <td>${u.cnic}</td>
-            <td>${u.email || ''}</td>
-            <td>${u.properties_count || 0}</td>
-            <td>
-                <button class="action-btn btn-view" data-id="${u.id}" data-action="view_user">
-                    <i class="fas fa-eye"></i> View
-                </button>
-                <button class="action-btn btn-edit" data-id="${u.id}" data-action="${u.status === 'active' ? 'block' : 'unblock'}">
-                    <i class="fas ${u.status === 'active' ? 'fa-ban' : 'fa-check-circle'}"></i>
-                    ${u.status === 'active' ? 'Block' : 'Unblock'}
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-    // Добавляем пагинацию
-    const existingPagination = section.querySelector('.pagination');
-    if (existingPagination) {
-        existingPagination.remove();
-    }
-    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
-
-    // Привязываем обработчики событий к динамическим кнопкам
-    attachActionHandlers3();
+  } catch (error) {
+    console.error('Archive error:', error);
+    showNotification('error', 'Error archiving user');
+  }
 }
+
+// Восстановление пользователя из архива
+async function restoreUser(userId) {
+  if (!confirm('Are you sure you want to restore this user from archive?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, {
+      method: 'POST'
+    });
+    
+    if (response.success) {
+      showNotification('success', 'User restored successfully');
+      // Перезагружаем список архивных пользователей
+      loadUsers('archived');
+    } else {
+      showNotification('error', response.message || 'Error restoring user');
+    }
+  } catch (error) {
+    console.error('Restore error:', error);
+    showNotification('error', 'Error restoring user');
+  }
+}
+async function loadUsers(status = 'active') {
+  const section = document.getElementById('users');
+  section.classList.add('loading');
+  const searchInput = section.querySelector('.search-input');
+  const searchParams = new URLSearchParams({
+    page: currentPage,
+    limit: itemsPerPage
+  });
+  
+  if (status !== 'all') {
+    searchParams.append('status', status);
+  }
+  
+  if (searchInput.value) {
+    searchParams.append('search', searchInput.value);
+  }
+  
+  console.log('Loading users with params:', searchParams.toString());
+  const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
+  
+  // Создаем таблицу
+  const table = document.createElement('table');
+  table.className = 'table table-striped';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Login</th>
+        <th>CNIC</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="usersTableBody"></tbody>
+  `;
+  
+  // Очищаем и добавляем таблицу
+  section.innerHTML = '';
+  section.appendChild(table);
+  
+  // Рендерим данные
+  renderUsersTable(data);
+  
+  // Добавляем пагинацию
+  section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
+  
+  // Привязываем обработчики событий к динамическим кнопкам
+  attachActionHandlers();
+}
+
 function attachActionHandlers3() {
     document.body.addEventListener('click', function(e) {
         const button = e.target.closest('.action-btn');
@@ -2124,26 +2364,33 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
 });
         // Обновление статуса пользователя
-       async function toggleUserStatus(userId, newStatus) {
-    try {
-        const response = await apiRequest(`/v1/admin/users/${userId}/status`, {
-            method: 'POST',
-            body: JSON.stringify({ status: newStatus })
-        });
-
-        if (response.success) {
-            showNotification('success', `User status updated to: ${newStatus}`);
-            loadUsers();
-        } else {
-            showNotification('error', response.message || 'Error updating user status');
-        }
-    } catch (error) {
-        console.error('Error updating user status:', error);
-        showNotification('error', 'Failed to update user status');
+      // Обновление статуса пользователя
+async function toggleUserStatus(userId, newStatus) {
+  try {
+    const response = await apiRequest(`/v1/admin/users/${userId}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus })
+    });
+    
+    if (response.success) {
+      showNotification('success', `User status updated to: ${newStatus}`);
+      
+      // Определяем, на какой странице мы сейчас
+      const activeSection = document.querySelector('.section.active').id;
+      if (activeSection === 'users') {
+        loadUsers('active');
+      } else if (activeSection === 'users-archive') {
+        loadUsers('archived');
+      }
+    } else {
+      showNotification('error', response.message || 'Error updating user status');
     }
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    showNotification('error', 'Error updating user status');
+  }
 }
-
-        // Обновление статуса сделки
+// Обновление статуса сделки
         async function updateTransactionStatus(transactionId, status) {
     try {
         let notes = null;
@@ -2251,26 +2498,33 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Переключение между разделами
         function showSection(sectionId) {
-            console.log('Showing section:', sectionId);
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            document.getElementById(sectionId).classList.add('active');
-            document.querySelector(`[href="#${sectionId}"]`).classList.add('active');
+                // Скрыть все разделы
+                document.querySelectorAll('.section').forEach(section => {
+                    section.style.display = 'none';
+                });
 
-            // Загружаем данные для активного раздела
-            if (sectionId === 'users') {
-                console.log('Loading users for users section');
-                loadUsers();
-            } else if (sectionId === 'transactions') {
-                console.log('Loading transactions for transactions section');
-                loadTransactions();
+                // Скрыть все ссылки навигации
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+
+                // Показать выбранный раздел
+                document.getElementById(sectionId).style.display = 'block';
+                document.getElementById(sectionId).classList.add('active');
+                document.querySelector(`[href="#${sectionId}"]`).classList.add('active');
+
+                // Загрузить данные для активного раздела
+                if (sectionId === 'users') {
+                    console.log('Loading users for users section');
+                    loadUsers('active');
+                } else if (sectionId === 'users-archive') {
+                    console.log('Loading archived users');
+                    loadUsers('archived');
+                } else if (sectionId === 'transactions') {
+                    console.log('Loading transactions for transactions section');
+                    loadTransactions();
+                }
             }
-        }
         
         // Переключение категорий объектов
         function toggleCategory(header) {

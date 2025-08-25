@@ -65,5 +65,86 @@ router.get('/profile', auth, async (req, res) => {
     res.status(500).json({ message: 'Внутренняя ошибка сервера' });
   }
 });
+// Добавляем маршруты для архивации пользователей
+router.post('/:id/archive', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const [result] = await pool.query(
+      'UPDATE users SET status = "archived" WHERE id = ? AND status IN ("active", "blocked")',
+      [userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found or already archived' 
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User archived successfully'
+    });
+  } catch (error) {
+    console.error('Error archiving user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error archiving user'
+    });
+  }
+});
+
+// Маршрут для восстановления пользователя из архива
+router.post('/:id/unarchive', adminAuth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const [result] = await pool.query(
+      'UPDATE users SET status = "active" WHERE id = ? AND status = "archived"',
+      [userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found or not in archive' 
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User restored from archive successfully'
+    });
+  } catch (error) {
+    console.error('Error unarchiving user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error unarchiving user'
+    });
+  }
+});
+
+// Модифицируем существующий маршрут GET /users для поддержки фильтрации
+router.get('/', adminAuth, async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = 'SELECT id, name, login, cnic, status, role, created_at FROM users';
+    let params = [];
+
+    if (status && status !== 'all' && status !== 'archived') {
+      query += ' WHERE status = ?';
+      params.push(status);
+    } else if (status === 'archived') {
+      query += ' WHERE status = "archived"';
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const [users] = await pool.query(query, params);
+    res.json(users);
+  } catch (error) {
+    console.error('Error getting users:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 export default router; 

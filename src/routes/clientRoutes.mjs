@@ -1,3 +1,4 @@
+//clientRoutes.mjs
 import express from 'express';
 import authController from '../controllers/authController.mjs';
 import transactionController from '../controllers/transactionController.mjs';

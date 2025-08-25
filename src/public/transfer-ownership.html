@@ -2239,111 +2239,6 @@
                                                             data-quiz-summery="false" data-save-progress="false"
                                                             data-form-type="general-form" data-stop-vertical-effect="">
                                                         </div>
-
-
-                                                        <!----------------------------- 
-			* controls_data : find the the props passed indie of data attribute
-			* props.SubmitResponseMarkup : contains the markup of error or success message
-			* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
-		--------------------------- -->
-
-                                                        <script type="text/mf" class="mf-template">
-			function controls_data (value){
-				let currentWrapper = "mf-response-props-id-175";
-				let currentEl = document.getElementById(currentWrapper);
-				
-				return currentEl ? currentEl.dataset[value] : false
-			}
-
-
-			let is_edit_mode = '' ? true : false;
-			let message_position = controls_data('messageposition') || 'top';
-
-			
-			let message_successIcon = controls_data('successicon') || '';
-			let message_errorIcon = controls_data('erroricon') || '';
-			let message_editSwitch = controls_data('editswitchopen') === 'yes' ? true : false;
-			let message_proClass = controls_data('editswitchopen') === 'yes' ? 'mf_pro_activated' : '';
-			
-			let is_dummy_markup = is_edit_mode && message_editSwitch ? true : false;
-
-			
-			return html`
-				<form
-					className="metform-form-content"
-					ref=${parent.formContainerRef}
-					onSubmit=${ validation.handleSubmit( parent.handleFormSubmit ) }
-				
-					>
-			
-			
-					${is_dummy_markup ? message_position === 'top' ?  props.ResponseDummyMarkup(message_successIcon, message_proClass) : '' : ''}
-					${is_dummy_markup ? ' ' :  message_position === 'top' ? props.SubmitResponseMarkup`${parent}${state}${message_successIcon}${message_errorIcon}${message_proClass}` : ''}
-
-					<!--------------------------------------------------------
-					*** IMPORTANT / DANGEROUS ***
-					${html``} must be used as in immediate child of "metform-form-main-wrapper"
-					class otherwise multistep form will not run at all
-					---------------------------------------------------------->
-
-					<div className="metform-form-main-wrapper" key=${'hide-form-after-submit'} ref=${parent.formRef}>
-					${html`
-								<div data-elementor-type="wp-post" key="2" data-elementor-id="175" className="elementor elementor-175">
-				<div className="elementor-element elementor-element-1db96f37 e-con-full e-flex e-con e-parent" data-id="1db96f37" data-element_type="container">
-		<div className="elementor-element elementor-element-540a520c e-con-full e-flex e-con e-child" data-id="540a520c" data-element_type="container">
-				<div className="elementor-element elementor-element-4f16628a elementor-widget elementor-widget-mf-email" data-id="4f16628a" data-element_type="widget" data-settings="{&quot;mf_input_name&quot;:&quot;mf-email&quot;}" data-widget_type="mf-email.default">
-				<div className="elementor-widget-container">
-					
-		<div className="mf-input-wrapper">
-			
-			<input 
-				type="email" 
-				 
-				defaultValue="" 
-				className="mf-input " 
-				id="mf-input-email-4f16628a" 
-				name="mf-email" 
-				placeholder="${ parent.decodeEntities(`Email address`) } " 
-				 
-				onBlur=${parent.handleChange} onFocus=${parent.handleChange} aria-invalid=${validation.errors['mf-email'] ? 'true' : 'false' } 
-				ref=${el=> parent.activateValidation({"message":"This field is required.","emailMessage":"Please enter a valid Email address","minLength":1,"maxLength":"","type":"none","required":true,"expression":"null"}, el)}
-							/>
-
-						<${validation.ErrorMessage} 
-				errors=${validation.errors} 
-				name="mf-email" 
-				as=${html`<span className="mf-error-message"></span>`}
-			/>
-			
-					</div>
-
-				</div>
-				</div>
-				</div>
-		<div className="elementor-element elementor-element-7f8cc6ce e-con-full e-flex e-con e-child" data-id="7f8cc6ce" data-element_type="container">
-				<div className="elementor-element elementor-element-345c6c39 mf-btn--right mf-btn--mobile-center elementor-widget elementor-widget-mf-button" data-id="345c6c39" data-element_type="widget" data-widget_type="mf-button.default">
-				<div className="elementor-widget-container">
-										<input type="hidden" name="mf-hidden-input-name" className="mf_hidden_input_class" value="mf_hidden_input_value" ref=${parent.setDefault} />
-						<div className="mf-btn-wraper " data-mf-form-conditional-logic-requirement="">
-							<button type="submit" className="metform-btn metform-submit-btn " id="">
-					<span>${ parent.decodeEntities(`Subscribe`) } </span>
-				</button>
-			        </div>
-        				</div>
-				</div>
-				</div>
-				</div>
-				</div>
-							`}
-					</div>
-
-					${is_dummy_markup ? message_position === 'bottom' ? props.ResponseDummyMarkup(message_successIcon, message_proClass) : '' : ''}
-					${is_dummy_markup ? ' ' : message_position === 'bottom' ? props.SubmitResponseMarkup`${parent}${state}${message_successIcon}${message_errorIcon}${message_proClass}` : ''}
-				
-				</form>
-			`
-		</script>
-
                                                     </div>
                                                 </div>
                                             </div>
@@ -2927,206 +2822,49 @@
                 transferSection.classList.remove('hidden');
                 updateProperties(verifyResponseData?.transaction);
             }
+            if (currentUser.role === 'user') {
+      // Получаем транзакции пользователя
+      const transactionsResponse = await fetch(`${API_BASE_URL}/v1/transactions/my`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
         }
+      });
+
+      if (!transactionsResponse.ok) {
+        throw new Error('Failed to fetch transactions');
+      }
+
+      const transactions = await transactionsResponse.json();
+      // Фильтруем только активные транзакции (одобренные или находящиеся в процессе)
+      const activeTransactions = transactions.filter(transaction => 
+        transaction.status === 'approved' || transaction.status === 'pending'
+      );
+
+      if (activeTransactions.length > 0) {
+        // Перенаправляем на страницу владения с ID первой активной транзакции
+        window.location.href = `ownership-details.html?id=${encodeURIComponent(activeTransactions[0].id)}`;
+      } else {
+        // Показываем сообщение о том, что нет активных транзакций
+        document.body.innerHTML = `
+          <div class="container mt-5 text-center" style="max-width: 600px; margin: 100px auto;">
+            <div class="card">
+              <div class="card-body">
+                <h2 class="card-title mb-4">You have no active transactions</h2>
+                <p class="card-text mb-4">Your account is active but there are no property transactions associated with it.</p>
+                <p class="card-text mb-4">Please contact administrator if you believe this is an error.</p>
+                <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">
+                  Back
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    } 
+    }
     })
-    let properties = {};
-    const allPropepty = {
-        'Parking': [
-            { id: 'DH01', name: 'Parking DH01', type: 'parking' },
-            { id: 'DH02', name: 'Parking DH02', type: 'parking' },
-            { id: 'DH03', name: 'Parking DH03', type: 'parking' }
-        ],
-        "Lower Basement": [
-            { "id": "LB01", "name": "Parking LB01", "type": "parking" },
-            { "id": "LB02", "name": "Parking LB02", "type": "parking" },
-            { "id": "LB03", "name": "Parking LB03", "type": "parking" },
-            { "id": "LB04", "name": "Parking LB04", "type": "parking" },
-            { "id": "LB05", "name": "Parking LB05", "type": "parking" },
-            { "id": "LB06", "name": "Parking LB06", "type": "parking" },
-            { "id": "LB07", "name": "Parking LB07", "type": "parking" },
-            { "id": "LB08", "name": "Parking LB08", "type": "parking" },
-            { "id": "LB09", "name": "Parking LB09", "type": "parking" },
-            { "id": "LB10", "name": "Parking LB10", "type": "parking" },
-            { "id": "LB11", "name": "Parking LB11", "type": "parking" },
-            { "id": "LB12", "name": "Parking LB12", "type": "parking" }
-        ],
-        "Upper Basement": [
-            { "id": "UB01", "name": "Parking UB01", "type": "parking" },
-            { "id": "UB02", "name": "Parking UB02", "type": "parking" },
-            { "id": "UB03", "name": "Parking UB03", "type": "parking" },
-            { "id": "UB04", "name": "Parking UB04", "type": "parking" },
-            { "id": "UB05", "name": "Parking UB05", "type": "parking" },
-            { "id": "UB06", "name": "Parking UB06", "type": "parking" },
-            { "id": "UB07", "name": "Parking UB07", "type": "parking" },
-            { "id": "UB08", "name": "Parking UB08", "type": "parking" },
-            { "id": "UB09", "name": "Parking UB09", "type": "parking" },
-            { "id": "UB10", "name": "Parking UB10", "type": "parking" },
-            { "id": "UB11", "name": "Parking UB11", "type": "parking" },
-            { "id": "UB12", "name": "Parking UB12", "type": "parking" }
-        ],
-        'Ground Floor': [
-            { id: 'DH01', name: 'Shop DH01', type: 'commercial' },
-            { id: 'DH02', name: 'Shop DH02', type: 'commercial' },
-            { id: 'DH03', name: 'Shop DH03', type: 'commercial' }
-        ],
-        '1st Floor': [
-            { id: 'DH101', name: 'Office DH101', type: 'commercial' },
-            { id: 'DH102', name: 'Office DH102', type: 'commercial' },
-            { id: 'DH103', name: 'Office DH103', type: 'commercial' }
-        ],
-        '2nd Floor': [
-            { id: 'DH201', name: 'Office DH201', type: 'commercial' },
-            { id: 'DH202', name: 'Office DH202', type: 'commercial' },
-            { id: 'DH203', name: 'Office DH203', type: 'commercial' }
-        ],
-        '3rd Floor': [
-            { id: 'DH301', name: 'Apartment DH301 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH302', name: 'Apartment DH302 (973.7 Sft)', type: 'residential' },
-            { id: 'DH303', name: 'Apartment DH303 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH304', name: 'Apartment DH304 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH305', name: 'Apartment DH305 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH306', name: 'Apartment DH306 (1,686.00 Sft)', type: 'residential' }
-        ],
-        '4th Floor': [
-            { id: 'DH401', name: 'Apartment DH401 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH402', name: 'Apartment DH402 (973.7 Sft)', type: 'residential' },
-            { id: 'DH403', name: 'Apartment DH403 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH404', name: 'Apartment DH404 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH405', name: 'Apartment DH405 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH406', name: 'Apartment DH406 (1,686.00 Sft)', type: 'residential' }
-        ],
-        '5th Floor': [
-            { id: 'DH501', name: 'Apartment DH501 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH502', name: 'Apartment DH502 (973.7 Sft)', type: 'residential' },
-            { id: 'DH503', name: 'Apartment DH503 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH504', name: 'Apartment DH504 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH505', name: 'Apartment DH505 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH506', name: 'Apartment DH506 (1,686.00 Sft)', type: 'residential' }
-        ],
-        '6th Floor': [
-            { id: 'DH601', name: 'Apartment DH601 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH602', name: 'Apartment DH602 (973.7 Sft)', type: 'residential' },
-            { id: 'DH603', name: 'Apartment DH603 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH604', name: 'Apartment DH604 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH605', name: 'Apartment DH605 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH606', name: 'Apartment DH606 (1,686.00 Sft)', type: 'residential' }
-        ],
-        '7th Floor': [
-            { id: 'DH701', name: 'Apartment DH701 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH702', name: 'Apartment DH702 (973.7 Sft)', type: 'residential' },
-            { id: 'DH703', name: 'Apartment DH703 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH704', name: 'Apartment DH704 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH705', name: 'Apartment DH705 (1,198.3 Sft)', type: 'residential' },
-            { id: 'DH706', name: 'Apartment DH706 (1,686.00 Sft)', type: 'residential' }
-        ],
-        'Penthouse': [
-            { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
-        ]
-    }
-    function updateProperties(array) {
-        try {
-            const idsExeption = array.map(item => item?.property_id)
-            properties = Object.keys(allPropepty).reduce((acc, key) => {
-                const filterItem = allPropepty[key].filter(item => idsExeption.includes(item?.id))
-                if (filterItem.length > 0) {
-                    console.log(filterItem)
-                    acc[key] = filterItem
-
-                }
-                return acc;
-            }, {})
-            renderProperties()
-        } catch (e) {
-            console.log(e)
-        }
-    }
-
-
-
-    function getIconByType(type) {
-        switch (type.toLowerCase()) {
-            case 'storage':
-                return 'fa-warehouse';
-            case 'parking':
-                return 'fa-parking';
-            case 'commercial':
-                return 'fa-store';
-            case 'residential':
-                return 'fa-home';
-            case 'penthouse':
-                return 'fa-crown';
-            default:
-                return 'fa-building';
-        }
-    }
-
-    function getTypeLabel(type) {
-        switch (type.toLowerCase()) {
-            case 'storage':
-                return 'Storage';
-            case 'parking':
-                return 'Parking';
-            case 'commercial':
-                return 'Commercial';
-            case 'residential':
-                return 'Residential';
-            case 'penthouse':
-                return 'Penthouse';
-            default:
-                return type;
-        }
-    }
-
-    function renderProperties() {
-        const container = document.getElementById('propertyContainer');
-        container.innerHTML = '';
-
-        Object.entries(properties).forEach(([floorName, items]) => {
-            const section = document.createElement('div');
-            section.className = 'floor-section collapsed';
-
-            const icon = getIconByType(items[0].type);
-            section.innerHTML = `
-                    <h2>
-                        <i class="fas ${icon}"></i>
-                        ${floorName}
-                        <i class="fas fa-chevron-down"></i>
-                    </h2>
-                    <div class="property-grid">
-                        ${items.map(property => `
-                            <div class="property-card" data-type="${property.type}">
-                                <div class="property-icon">
-                                    <i class="fas ${getIconByType(property.type)}"></i>
-                                </div>
-                                <div class="property-info">
-                                    <h3>${property.name}</h3>
-                                    <div class="property-type">
-                                        <i class="fas ${getIconByType(property.type)}"></i>
-                                        ${getTypeLabel(property.type)}
-                                    </div>
-                                    <div class="property-id">ID: ${property.id}</div>
-                                    <a href="javascript:void(0)" onclick="handleTransfer('${property.id}', '${property.type}')" class="transfer-btn">
-                                        <i class="fas fa-exchange-alt"></i>
-                                        Transfer Rights
-                                    </a>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-
-            container.appendChild(section);
-        });
-
-        // Добавляем обработчики для сворачивания/разворачивания секций
-        document.querySelectorAll('.floor-section h2').forEach(header => {
-            header.addEventListener('click', function () {
-                const section = this.parentElement;
-                section.classList.toggle('collapsed');
-            });
-        });
-    }
-
+   
     function handleTransfer(id, type) {
         window.location.href = `ownership-details.html?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}`;
     }
@@ -3135,22 +2873,6 @@
         $('.menu-toggle').on('click', function () {
             $(this).toggleClass('active');
             $('.mainnav').toggleClass('active');
-        });
-    });
-
-    function redirectToOwnershipDetails(objectName) {
-        const encodedObject = encodeURIComponent(objectName);
-        window.location.href = `ownership-details.html?object=${encodedObject}`;
-    }
-
-    // Добавляем обработчики для всех кнопок передачи прав
-    document.addEventListener('DOMContentLoaded', function () {
-        const transferButtons = document.querySelectorAll('.transfer-ownership-btn');
-        transferButtons.forEach(button => {
-            button.addEventListener('click', function () {
-                const objectName = this.getAttribute('data-object-name');
-                redirectToOwnershipDetails(objectName);
-            });
         });
     });
 </script>

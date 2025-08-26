@@ -1556,8 +1556,10 @@
                             </div>
                             <div class="form-group">
                                 <label for="totalAmount">Total Amount (PKR)</label>
+                                <!-- сделать чтобы число отображаось в денеэжнос формате напрммер 1.000.000 -->
                                 <input type="number" id="totalAmount" name="total_amount" class="form-control" required
                                     min="0" step="0.01" placeholder="0.00">
+                                <p id="toUSD"></p>
                             </div>
 
                             <!-- Witnesses Information -->
@@ -1721,10 +1723,10 @@
             </div>
 
             <script>
-
+                const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
                 let exchangeRateCache = null;
                 let lastFetchTime = 0;
-                const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+                let conversionDebounce = null;
 
                 // Форматирование суммы в долларах
                 function formatUSD(amount) {
@@ -1738,18 +1740,17 @@
                 // Получение курса обмена PKR к USD
                 async function getExchangeRatePKRtoUSD() {
                     try {
-
-                        // Если внутренний API недоступен, используем внешний
+                        // Исправлено: убраны лишние пробелы в URL
                         const externalResponse = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
                         const data = await externalResponse.json();
                         return data.rates.USD;
                     } catch (error) {
                         console.error('Error fetching exchange rate:', error);
                         showNotification('error', 'Could not get current exchange rate. Using approximate value.');
-                        // Приблизительный курс (актуален на момент написания)
-                        return 0.0036;
+                        return 0.0036; // Приблизительный курс
                     }
                 }
+
                 async function getCachedExchangeRate() {
                     const now = Date.now();
                     if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
@@ -1761,6 +1762,109 @@
                     return exchangeRateCache;
                 }
 
+                function openCreateTransactionModal() {
+                    loadProperties();
+                    openModal('createTransactionModal');
+
+                    setTimeout(() => {
+                        const totalAmountInput = document.getElementById('totalAmount');
+                        if (!totalAmountInput) return;
+
+                        // Создаем элемент для отображения конвертации
+                        let conversionElement = totalAmountInput.parentNode.querySelector('.currency-conversion');
+                        if (!conversionElement) {
+                            conversionElement = document.createElement('div');
+                            conversionElement.className = 'currency-conversion';
+                            conversionElement.style.marginTop = '5px';
+                            conversionElement.style.color = '#666';
+                            conversionElement.style.fontSize = '0.9em';
+                            totalAmountInput.parentNode.appendChild(conversionElement);
+                        }
+
+                        let rawValue = 0;
+
+                        // Функция для обновления конвертации
+                        async function updateConversion(pkrAmount) {
+                            try {
+                                const exchangeRate = await getCachedExchangeRate();
+                                const usdAmount = pkrAmount * exchangeRate;
+
+                                conversionElement.innerHTML = `<span>≈ ${formatUSD(usdAmount)} USD</span>
+                  <span style="font-size: 0.8em; display: block; margin-top: 3px; opacity: 0.7">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                  </span>`;
+                            } catch (error) {
+                                console.error('Error converting currency:', error);
+                                conversionElement.innerHTML = '<span style="color: #dc3545;">Error converting currency</span>';
+                            }
+                        }
+
+                        // Функция форматирования числа с разделителями
+                        function formatNumber(value) {
+                            const number = parseFloat(value) || 0;
+                            return number.toLocaleString('en-PK', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+
+                        // Функция парсинга числа
+                        function parseNumber(formattedValue) {
+                            const cleanValue = formattedValue.replace(/[^0-9.]/g, '');
+                            return parseFloat(cleanValue) || 0;
+                        }
+
+                        // Обработчик потери фокуса
+                        totalAmountInput.addEventListener('blur', function () {
+                            const value = parseNumber(this.value);
+                            rawValue = value;
+                            this.value = formatNumber(value);
+                            updateConversion(value);
+                        });
+
+                        // Обработчик получения фокуса
+                        totalAmountInput.addEventListener('focus', function () {
+                            this.value = rawValue.toFixed(2);
+                        });
+
+                        // Дебаунс-обработчик ввода
+                        totalAmountInput.addEventListener('input', function () {
+                            // Разрешаем только цифры, точку и запятую
+                            this.value = this.value.replace(/[^0-9.,]/g, '');
+
+                            const pkrAmount = parseNumber(this.value);
+                            rawValue = pkrAmount;
+
+                            // Очищаем предыдущий таймер
+                            clearTimeout(conversionDebounce);
+
+                            // Устанавливаем новый таймер с задержкой 500мс
+                            conversionDebounce = setTimeout(() => {
+                                updateConversion(pkrAmount);
+                            }, 500);
+                        });
+
+                        // Инициализация поля
+                        if (totalAmountInput.value) {
+                            const value = parseNumber(totalAmountInput.value);
+                            rawValue = value;
+                            totalAmountInput.value = formatNumber(value);
+                            updateConversion(value);
+                        } else {
+                            updateConversion(0);
+                        }
+
+                        // Обработчик кнопки очистки
+                        const clearButton = totalAmountInput.parentNode.querySelector('.clear-btn');
+                        if (clearButton) {
+                            clearButton.addEventListener('click', () => {
+                                totalAmountInput.value = '';
+                                rawValue = 0;
+                                updateConversion(0);
+                            });
+                        }
+                    }, 100);
+                }
 
                 function openCreateTransactionModal() {
                     loadProperties();
@@ -1995,6 +2099,7 @@
                         window.location.href = '/login.html';
                     }
                 });
+
                 // Функция выхода
                 async function logout() {
                     try {
@@ -2337,8 +2442,8 @@
                         button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
                     });
                 }
-                
-                
+
+
                 async function loadUsers(status = 'active') {
                     // Определяем, в каком разделе мы находимся
                     const section = status === 'archived'
@@ -4247,13 +4352,13 @@
                                 return;
                             }
                             if (!validateCNIC(witness.cnic)) {
-                                 showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
-                                 return;
-                             }
-                             if (witness.phone && !validatePhone(witness.phone)) {
-                                 showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
-                                 return;
-                             }
+                                showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
+                                return;
+                            }
+                            if (witness.phone && !validatePhone(witness.phone)) {
+                                showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
+                                return;
+                            }
                         }
 
                         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {

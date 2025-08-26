@@ -1896,7 +1896,8 @@
                         // Если авторизация успешна, загружаем данные
                         await Promise.all([
                             loadTransactions(),
-                            loadUsers('active')
+                            loadUsers('active'),
+                            loadUsers('archived')
                         ]);
 
                     } catch (error) {
@@ -2058,7 +2059,7 @@
                             loadUsers('active');
                             break;
                         case 'users-archive':
-                            loadUsers('archive');
+                            loadUsers('archived');
                             break;
                     }
                 }
@@ -2640,7 +2641,7 @@
                             if (section === 'users') {
                                 loadUsers('active');
                             } else if (section === 'users-archive') {
-                                loadUsers('archive');
+                                loadUsers('archived');
                             }else if (section === 'transactions') {
                                 loadTransactions();
                             }

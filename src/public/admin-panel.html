@@ -3679,9 +3679,7 @@
                     if (input&&input.length==0) {
                         console.log(input)
                         input.setCustomValidity('Please enter CNIC');
-                    } else {
-                        input.setCustomValidity('');
-                    }
+                    } 
                 }
 
                 // Добавляем валидацию телефона
@@ -3689,9 +3687,7 @@
                     if (input&&input.length==0) {
                         console.log(input)
                         input.setCustomValidity('Please enter phone');
-                    } else {
-                        input.setCustomValidity('');
-                    }
+                    } 
                 }
 
                 // Функция загрузки transfer requests
@@ -3874,6 +3870,55 @@
                         showNotification('error', 'Error updating request');
                     }
                 }
+                // Оберните добавление обработчиков событий в проверку готовности DOM
+document.addEventListener('DOMContentLoaded', function() {
+  // Добавляем обработчики валидации
+  const witness1CNIC = document.getElementById('witness1CNIC');
+  const witness2CNIC = document.getElementById('witness2CNIC');
+  const witness1Phone = document.getElementById('witness1Phone');
+  const witness2Phone = document.getElementById('witness2Phone');
+  
+  if (witness1CNIC) {
+    witness1CNIC.addEventListener('input', function() {
+      validateCNIC(this);
+    });
+    
+    // Добавляем валидацию при потере фокуса для немедленной обратной связи
+    witness1CNIC.addEventListener('blur', function() {
+      validateCNIC(this);
+    });
+  }
+  
+  if (witness2CNIC) {
+    witness2CNIC.addEventListener('input', function() {
+      validateCNIC(this);
+    });
+    
+    witness2CNIC.addEventListener('blur', function() {
+      validateCNIC(this);
+    });
+  }
+  
+  if (witness1Phone) {
+    witness1Phone.addEventListener('input', function() {
+      validatePhone(this);
+    });
+    
+    witness1Phone.addEventListener('blur', function() {
+      validatePhone(this);
+    });
+  }
+  
+  if (witness2Phone) {
+    witness2Phone.addEventListener('input', function() {
+      validatePhone(this);
+    });
+    
+    witness2Phone.addEventListener('blur', function() {
+      validatePhone(this);
+    });
+  }
+});
                 document.addEventListener('DOMContentLoaded', function () {
                     // Закрытие модальных окон по кнопке "×"
                     document.querySelectorAll('.modal-close, .close').forEach(button => {

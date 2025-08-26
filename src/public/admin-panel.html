@@ -4403,7 +4403,7 @@ function parseNumber(value) {
 async function getExchangeRatePKRtoUSD() {
     try {
         // Запрашиваем курс через внутренний API
-        const data = await apiRequest('/latest/PKR', {
+        const data = await apiRequest('/v1/admin//latest/PKR', {
             method: 'GET'
         });
         
@@ -4538,10 +4538,8 @@ function attachCurrencyConverter() {
     updateUSD(rawValue);
 }
 
-// Запускаем только после загрузки DOM
-document.addEventListener('DOMContentLoaded', () => {
+
     attachCurrencyConverter();
-});
             </script>
 </body>
 

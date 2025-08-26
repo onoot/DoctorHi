@@ -344,12 +344,14 @@ router.put('/transactions/:transactionId/witnesses', [
 router.get('/latest/PKR', async (req, res) => {
     try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
-
+console.log("ТЕСТ")
         return res.json({
             success: true,
             USD: response.data.rates.USD
         });
     } catch (e) {
+console.log("ТЕСТ", e)
+
         return res.json({
             success: false,
         });

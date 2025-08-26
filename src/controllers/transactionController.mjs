@@ -696,25 +696,17 @@ async update(req, res) {
 async create(req, res) {
   try {
     const { property_id, new_owner_id, total_amount, witnesses } = req.body;
-    console.log('Parsed request data:', { 
-      property_id, 
-      new_owner_id, 
-      total_amount,
-      hasWitnesses: !!witnesses 
-    });
-
-    // Проверяем существование объекта недвижимости
+    
+    // Проверяем, что свойство существует (через ваш массив свойств)
     const property = getPropertyById(property_id);
     if (!property) {
       console.log('Property not found:', property_id);
       return res.status(404).json({ message: 'Property not found' });
     }
-    console.log('Found property:', property);
-
+    
     // Получаем предыдущего владельца
     const previous_owner_id = await getPreviousOwner(property_id);
-    console.log('Previous owner:', previous_owner_id);
-
+    
     // Создаем транзакцию
     const [result] = await pool.query(
       `INSERT INTO transactions 
@@ -722,110 +714,12 @@ async create(req, res) {
        VALUES (?, ?, ?, 'pending', ?, 0)`,
       [property_id, previous_owner_id, new_owner_id, total_amount]
     );
-    console.log('Transaction created:', result);
     
     const transactionId = result.insertId;
 
-    // Обрабатываем данные о свидетелях, если они предоставлены
+    // Обрабатываем данные о свидетелях
     if (witnesses) {
-      try {
-        const connection = await pool.getConnection();
-        try {
-          await connection.beginTransaction();
-          
-          // Удаляем существующих свидетелей (на случай повторной попытки)
-          await connection.query(
-            'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
-            [transactionId]
-          );
-          
-          // Обработка первого свидетеля
-          if (witnesses.witness1) {
-            const { name, cnic, phone } = witnesses.witness1;
-            
-            // Пытаемся найти свидетеля по CNIC
-            let [existingWitnesses] = await connection.query(
-              'SELECT id, name, phone FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-              [cnic]
-            );
-            
-            let witnessData;
-            if (existingWitnesses.length > 0) {
-              // Используем данные из существующего свидетеля
-              witnessData = {
-                name: existingWitnesses[0].name,
-                cnic: cnic,
-                phone: existingWitnesses[0].phone || phone
-              };
-              console.log('Using existing witness1 data for CNIC:', cnic);
-            } else {
-              // Используем предоставленные данные
-              witnessData = {
-                name: name,
-                cnic: cnic,
-                phone: phone
-              };
-              console.log('Creating new witness1 for CNIC:', cnic);
-            }
-            
-            // Сохраняем свидетеля для этой транзакции
-            await connection.query(
-              `INSERT INTO transaction_witnesses 
-               (transaction_id, witness_type, name, cnic, phone) 
-               VALUES (?, 'witness1', ?, ?, ?)`,
-              [transactionId, witnessData.name, witnessData.cnic, witnessData.phone || null]
-            );
-          }
-          
-          // Аналогично для второго свидетеля
-          if (witnesses.witness2) {
-            const { name, cnic, phone } = witnesses.witness2;
-            
-            // Пытаемся найти свидетеля по CNIC
-            let [existingWitnesses] = await connection.query(
-              'SELECT id, name, phone FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-              [cnic]
-            );
-            
-            let witnessData;
-            if (existingWitnesses.length > 0) {
-              // Используем данные из существующего свидетеля
-              witnessData = {
-                name: existingWitnesses[0].name,
-                cnic: cnic,
-                phone: existingWitnesses[0].phone || phone
-              };
-              console.log('Using existing witness2 data for CNIC:', cnic);
-            } else {
-              // Используем предоставленные данные
-              witnessData = {
-                name: name,
-                cnic: cnic,
-                phone: phone
-              };
-              console.log('Creating new witness2 for CNIC:', cnic);
-            }
-            
-            // Сохраняем свидетеля для этой транзакции
-            await connection.query(
-              `INSERT INTO transaction_witnesses 
-               (transaction_id, witness_type, name, cnic, phone) 
-               VALUES (?, 'witness2', ?, ?, ?)`,
-              [transactionId, witnessData.name, witnessData.cnic, witnessData.phone || null]
-            );
-          }
-          
-          await connection.commit();
-          console.log('Witnesses added successfully for transaction:', transactionId);
-        } catch (error) {
-          await connection.rollback();
-          throw error;
-        } finally {
-          connection.release();
-        }
-      } catch (witnessError) {
-        console.error('Error processing witnesses:', witnessError);
-      }
+      await saveWitnesses(transactionId, witnesses);
     }
 
     res.status(201).json({
@@ -835,6 +729,85 @@ async create(req, res) {
   } catch (error) {
     console.error('Error creating transaction:', error);
     res.status(500).json({ message: 'Error creating transaction' });
+  }
+},
+
+// Вспомогательная функция для сохранения свидетелей
+async saveWitnesses(transactionId, witnesses) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    
+    // Удаляем существующих свидетелей
+    await connection.query(
+      'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
+      [transactionId]
+    );
+    
+    // Сохраняем первого свидетеля
+    if (witnesses.witness1) {
+      const { name, cnic, phone } = witnesses.witness1;
+      
+      // Пытаемся найти свидетеля по CNIC
+      let [existingWitnesses] = await connection.query(
+        'SELECT * FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+        [cnic]
+      );
+      
+      if (existingWitnesses.length > 0) {
+        // Используем существующего свидетеля
+        await connection.query(
+          `INSERT INTO transaction_witnesses 
+           (transaction_id, witness_type, name, cnic, phone) 
+           VALUES (?, 'witness1', ?, ?, ?)`,
+          [transactionId, existingWitnesses[0].name, cnic, existingWitnesses[0].phone || phone]
+        );
+      } else {
+        // Создаем нового свидетеля
+        await connection.query(
+          `INSERT INTO transaction_witnesses 
+           (transaction_id, witness_type, name, cnic, phone) 
+           VALUES (?, 'witness1', ?, ?, ?)`,
+          [transactionId, name, cnic, phone || null]
+        );
+      }
+    }
+    
+    // Аналогично для второго свидетеля
+    if (witnesses.witness2) {
+      const { name, cnic, phone } = witnesses.witness2;
+      
+      // Пытаемся найти свидетеля по CNIC
+      let [existingWitnesses] = await connection.query(
+        'SELECT * FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+        [cnic]
+      );
+      
+      if (existingWitnesses.length > 0) {
+        // Используем существующего свидетеля
+        await connection.query(
+          `INSERT INTO transaction_witnesses 
+           (transaction_id, witness_type, name, cnic, phone) 
+           VALUES (?, 'witness2', ?, ?, ?)`,
+          [transactionId, existingWitnesses[0].name, cnic, existingWitnesses[0].phone || phone]
+        );
+      } else {
+        // Создаем нового свидетеля
+        await connection.query(
+          `INSERT INTO transaction_witnesses 
+           (transaction_id, witness_type, name, cnic, phone) 
+           VALUES (?, 'witness2', ?, ?, ?)`,
+          [transactionId, name, cnic, phone || null]
+        );
+      }
+    }
+    
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
   }
 },
 

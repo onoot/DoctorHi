@@ -80,53 +80,57 @@ export const updateTransactionStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // Начинаем транзакцию
     await pool.query('START TRANSACTION');
 
-    // Обновляем статус сделки
-    const [result] = await pool.query(
-      'UPDATE transactions SET status = ?, updated_at = NOW() WHERE property_id = ?',
-      [status, transactionId]
+    // Сначала получаем информацию о транзакции
+    const [transactions] = await pool.query(
+      'SELECT * FROM transactions WHERE id = ?',
+      [transactionId]
     );
 
-    if (result.affectedRows === 0) {
+    if (transactions.length === 0) {
       await pool.query('ROLLBACK');
-      return res.status(404).json({ message: 'Deal not found' });
+      return res.status(404).json({ message: 'Transaction not found' });
     }
 
-    // Если сделка одобрена, обновляем владельца недвижимости
+    const transaction = transactions[0];
+
+    // Обновляем статус транзакции
+    const [result] = await pool.query(
+      'UPDATE transactions SET status = ?, reason = ?, updated_at = NOW() WHERE id = ?',
+      [status, reason, transactionId]
+    );
+
+    // Если транзакция одобрена, обновляем историю владения
     if (status === 'approved') {
-      const [transaction] = await pool.query(
-        'SELECT * FROM transactions WHERE id = ?',
-        [transactionId]
+      // Добавляем новую запись в историю владения
+      await pool.query(
+        'INSERT INTO ownership_history (property_id, owner_id, from_date) VALUES (?, ?, NOW())',
+        [transaction.property_id, transaction.new_owner_id]
       );
 
-      if (transaction.length > 0) {
-        // Обновляем текущего владельца
-        await pool.query(
-          'UPDATE properties SET current_owner_id = ? WHERE id = ?',
-          [transaction[0].new_owner_id, transaction[0].property_id]
-        );
-
-        // Добавляем запись в историю владения
-        await pool.query(
-          'INSERT INTO ownership_history (property_id, owner_id, from_date) VALUES (?, ?, NOW())',
-          [transaction[0].property_id, transaction[0].new_owner_id]
-        );
-
-        // Закрываем предыдущую запись в истории владения
+      // Закрываем предыдущую запись в истории владения
+      if (transaction.previous_owner_id) {
         await pool.query(
           'UPDATE ownership_history SET to_date = NOW() WHERE property_id = ? AND owner_id = ? AND to_date IS NULL',
-          [transaction[0].property_id, transaction[0].previous_owner_id]
+          [transaction.property_id, transaction.previous_owner_id]
         );
       }
     }
 
     await pool.query('COMMIT');
-    res.json({ message: 'Deal status updated' });
+    res.json({ 
+      message: 'Transaction status updated successfully',
+      transaction_id: transactionId
+    });
   } catch (error) {
     await pool.query('ROLLBACK');
-    console.error('Error updating deal status:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error updating transaction status:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      details: error.message 
+    });
   }
 };
 

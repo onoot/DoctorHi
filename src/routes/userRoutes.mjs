@@ -41,7 +41,7 @@ router.put('/:id', adminAuth, [
   body('login').optional().notEmpty().withMessage('Enter login'),
   body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('cnic').optional().notEmpty().withMessage('Enter CNIC'),
-  body('status').optional().isIn(['active', 'blocked']).withMessage('Invalid status')
+  body('status').optional().isIn(['active', 'blocked', 'archived']).withMessage('Invalid status')
 ], update);
 
 router.delete('/:id', adminAuth, remove);

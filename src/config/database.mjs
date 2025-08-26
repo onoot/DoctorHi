@@ -15,7 +15,7 @@ async function columnExists(tableName, columnName) {
     FROM INFORMATION_SCHEMA.COLUMNS 
     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
   `, [process.env.DB_NAME, tableName, columnName]);
-  
+
   return columns.length > 0;
 }
 
@@ -172,7 +172,31 @@ export const initializeDatabase = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('Transaction files table checked/created');
+    // Проверяем и добавляем столбец status
+    if (!await columnExists('users', 'status')) {
+      await pool.query('ALTER TABLE users ADD COLUMN status ENUM(\'active\', \'blocked\') DEFAULT \'active\' AFTER address');
+      console.log('Added status column');
+    }
 
+    // Проверяем, содержит ли ENUM значение 'archived'
+    const [statusInfo] = await pool.query(`
+      SELECT COLUMN_TYPE 
+      FROM information_schema.COLUMNS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = 'users' 
+        AND COLUMN_NAME = 'status'
+    `);
+
+    const enumValues = statusInfo[0].COLUMN_TYPE.match(/enum\((.*)\)/i)[1].replace(/'/g, '').split(',');
+
+    if (!enumValues.includes('archived')) {
+      // Добавляем значение 'archived' в ENUM
+      await pool.query(`
+        ALTER TABLE users 
+        MODIFY status ENUM('active', 'blocked', 'archived') DEFAULT 'active'
+      `);
+      console.log('Updated status ENUM to include "archived"');
+    }
     // Создаем таблицу transaction_payments если она не существует
     await pool.query(`
       CREATE TABLE IF NOT EXISTS transaction_payments (
@@ -237,7 +261,7 @@ export const initializeDatabase = async () => {
       await pool.query('ALTER TABLE users ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at');
       console.log('Added updated_at column');
     }
-    
+
     console.log('Database structure updated successfully');
   } catch (error) {
     console.error('Database initialization error:', error);

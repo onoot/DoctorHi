@@ -74,7 +74,7 @@ export const updateUserStatus = async (req, res) => {
 export const updateTransactionStatus = async (req, res) => {
   try {
     const { transactionId } = req.params;
-    const { status, reason } = req.body;
+    const { status} = req.body;
 
     if (!['approved', 'rejected', 'cancelled'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
@@ -98,8 +98,8 @@ export const updateTransactionStatus = async (req, res) => {
 
     // Обновляем статус транзакции
     const [result] = await pool.query(
-      'UPDATE transactions SET status = ?, reason = ?, updated_at = NOW() WHERE id = ?',
-      [status, reason, transactionId]
+      'UPDATE transactions SET status = ?, updated_at = NOW() WHERE id = ?',
+      [status, transactionId]
     );
 
     // Если транзакция одобрена, обновляем историю владения

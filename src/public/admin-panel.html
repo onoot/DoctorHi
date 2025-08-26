@@ -4104,7 +4104,7 @@
                                 showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
                                 return;
                             }
-                            if (witness.phone) {
+                            if (witness.phone && !validatePhone(witness.phone)) {
                                 showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
                                 return;
                             }

@@ -1726,34 +1726,9 @@
 <script>
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
 
+        console.log(response.data.rates.USD)
 const amountInput = document.getElementById('totalAmount');
     const usdOutput = document.getElementById('toUSD');
-
-// Форматирование суммы в долларах
-function formatUSD(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2
-    }).format(amount);
-}
-
-function parseNumber(value) {
-    const cleanValue = value.replace(/[^0-9.]/g, '');
-    return parseFloat(cleanValue) || 0;
-}
-
-async function getExchangeRatePKRtoUSD() {
-    try {
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
-        const data = await response.json();
-        return data.rates.USD;
-    } catch (error) {
-        console.error('Ошибка получения курса:', error);
-        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
-        return 0.0036; 
-    }
-}
 
 
 </script>

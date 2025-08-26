@@ -1724,7 +1724,8 @@
                 </form>
             </div>
 <script>
-
+const amountInput = document.getElementById('totalAmount');
+    const usdOutput = document.getElementById('toUSD');
    const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let exchangeRateCache = null;
 let lastFetchTime = 0;
@@ -1808,8 +1809,7 @@ async function getCachedExchangeRate() {
     }
    
 function attachCurrencyConverter() {
-    const amountInput = document.getElementById('totalAmount');
-    const usdOutput = document.getElementById('toUSD');
+    
 
     if (!amountInput || !usdOutput) {
         console.error('Элементы #totalAmount или #toUSD не найдены!');

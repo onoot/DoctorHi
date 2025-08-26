@@ -3678,6 +3678,9 @@
                 function validateCNIC(input) {
                     if (input.value.length==0) {
                         console.log(input)
+                        input.setCustomValidity('Please enter CNIC');
+                    } else {
+                        input.setCustomValidity('');
                     }
                 }
 
@@ -3685,6 +3688,9 @@
                 function validatePhone(input) {
                     if (input.value.length==0) {
                         console.log(input)
+                        input.setCustomValidity('Please enter phone');
+                    } else {
+                        input.setCustomValidity('');
                     }
                 }
 

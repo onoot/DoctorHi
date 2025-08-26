@@ -1,0 +1,2563 @@
+                function openCreateTransactionModal() {
+                    loadProperties();
+                    openModal('createTransactionModal');
+
+                    // Небольшая задержка для гарантированной загрузки модального окна
+                    setTimeout(() => {
+                        const totalAmountInput = document.getElementById('totalAmount');
+                        if (totalAmountInput) {
+                            // Создаем элемент для отображения конвертации, если его нет
+                            let conversionElement = totalAmountInput.parentNode.querySelector('.currency-conversion');
+                            if (!conversionElement) {
+                                conversionElement = document.createElement('div');
+                                conversionElement.className = 'currency-conversion';
+                                conversionElement.style.marginTop = '5px';
+                                conversionElement.style.color = '#666';
+                                conversionElement.style.fontSize = '0.9em';
+                                totalAmountInput.parentNode.appendChild(conversionElement);
+                            }
+
+                            // Добавляем обработчик для пересчета суммы
+                            totalAmountInput.addEventListener('input', async function () {
+                                const pkrAmount = parseFloat(this.value) || 0;
+                                const exchangeRate = await getExchangeRatePKRtoUSD();
+                                const usdAmount = pkrAmount * exchangeRate;
+
+                                conversionElement.innerHTML = `
+          <span>≈ ${formatUSD(usdAmount)} USD</span>
+          <span style="font-size: 0.8em; display: block; margin-top: 3px; opacity: 0.7">
+            (1 PKR = ${exchangeRate.toFixed(6)} USD)
+          </span>
+        `;
+                            });
+
+                            // Имитируем событие для первоначального расчета
+                            const event = new Event('input', { bubbles: true });
+                            totalAmountInput.dispatchEvent(event);
+                        }
+                    }, 100);
+                }
+                // Затем используйте getCachedExchangeRate() вместо getExchangeRatePKRtoUSD() в обработчике
+
+
+
+                const API_BASE_URL = `https://${window?.location?.host}/api`;
+                let currentPage = 1;
+                let itemsPerPage = 10;
+
+                // Предопределенный массив объектов недвижимости
+                const properties = {
+                    'Parking': [
+                        { id: 'DH01', name: 'Parking DH01', type: 'parking' },
+                        { id: 'DH02', name: 'Parking DH02', type: 'parking' },
+                        { id: 'DH03', name: 'Parking DH03', type: 'parking' }
+                    ], "Lower Basement": [
+                        { "id": "LB01", "name": "Parking LB01", "type": "parking" },
+                        { "id": "LB02", "name": "Parking LB02", "type": "parking" },
+                        { "id": "LB03", "name": "Parking LB03", "type": "parking" },
+                        { "id": "LB04", "name": "Parking LB04", "type": "parking" },
+                        { "id": "LB05", "name": "Parking LB05", "type": "parking" },
+                        { "id": "LB06", "name": "Parking LB06", "type": "parking" },
+                        { "id": "LB07", "name": "Parking LB07", "type": "parking" },
+                        { "id": "LB08", "name": "Parking LB08", "type": "parking" },
+                        { "id": "LB09", "name": "Parking LB09", "type": "parking" },
+                        { "id": "LB10", "name": "Parking LB10", "type": "parking" },
+                        { "id": "LB11", "name": "Parking LB11", "type": "parking" },
+                        { "id": "LB12", "name": "Parking LB12", "type": "parking" }
+                    ],
+                    "Upper Basement": [
+                        { "id": "UB01", "name": "Parking UB01", "type": "parking" },
+                        { "id": "UB02", "name": "Parking UB02", "type": "parking" },
+                        { "id": "UB03", "name": "Parking UB03", "type": "parking" },
+                        { "id": "UB04", "name": "Parking UB04", "type": "parking" },
+                        { "id": "UB05", "name": "Parking UB05", "type": "parking" },
+                        { "id": "UB06", "name": "Parking UB06", "type": "parking" },
+                        { "id": "UB07", "name": "Parking UB07", "type": "parking" },
+                        { "id": "UB08", "name": "Parking UB08", "type": "parking" },
+                        { "id": "UB09", "name": "Parking UB09", "type": "parking" },
+                        { "id": "UB10", "name": "Parking UB10", "type": "parking" },
+                        { "id": "UB11", "name": "Parking UB11", "type": "parking" },
+                        { "id": "UB12", "name": "Parking UB12", "type": "parking" }
+                    ],
+                    'Ground Floor': [
+                        { id: 'DH01', name: 'Shop DH01', type: 'commercial' },
+                        { id: 'DH02', name: 'Shop DH02', type: 'commercial' },
+                        { id: 'DH03', name: 'Shop DH03', type: 'commercial' }
+                    ],
+                    '1st Floor': [
+                        { id: 'DH101', name: 'Office DH101', type: 'commercial' },
+                        { id: 'DH102', name: 'Office DH102', type: 'commercial' },
+                        { id: 'DH103', name: 'Office DH103', type: 'commercial' }
+                    ],
+                    '2nd Floor': [
+                        { id: 'DH201', name: 'Office DH201', type: 'commercial' },
+                        { id: 'DH202', name: 'Office DH202', type: 'commercial' },
+                        { id: 'DH203', name: 'Office DH203', type: 'commercial' }
+                    ],
+                    '3rd Floor': [
+                        { id: 'DH301', name: 'Apartment DH301 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH302', name: 'Apartment DH302 (973.7 Sft)', type: 'residential' },
+                        { id: 'DH303', name: 'Apartment DH303 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH304', name: 'Apartment DH304 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH305', name: 'Apartment DH305 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH306', name: 'Apartment DH306 (1,686.00 Sft)', type: 'residential' }
+                    ],
+                    '4th Floor': [
+                        { id: 'DH401', name: 'Apartment DH401 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH402', name: 'Apartment DH402 (973.7 Sft)', type: 'residential' },
+                        { id: 'DH403', name: 'Apartment DH403 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH404', name: 'Apartment DH404 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH405', name: 'Apartment DH405 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH406', name: 'Apartment DH406 (1,686.00 Sft)', type: 'residential' }
+                    ],
+                    '5th Floor': [
+                        { id: 'DH501', name: 'Apartment DH501 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH502', name: 'Apartment DH502 (973.7 Sft)', type: 'residential' },
+                        { id: 'DH503', name: 'Apartment DH503 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH504', name: 'Apartment DH504 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH505', name: 'Apartment DH505 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH506', name: 'Apartment DH506 (1,686.00 Sft)', type: 'residential' }
+                    ],
+                    '6th Floor': [
+                        { id: 'DH601', name: 'Apartment DH601 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH602', name: 'Apartment DH602 (973.7 Sft)', type: 'residential' },
+                        { id: 'DH603', name: 'Apartment DH603 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH604', name: 'Apartment DH604 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH605', name: 'Apartment DH605 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH606', name: 'Apartment DH606 (1,686.00 Sft)', type: 'residential' }
+                    ],
+                    '7th Floor': [
+                        { id: 'DH701', name: 'Apartment DH701 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH702', name: 'Apartment DH702 (973.7 Sft)', type: 'residential' },
+                        { id: 'DH703', name: 'Apartment DH703 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH704', name: 'Apartment DH704 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH705', name: 'Apartment DH705 (1,198.3 Sft)', type: 'residential' },
+                        { id: 'DH706', name: 'Apartment DH706 (1,686.00 Sft)', type: 'residential' }
+                    ],
+                    'Penthouse': [
+                        { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
+                    ]
+                };
+                // Проверка авторизации при загрузке страницы
+                document.addEventListener('DOMContentLoaded', async function () {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/auth/admin/validate`, {
+                            method: 'GET',
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Not authenticated');
+                        }
+
+                        const userData = await response.json();
+                        const currentUser = userData.user;
+
+                        // Настройка обработчиков для навигации
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.addEventListener('click', function (e) {
+                                e.preventDefault();
+                                const sectionId = this.getAttribute('href').substring(1);
+                                showSection(sectionId);
+                            });
+                        });
+
+                        // Настраиваем поиск
+                        setupSearch();
+
+                        // Проверяем, существует ли элемент с id="users-archive"
+                        if (!document.getElementById('users-archive')) {
+                            // Создаем элемент для архивных пользователей, если его нет
+                            const usersArchiveSection = document.createElement('div');
+                            usersArchiveSection.id = 'users-archive';
+                            usersArchiveSection.className = 'section';
+                            usersArchiveSection.style.display = 'none';
+                            usersArchiveSection.innerHTML = `
+        <div class="section-header">
+          <h2 class="section-title">Archived Users</h2>
+        </div>
+        <div class="search-box">
+          <input type="text" class="search-input" placeholder="Search archived users...">
+          <button class="search-btn">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>CNIC</th>
+              <th>Email</th>
+              <th>Properties</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      `;
+                            document.querySelector('.main-content').appendChild(usersArchiveSection);
+                        }
+
+                        // Определяем, какой раздел показать по умолчанию
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const initialSection = urlParams.get('section') || 'transactions';
+
+                        // Проверяем, существует ли элемент с таким id
+                        if (document.getElementById(initialSection)) {
+                            showSection(initialSection);
+                        } else {
+                            console.error(`Initial section "${initialSection}" not found, defaulting to transactions`);
+                            showSection('transactions');
+                        }
+
+                        // Добавляем обработчик для поиска
+                        document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
+                            currentPage = 1;
+                            const activeSection = document.querySelector('.section.active')?.id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        }, 300));
+
+                    } catch (error) {
+                        console.error('Authentication error:', error);
+                        window.location.href = '/login.html';
+                    }
+                });
+
+                // Функция выхода
+                async function logout() {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Logout failed');
+                        }
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                    } finally {
+                        window.location.href = '/login.html';
+                    }
+                }
+
+                // Функция для выполнения API запросов
+                async function apiRequest(endpoint, options = {}) {
+                    console.log('Making API request to:', endpoint);
+                    const defaultOptions = {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'include'
+                    };
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                            ...defaultOptions,
+                            ...options,
+                            headers: {
+                                ...defaultOptions.headers,
+                                ...(options.headers || {})
+                            },
+                            credentials: 'include',
+                        });
+
+                        console.log('API response status:', response.status);
+
+                        // Пытаемся распарсить ответ как JSON
+                        let data = null;
+                        try {
+                            data = await response.json();
+                        } catch (e) {
+                            // Если не удалось распарсить JSON, используем текстовый ответ
+                            const text = await response.text();
+                            console.log('API response text:', text);
+                            data = { message: text || 'Unknown error' };
+                        }
+
+                        console.log('API response data:', data);
+
+                        if (!response.ok) {
+                            console.log('API request failed:', data);
+                            throw new Error(data.message || 'API request failed');
+                        }
+
+                        return data;
+                    } catch (error) {
+                        console.error('API request failed:', error);
+                        throw error;
+                    }
+                }
+                // Функции для уведомлений
+                function showNotification(type, message) {
+                    let duration = 3000
+                    // Создаем контейнер для уведомлений, если его еще нет
+                    let container = document.getElementById('notification-container');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'notification-container';
+                        document.body.appendChild(container);
+                    }
+
+                    // Создаем элемент уведомления
+                    const notification = document.createElement('div');
+                    notification.className = `notification ${type}`;
+                    notification.textContent = message;
+
+                    // Добавляем уведомление в контейнер
+                    container.appendChild(notification);
+
+                    // Показываем уведомление с анимацией
+                    setTimeout(() => {
+                        notification.classList.add('show');
+                    }, 10); // Небольшая задержка для корректного запуска анимации
+
+                    // Автоматически скрываем и удаляем уведомление через указанное время
+                    setTimeout(() => {
+                        notification.classList.remove('show'); // Запускаем анимацию исчезновения
+                        setTimeout(() => {
+                            notification.remove(); // Удаляем элемент из DOM
+                        }, 300); // Ждем завершения анимации исчезновения
+                    }, duration);
+                }
+                // Функции для пагинации
+                function createPagination(totalItems, currentPage, itemsPerPage) {
+                    const totalPages = Math.ceil(totalItems / itemsPerPage);
+                    const pagination = document.createElement('div');
+                    pagination.className = 'pagination';
+
+                    // Кнопка "Предыдущая"
+                    const prevButton = document.createElement('button');
+                    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                    prevButton.disabled = currentPage === 1;
+                    prevButton.onclick = () => {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            loadCurrentSection();
+                        }
+                    };
+                    pagination.appendChild(prevButton);
+
+                    // Текущая страница
+                    const pageInfo = document.createElement('span');
+                    pageInfo.className = 'current-page';
+                    pageInfo.textContent = `${currentPage} / ${totalPages}`;
+                    pagination.appendChild(pageInfo);
+
+                    // Кнопка "Следующая"
+                    const nextButton = document.createElement('button');
+                    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                    nextButton.disabled = currentPage === totalPages;
+                    nextButton.onclick = () => {
+                        if (currentPage < totalPages) {
+                            currentPage++;
+                            loadCurrentSection();
+                        }
+                    };
+                    pagination.appendChild(nextButton);
+
+                    return pagination;
+                }
+
+                // Функция загрузки текущего раздела
+                function loadCurrentSection() {
+                    const activeSection = document.querySelector('.section.active');
+                    if (!activeSection) return;
+
+                    switch (activeSection.id) {
+                        case 'transactions':
+                            loadTransactions();
+                            break;
+                        case 'users':
+                            loadUsers('active');
+                            break;
+                        case 'users-archive':
+                            loadUsers('archived');
+                            break;
+                    }
+                }
+
+                async function loadTransactions() {
+                    const section = document.getElementById('transactions');
+                    section.classList.add('loading');
+
+                    const searchInput = section.querySelector('.search-input');
+                    const searchParams = new URLSearchParams({
+                        page: currentPage,
+                        limit: itemsPerPage
+                    });
+
+                    if (searchInput?.value) {
+                        searchParams.append('search', searchInput.value);
+                    }
+
+                    const data = await apiRequest(`/v1/admin/transactions?${searchParams}`);
+                    section.classList.remove('loading');
+
+                    if (!data) return;
+
+                    const tbody = document.getElementById('transactionsTableBody');
+                    tbody.innerHTML = data.transactions.map(t => `
+        <tr>
+            <td>${t.id}</td>
+            <td>${t.property_id}</td>
+            <td>${t.previous_owner_id || 'No'}</td>
+            <td>${t.new_owner_id}</td>
+            <td>${new Date(t.created_at).toLocaleDateString()}</td>
+            <td><span class="status-badge ${t.status.toLowerCase()}">${t.status}</span></td>
+            <td>
+                <button class="action-btn btn-view" data-id="${t.id}" data-action="view">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                ${t.status === 'pending' ? `
+                    <button class="action-btn btn-edit" data-id="${t.id}" data-action="approve">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="action-btn btn-delete" data-id="${t.id}" data-action="reject">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                ` : ''}
+            </td>
+        </tr>
+    `).join('');
+
+                    // Добавляем пагинацию
+                    const existingPagination = section.querySelector('.pagination');
+                    if (existingPagination) {
+                        existingPagination.remove();
+                    }
+                    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
+
+                    // Привязываем обработчики событий к динамическим кнопкам
+                    attachActionHandlers3();
+                }
+                // Архивация пользователя
+                async function archiveUser(userId) {
+                    if (!confirm('Are you sure you want to archive this user?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await apiRequest(`/v1/admin/users/${userId}/archive`, {
+                            method: 'POST'
+                        });
+
+                        if (response.success) {
+                            showNotification('success', 'User archived successfully');
+                            // Перезагружаем список пользователей с учетом текущего раздела
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        } else {
+                            showNotification('error', response.message || 'Error archiving user');
+                        }
+                    } catch (error) {
+                        console.error('Archive error:', error);
+                        showNotification('error', 'Error archiving user');
+                    }
+                }
+
+                // Восстановление пользователя из архива
+                async function restoreUser(userId) {
+                    if (!confirm('Are you sure you want to restore this user from archive?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, {
+                            method: 'POST'
+                        });
+
+                        if (response.success) {
+                            showNotification('success', 'User restored successfully');
+                            // Перезагружаем список пользователей с учетом текущего раздела
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        } else {
+                            showNotification('error', response.message || 'Error restoring user');
+                        }
+                    } catch (error) {
+                        console.error('Restore error:', error);
+                        showNotification('error', 'Error restoring user');
+                    }
+                }
+                function renderUsersTable(users, tbody) {
+                    if (!tbody) {
+                        console.error('No tbody provided to renderUsersTable');
+                        return;
+                    }
+
+                    tbody.innerHTML = ''; // Очищаем
+
+                    if (!users || users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
+                        return;
+                    }
+
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.cnic}</td>
+            <td>${user.login}</td>
+            <td>${user.properties_count || 0}</td>
+            <td><span class="status-badge ${user.status}">${user.status}</span></td>
+            <td class="actions-cell"></td>
+        `;
+
+                        const actionsCell = row.querySelector('.actions-cell');
+                        let actionsHTML = '';
+
+                        if (user.status === 'archived') {
+                            actionsHTML = `
+                <div class="actions-footer">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                </div>`;
+                        } else {
+                            actionsHTML = `
+                <div class="actions-column">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                </div>`;
+                        }
+
+                        actionsCell.innerHTML = actionsHTML;
+                        tbody.appendChild(row);
+                    });
+
+                    // Привязываем обработчики
+                    document.querySelectorAll('.btn-view').forEach(button => {
+                        button.addEventListener('click', (e) => viewUser(e.target.dataset.id));
+                    });
+
+                    document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
+                        button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
+                    });
+
+                    document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
+                        button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
+                    });
+
+                    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
+                        button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
+                    });
+                }
+
+
+                async function loadUsers(status = 'active') {
+                    // Определяем, в каком разделе мы находимся
+                    const section = status === 'archived'
+                        ? document.getElementById('users-archive')
+                        : document.getElementById('users');
+
+                    const loadingIndicator = document.createElement('div');
+                    loadingIndicator.className = 'loading-indicator';
+                    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
+
+                    // Удаляем предыдущий индикатор загрузки, если он есть
+                    const existingLoader = section.querySelector('.loading-indicator');
+                    if (existingLoader) {
+                        existingLoader.remove();
+                    }
+
+                    // Добавляем новый индикатор загрузки
+                    section.appendChild(loadingIndicator);
+
+                    try {
+                        const searchInput = section.querySelector('.search-input');
+                        const searchParams = new URLSearchParams({
+                            page: currentPage,
+                            limit: itemsPerPage
+                        });
+
+                        // Добавляем параметр статуса только если он не 'all'
+                        if (status && status !== 'all') {
+                            searchParams.append('status', status);
+                        }
+
+                        if (searchInput && searchInput.value) {
+                            searchParams.append('search', searchInput.value);
+                        }
+
+                        console.log('Loading users with params:', searchParams.toString());
+                        const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
+
+                        // Удаляем индикатор загрузки
+                        loadingIndicator.remove();
+
+                        // --- ОПРЕДЕЛЯЕМ УНИКАЛЬНЫЙ ID ДЛЯ tbody ---
+                        const tbodyId = status === 'archived' ? 'archivedUsersTableBody' : 'usersTableBody';
+
+                        // Находим или создаем таблицу
+                        let table = section.querySelector('.data-table');
+                        if (!table) {
+                            // Если таблицы нет, создаем новую структуру
+                            const tableContainer = document.createElement('div');
+                            tableContainer.className = 'table-container';
+
+                            table = document.createElement('table');
+                            table.className = 'data-table';
+                            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>CNIC</th>
+                        <th>Login</th>
+                        <th>Properties</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="${tbodyId}"></tbody>
+            `;
+
+                            tableContainer.appendChild(table);
+
+                            // Проверяем, есть ли уже пагинация
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                section.insertBefore(tableContainer, existingPagination);
+                            } else {
+                                section.appendChild(tableContainer);
+                            }
+                        }
+
+                        // --- РЕНДЕРИМ ДАННЫЕ В СООТВЕТСТВУЮЩУЮ ТАБЛИЦУ ---
+                        const tbody = document.getElementById(tbodyId);
+                        if (!tbody) {
+                            console.error(`Failed to find tbody with id: ${tbodyId}`);
+                            return;
+                        }
+
+                        if (data && Array.isArray(data)) {
+                            // Простой массив
+                            renderUsersTable(data, tbody);
+                            const pagination = createPagination(data.length, currentPage, itemsPerPage);
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                existingPagination.replaceWith(pagination);
+                            } else {
+                                section.appendChild(pagination);
+                            }
+                        } else if (data && Array.isArray(data.users)) {
+                            // Структурированный ответ
+                            renderUsersTable(data.users, tbody);
+                            const pagination = createPagination(data.total, currentPage, itemsPerPage);
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                existingPagination.replaceWith(pagination);
+                            } else {
+                                section.appendChild(pagination);
+                            }
+                        } else {
+                            console.error('Invalid users data format:', data);
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
+                        }
+
+                        // Привязываем обработчики событий
+                        attachActionHandlers();
+                    } catch (error) {
+                        console.error('Error loading users:', error);
+                        loadingIndicator.remove();
+
+                        let errorContainer = section.querySelector('.error-message');
+                        if (!errorContainer) {
+                            errorContainer = document.createElement('div');
+                            errorContainer.className = 'error-message';
+                            errorContainer.style = 'color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 4px; margin: 10px 0;';
+                            section.appendChild(errorContainer);
+                        }
+
+                        errorContainer.innerHTML = `
+            <i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
+            <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                Retry
+            </button>
+        `;
+
+                        const retryBtn = errorContainer.querySelector('.retry-btn');
+                        if (retryBtn) {
+                            retryBtn.addEventListener('click', () => {
+                                errorContainer.remove();
+                                loadUsers(status);
+                            });
+                        }
+                    }
+                }
+                document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
+                    currentPage = 1;
+                    const activeSection = document.querySelector('.section.active').id;
+                    if (activeSection === 'users') {
+                        loadUsers('active');
+                    } else if (activeSection === 'users-archive') {
+                        loadUsers('archived');
+                    }
+                }, 300));
+                function attachActionHandlers3() {
+                    document.body.addEventListener('click', function (e) {
+                        const button = e.target.closest('.action-btn');
+                        if (!button) return;
+
+                        const action = button.getAttribute('data-action');
+                        const id = button.getAttribute('data-id');
+
+                        if (!id || !action) return;
+
+                        switch (action) {
+                            case 'view':
+                                viewTransaction(id);
+                                break;
+                            case 'view_user':
+                                viewUser(id);
+                                break;
+                            case 'approve':
+                                updateTransactionStatus(id, 'approved');
+                                break;
+                            case 'reject':
+                                updateTransactionStatus(id, 'rejected');
+                                break;
+                            case 'block':
+                                toggleUserStatus(id, 'blocked');
+                                break;
+                            case 'unblock':
+                                toggleUserStatus(id, 'active');
+                                break;
+                        }
+                    });
+                }
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Закрытие модалов
+                    document.querySelectorAll('.modal-close, .close').forEach(button => {
+                        button.addEventListener('click', function () {
+                            const modalId = this.getAttribute('data-modal');
+                            closeModal(modalId);
+                        });
+                    });
+
+                    // Закрытие модального окна при клике вне содержимого
+                    document.addEventListener('click', function (event) {
+                        if (event.target.classList.contains('modal')) {
+                            event.target.style.display = 'none';
+                        }
+                    });
+
+                    // Форма добавления пользователя
+                    document.getElementById('addUserForm')?.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        createUser(e);
+                    });
+
+                    // Регенерация логина и пароля
+                    document.querySelector('.regenerate-login-btn')?.addEventListener('click', regenerateLogin);
+                    document.querySelector('.regenerate-password-btn')?.addEventListener('click', regeneratePassword);
+
+                    // Форма создания транзакции
+                    document.getElementById('createTransactionForm')?.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        handleCreateTransaction(e);
+                    });
+
+                    // Форма загрузки одного файла
+                    document.getElementById('singleFileUploadForm')?.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        uploadSingleFile(e);
+                    });
+
+                    // Форма множественной загрузки файлов
+                    document.getElementById('multipleFileUploadForm')?.addEventListener('submit', function (e) {
+                        e.preventDefault();
+                        uploadMultipleFiles(e);
+                    });
+                    // Закрытие модальных окон по кнопке "×"
+                    document.querySelectorAll('.close').forEach(button => {
+                        button.addEventListener('click', function () {
+                            const modalId = this.getAttribute('data-modal');
+                            closeModal(modalId);
+                        });
+                    });
+
+                    // Закрытие модального окна при клике вне содержимого
+                    document.addEventListener('click', function (event) {
+                        if (event.target.classList.contains('modal')) {
+                            event.target.style.display = 'none';
+                        }
+                    });
+
+                    // Редактирование суммы транзакции
+                    document.querySelector('.edit-amount-btn')?.addEventListener('click', toggleAmountEdit);
+
+                    // Сохранение новой суммы
+                    document.querySelector('.save-amount-btn')?.addEventListener('click', updateTransactionAmount);
+
+                    // Отмена редактирования суммы
+                    document.querySelector('.cancel-amount-btn')?.addEventListener('click', cancelAmountEdit);
+
+                    // Сохранение информации о свидетелях
+                    document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
+                });
+                // Обновление статуса пользователя
+                async function toggleUserStatus(userId, newStatus) {
+                    try {
+                        const response = await apiRequest(`/v1/admin/users/${userId}/status`, {
+                            method: 'POST',
+                            body: JSON.stringify({ status: newStatus })
+                        });
+
+                        if (response.success) {
+                            showNotification('success', `User status updated to: ${newStatus}`);
+
+                            // Определяем, на какой странице мы сейчас
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        } else {
+                            showNotification('error', response.message || 'Error updating user status');
+                        }
+                    } catch (error) {
+                        console.error('Error updating user status:', error);
+                        showNotification('error', 'Error updating user status');
+                    }
+                }
+                // Обновление статуса сделки
+                async function updateTransactionStatus(transactionId, status) {
+                    try {
+                        let notes = null;
+                        if (status === 'rejected') {
+                            notes = prompt('Please provide a reason for rejection:');
+                            if (notes === null) return;
+                        }
+
+                        // Исправляем имя поля с admin_notes на reason
+                        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                                status,
+                                reason: notes
+                            })
+                        });
+
+                        // Проверяем, что response существует и имеет поле success
+                        if (response && response.success) {
+                            showNotification('success', `Transaction ${status} successfully`);
+                            loadTransactions();
+                        } else {
+                            const errorMessage = response?.message || 'Error updating transaction';
+                            showNotification('error', errorMessage);
+                        }
+                    } catch (error) {
+                        console.error('Error updating transaction status:', error);
+                        showNotification('error', 'Failed to update transaction status');
+                    }
+                }
+                // Загрузка документов
+                async function uploadDocuments(transactionId) {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.multiple = true;
+                    input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+
+                    input.onchange = async (e) => {
+                        const files = Array.from(e.target.files);
+                        const formData = new FormData();
+
+                        files.forEach(file => {
+                            formData.append('documents[]', file);
+                        });
+
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            showNotification('success', 'Documents uploaded successfully');
+                            loadTransactions();
+                        } else {
+                            showNotification('error', 'Failed to upload documents');
+                        }
+                    };
+
+                    input.click();
+                }
+
+                // Очистка истории сделок
+                async function clearTransactionHistory() {
+                    const date = prompt('Enter date to clear history before (YYYY-MM-DD):');
+                    if (!date) return;
+
+                    const response = await apiRequest('/v1/admin/transactions/history/clear', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            older_than: date,
+                            status: ['approved', 'rejected', 'cancelled']
+                        })
+                    });
+
+                    if (response) {
+                        showNotification('success', 'Transaction history cleared successfully');
+                        loadTransactions();
+                    }
+                }
+
+                // Поиск
+                function setupSearch() {
+                    const searchInputs = document.querySelectorAll('.search-input');
+                    searchInputs.forEach(input => {
+                        input.addEventListener('input', debounce(function () {
+                            currentPage = 1;
+                            const section = this.closest('.section').id;
+                            if (section === 'users') {
+                                loadUsers('active');
+                            } else if (section === 'users-archive') {
+                                loadUsers('archived');
+                            } else if (section === 'transactions') {
+                                loadTransactions();
+                            }
+                        }, 300));
+                    });
+                }
+
+                // Вспомогательные функции
+                function debounce(func, wait) {
+                    let timeout;
+                    return function executedFunction(...args) {
+                        const later = () => {
+                            clearTimeout(timeout);
+                            func.apply(this, args);
+                        };
+                        clearTimeout(timeout);
+                        timeout = setTimeout(later, wait);
+                    };
+                }
+
+                // Переключение между разделами
+                function showSection(sectionId) {
+                    // Скрыть все разделы
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+
+                    // Скрыть все ссылки навигации
+                    document.querySelectorAll('.nav-link').forEach(link => {
+                        link.classList.remove('active');
+                    });
+
+                    // Показать выбранный раздел
+                    const sectionElement = document.getElementById(sectionId);
+                    if (!sectionElement) {
+                        console.error(`Section with id "${sectionId}" not found in DOM`);
+
+                        // Если раздел не найден, переключаемся на раздел транзакций
+                        const transactionsSection = document.getElementById('transactions');
+                        if (transactionsSection) {
+                            transactionsSection.style.display = 'block';
+                            transactionsSection.classList.add('active');
+
+                            // Активируем соответствующую ссылку навигации
+                            const navLink = document.querySelector('[href="#transactions"]');
+                            if (navLink) {
+                                navLink.classList.add('active');
+                            }
+
+                            // Загружаем данные для раздела транзакций
+                            loadTransactions();
+
+                            return;
+                        } else {
+                            console.error('Transactions section not found either');
+                            return;
+                        }
+                    }
+
+                    // Элемент найден, показываем его
+                    sectionElement.style.display = 'block';
+                    sectionElement.classList.add('active');
+
+                    // Активируем соответствующую ссылку навигации
+                    const navLink = document.querySelector(`[href="#${sectionId}"]`);
+                    if (navLink) {
+                        navLink.classList.add('active');
+                    }
+
+                    // Загрузить данные для активного раздела
+                    if (sectionId === 'users') {
+                        console.log('Loading users for active users section');
+                        loadUsers('active');
+                    } else if (sectionId === 'users-archive') {
+                        console.log('Loading archived users');
+                        loadUsers('archived');
+                    } else if (sectionId === 'transactions') {
+                        console.log('Loading transactions for transactions section');
+                        loadTransactions();
+                    }
+                }
+                // Переключение категорий объектов
+                function toggleCategory(header) {
+                    const category = header.parentElement;
+                    category.classList.toggle('active');
+                }
+
+                // Функции для работы с модальными окнами
+                function openModal(modalId) {
+                    document.getElementById(modalId).style.display = 'block';
+                    loadUsersForSelect();
+
+                }
+
+                function closeModal(modalId) {
+                    document.getElementById(modalId).style.display = 'none';
+                }
+
+                // Закрытие модального окна при клике вне его содержимого
+                document.addEventListener('click', function (event) {
+                    if (event.target.classList.contains('modal')) {
+                        event.target.classList.remove('show');
+                    }
+                });
+
+                // Просмотр деталей пользователя
+                async function viewUser(userId) {
+                    const data = await apiRequest(`/v1/admin/users/${userId}`);
+                    if (!data) return;
+
+                    const modalBody = document.getElementById('userModalBody');
+                    modalBody.innerHTML = `
+                <div class="user-details">
+                    <p><strong>ID:</strong> ${data.id}</p>
+                    <p><strong>Name:</strong> ${data.name}</p>
+                    <p><strong>CNIC:</strong> ${data.cnic}</p>
+                    <p><strong>Email:</strong> ${data.email}</p>
+                    <p><strong>Status:</strong> <span class="status-badge ${data.status.toLowerCase()}">${data.status}</span></p>
+                    <p><strong>Created:</strong> ${new Date(data.created_at).toLocaleString()}</p>
+                    
+                    <h4>Properties</h4>
+                    ${data.properties && data.properties.length > 0 ? `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.properties.map(p => `
+                                    <tr>
+                                        <td>${p.id}</td>
+                                        <td>${p.name}</td>
+                                        <td>${p.type}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<p>No properties owned</p>'}
+                </div>
+            `;
+
+                    openModal('userModal');
+                }
+
+                // Просмотр деталей сделки
+                async function viewTransaction(transactionId) {
+                    try {
+                        // Устанавливаем ID текущей транзакции
+                        document.getElementById('currentTransactionId').value = transactionId;
+
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}`, {
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok)
+                            throw new Error('Error load data');
+
+                        const transaction = await response.json();
+
+                        // Заполняем данные в модальном окне
+                        document.getElementById('transactionId').textContent = transaction.id;
+                        document.getElementById('propertyName').textContent = transaction.property_id;
+                        document.getElementById('previousOwner').textContent = transaction.previous_owner_name || 'N/A';
+                        document.getElementById('newOwner').textContent = transaction.new_owner_name;
+                        document.getElementById('transactionStatus').textContent = transaction.status;
+                        document.getElementById('totalAmount').textContent = `${transaction.total_amount} PKR`;
+                        document.getElementById('paidAmount').textContent = `${transaction.paid_amount} PKR`;
+                        document.getElementById('remainingAmount').textContent = `${transaction.total_amount - transaction.paid_amount} PKR`;
+                        document.getElementById('createdAt').textContent = new Date(transaction.created_at).toLocaleString();
+
+                        // Заполняем данные свидетелей из объекта witnesses
+                        const { witness1, witness2 } = transaction.witnesses || {};
+
+                        // Заполняем поля для первого свидетеля
+                        document.getElementById('witness1Name').value = witness1 ? witness1.name : 'Not assigned';
+                        document.getElementById('witness1CNIC').value = witness1 ? witness1.cnic : 'Not assigned';
+                        document.getElementById('witness1Phone').value = witness1 ? (witness1.phone || '') : '';
+
+                        // Заполняем поля для второго свидетеля
+                        document.getElementById('witness2Name').value = witness2 ? witness2.name : 'Not assigned';
+                        document.getElementById('witness2CNIC').value = witness2 ? witness2.cnic : 'Not assigned';
+                        document.getElementById('witness2Phone').value = witness2 ? (witness2.phone || '') : '';
+
+                        // Загружаем платежи и файлы
+                        await loadTransactionPayments(transactionId),
+                            await loadTransactionFiles(transactionId)
+
+                        openModal('viewTransactionModal');
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', 'Error load data');
+                    }
+                }
+
+                // Функция для загрузки платежей
+                async function loadTransactionPayments(transactionId) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/payments`, {
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) {
+                            showNotification('error', 'Error to fetch')
+                            return;
+                        }
+
+                        const data = await response.json();
+
+                        const tbody = document.getElementById('paymentsTableBody');
+
+                        tbody.innerHTML = data.payments.map(payment => {
+                            console.log('Processing payment:', payment);
+                            // Проверяем наличие квитанции
+                            const hasReceipt = payment.receipt_file_id && payment.file_path;
+                            console.log('Has receipt:', hasReceipt, {
+                                receipt_file_id: payment.receipt_file_id,
+                                file_path: payment.file_path,
+                                original_name: payment.original_name
+                            });
+
+                            return `
+                        <tr>
+                            <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
+                            <td>${payment.amount} PKR</td>
+                            <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
+                            <td>
+                                ${hasReceipt ? `
+                                    <button onclick="downloadFile({
+                                        file_name: '${payment.file_path.split('/').pop()}',
+                                        original_name: '${payment.original_name}'
+                                    })" class="action-btn btn-download">
+                                        <i class="fas fa-download"></i> Скачать
+                                    </button>
+                                ` : 'Нет квитанции'}
+                            </td>
+                            <td>
+                                ${payment.status === 'pending' ? `
+                                    <button onclick="updatePaymentStatus(${payment.id}, 'paid')" class="action-btn btn-edit">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                    <button onclick="updatePaymentStatus(${payment.id}, 'cancelled')" class="action-btn btn-delete">
+                                        <i class="fas fa-times"></i> Cencel
+                                    </button>
+                                ` : ''}
+                                        </td>
+                                    </tr>
+                    `;
+                        }).join('');
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', 'Error when uploading payments');
+                    }
+                }
+
+                // Функция для создания нового платежа
+                async function createPayment(event) {
+                    event.preventDefault();
+
+                    const transactionId = document.getElementById('paymentTransactionId').value;
+                    if (!transactionId) {
+                        showNotification('warning', 'Transaction ID not found');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('amount', document.getElementById('paymentAmount').value);
+                    formData.append('payment_date', document.getElementById('paymentDate').value);
+                    formData.append('payment_method', document.getElementById('paymentMethod').value);
+                    formData.append('notes', document.getElementById('paymentNotes')?.value || '');
+
+                    const receiptFile = document.getElementById('paymentReceipt').files[0];
+                    if (receiptFile) {
+                        formData.append('receipt', receiptFile);
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/payments`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Error creating payment');
+                        }
+
+                        showNotification('success', 'Payment created successfully');
+                        document.getElementById('addPaymentForm').reset();
+                        closeModal('addPaymentModal');
+                        loadTransactionPayments(transactionId);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', error.message || 'Error creating payment');
+                    }
+                }
+
+                // Функция для загрузки файлов сделки
+                async function loadTransactionFiles(transactionId) {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) throw new Error('Error load fils');
+
+                        const files = await response.json();
+
+                        // Очищаем контейнеры файлов
+                        document.getElementById('agreementFile').innerHTML = '';
+                        document.getElementById('videoFile').innerHTML = '';
+
+                        // Распределяем файлы по категориям
+                        files.forEach(file => {
+                            const fileElement = createFileElement(file);
+                            switch (file.category) {
+                                case 'agreement':
+                                    document.getElementById('agreementFile').appendChild(fileElement);
+                                    break;
+                                case 'video':
+                                    document.getElementById('videoFile').appendChild(fileElement);
+                                    break;
+                                default:
+                                    break;
+                            }
+                        });
+                    } catch (error) {
+                        console.error('error:', error);
+                    }
+                }
+
+                // Функция для создания элемента файла
+                function createFileElement(file) {
+                    const fileContainer = document.createElement('div');
+                    fileContainer.className = 'file-item';
+                    fileContainer.dataset.fileId = file.id;
+
+                    // Создаем превью файла
+                    if (file.file_type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = `${API_BASE_URL}/uploads/${file.file_name}`;
+                        img.alt = file.original_name;
+                        img.className = 'file-preview';
+                        fileContainer.appendChild(img);
+                    } else {
+                        const icon = document.createElement('i');
+                        icon.className = 'fas fa-file-alt file-icon';
+                        fileContainer.appendChild(icon);
+                    }
+
+                    // Информация о файле
+                    const fileInfo = document.createElement('div');
+                    fileInfo.className = 'file-info';
+                    fileInfo.innerHTML = `
+                <p class="file-name">${file.original_name}</p>
+                <p class="file-type">${file.file_type}</p>
+                <p class="file-date">Загружен: ${new Date(file.created_at).toLocaleString()}</p>
+            `;
+
+                    // Кнопки действий
+                    const actions = document.createElement('div');
+                    actions.className = 'file-actions';
+
+                    // Кнопка просмотра
+                    const viewBtn = document.createElement('button');
+                    viewBtn.innerHTML = '<i class="fas fa-eye"></i> Просмотр';
+                    viewBtn.onclick = () => window.open(`${API_BASE_URL}/uploads/${file.file_name}`, '_blank');
+                    actions.appendChild(viewBtn);
+
+                    // Кнопка скачивания
+                    const downloadBtn = document.createElement('button');
+                    downloadBtn.innerHTML = '<i class="fas fa-download"></i> Скачать';
+                    downloadBtn.onclick = () => downloadFile(file);
+                    actions.appendChild(downloadBtn);
+
+                    // Кнопка удаления
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Удалить';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.onclick = () => deleteFile(file);
+                    actions.appendChild(deleteBtn);
+
+                    fileContainer.appendChild(fileInfo);
+                    fileContainer.appendChild(actions);
+
+                    return fileContainer;
+                }
+
+                // Функция для скачивания файла
+                async function downloadFile(file) {
+                    if (!file || !file.file_name) {
+                        showNotification('error', 'File not fount');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/uploads/admin/${encodeURIComponent(file.file_name)}?download=true`, {
+                            method: 'GET',
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) throw new Error('Download failed');
+
+                        // Создаем ссылку для скачивания
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = file.original_name || file.file_name;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+
+                        showNotification('success', 'Success');
+                    } catch (error) {
+                        console.error('Download error:', error);
+                        showNotification('error', 'Error load');
+                    }
+                }
+
+                // Функция для удаления файла
+                async function deleteFile(file) {
+                    if (!confirm(`Вы уверены, что хотите удалить файл "${file.original_name}"?`)) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/uploads/${file.file_name}`, {
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) throw new Error('Delete failed');
+
+                        // Обновляем список файлов
+                        const fileElement = document.querySelector(`[data-file-id="${file.id}"]`);
+                        if (fileElement) {
+                            fileElement.remove();
+                        }
+                        showNotification('success', 'Deleted');
+                    } catch (error) {
+                        console.error('Delete error:', error);
+                        showNotification('error', 'Error');
+                    }
+                }
+
+                // Добавляем функцию предпросмотра изображения при выборе файла
+                document.getElementById('file')?.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file && file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        const previewImage = document.getElementById('previewImage');
+
+                        reader.onload = function (e) {
+                            previewImage.src = e.target.result;
+                            previewImage.style.display = 'block';
+                        }
+
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                // Функция для открытия предпросмотра изображения в полном размере
+                function openImagePreview(imageSrc) {
+                    const modal = document.createElement('div');
+                    modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+                cursor: pointer;
+            `;
+
+                    const img = document.createElement('img');
+                    img.src = imageSrc;
+                    img.style.cssText = `
+                max-width: 90%;
+                max-height: 90%;
+                object-fit: contain;
+            `;
+
+                    modal.appendChild(img);
+                    document.body.appendChild(modal);
+
+                    modal.onclick = () => modal.remove();
+                }
+                document.getElementById("openAddUserModal").addEventListener("click", function () {
+                    openAddUserModal();
+                });
+                // Функции для работы с новыми пользователями
+                function openAddUserModal() {
+                    generateLoginCredentials();
+                    openModal('addUserModal');
+                }
+
+                function generateLoginCredentials() {
+                    regenerateLogin();
+                    regeneratePassword();
+                }
+
+                function regenerateLogin() {
+                    const nameInput = document.getElementById('userName');
+                    const fullName = nameInput.value || '';
+
+                    let login = '';
+                    if (fullName) {
+                        const nameParts = fullName.toLowerCase().split(' ').filter(part => part.length > 0);
+
+                        if (nameParts.length > 0) {
+                            if (nameParts.length === 1) {
+                                login = nameParts[0];
+                            }
+                            else if (nameParts.length === 2) {
+                                login = `${nameParts[0]}_${nameParts[1][0]}`;
+                            }
+                            else {
+                                login = nameParts[0] + '_' + nameParts.slice(1).map(part => part[0]).join('');
+                            }
+                        }
+                    }
+
+                    if (!login) {
+                        login = 'user';
+                    }
+
+                    const timestamp = Date.now().toString().slice(-4);
+                    login = `${login}_${timestamp}`;
+
+                    login = login.toLowerCase()
+                        .replace(/[^a-z0-9_]/g, '_')
+                        .replace(/_+/g, '_');
+
+                    document.getElementById('userLogin').value = login;
+                }
+
+                function regeneratePassword() {
+                    const length = 10;
+                    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+                    let password = '';
+                    for (let i = 0; i < length; i++) {
+                        const randomIndex = Math.floor(Math.random() * charset.length);
+                        password += charset[randomIndex];
+                    }
+                    document.getElementById('userPassword').value = password;
+                }
+
+                async function createUser(event) {
+                    event.preventDefault();
+
+                    const formData = {
+                        name: document.getElementById('userName').value,
+                        cnic: document.getElementById('userCnic').value,
+                        phone: document.getElementById('userPhone').value,
+                        address: document.getElementById('userAddress').value,
+                        login: document.getElementById('userLogin').value,
+                        password: document.getElementById('userPassword').value
+                    };
+
+                    const response = await apiRequest('/v1/admin/users', {
+                        method: 'POST',
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (response) {
+                        showNotification('success', 'User created successfully');
+                        closeModal('addUserModal');
+                        loadUsers('active');
+                    }
+                }
+
+                // Обновляем генерацию логина при вводе имени
+                document.getElementById('userName')?.addEventListener('input', regenerateLogin);
+
+                // Функции для работы со сделками
+                async function openCreateTransactionModal() {
+                    try {
+                        // Очищаем селекты перед загрузкой новых данных
+                        document.getElementById('propertyId').innerHTML = '<option value="">Загрузка...</option>';
+                        document.getElementById('newOwnerId').innerHTML = '<option value="">Загрузка...</option>';
+
+                        // Открываем модальное окно
+                        openModal('createTransactionModal');
+
+                        // Загружаем данные параллельно
+                        loadProperties();
+                    } catch (error) {
+                        console.error('Error opening transaction modal:', error);
+                        showNotification('error', 'Error modal');
+                    }
+                }
+
+                // Загрузка списка пользователей для селектов
+                async function loadUsersForSelect() {
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/users?limit=100`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to load users');
+                        }
+
+                        const data = await response.json();
+                        const newOwnerSelect = document.getElementById('newOwnerId');
+
+                        if (!newOwnerSelect) {
+                            console.error('New owner select element not found');
+                            return;
+                        }
+
+                        // Очищаем селект
+                        newOwnerSelect.innerHTML = '<option value="">Select New Owner</option>';
+
+                        // Проверяем наличие пользователей в ответе
+                        if (data && data.users && Array.isArray(data.users)) {
+                            data.users.forEach(user => {
+                                if (user && user.id && user.name) {
+                                    const option = document.createElement('option');
+                                    option.value = user.id;
+                                    option.textContent = `${user.name}${user.cnic ? ` (${user.cnic})` : ''}`;
+                                    newOwnerSelect.appendChild(option);
+                                }
+                            });
+                        } else {
+                            console.error('Invalid users data structure:', data);
+                            throw new Error('Invalid users data received');
+                        }
+                    } catch (error) {
+                        console.error('Error loading users:', error);
+                        showNotification('error', "Couldn't load user list:" + error.message);
+                    }
+                }
+
+                // Добавление элемента графика платежей
+                function addPaymentScheduleItem() {
+                    const container = document.getElementById('paymentSchedule');
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'payment-schedule-item';
+                    itemDiv.innerHTML = `
+                <div class="form-group">
+                    <input type="number" name="payment_amount" placeholder="Amount" required min="0" step="0.01">
+                    <input type="date" name="payment_date" required>
+                    <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">Remove</button>
+                </div>
+            `;
+                    container.appendChild(itemDiv);
+                }
+
+                // Обработка создания транзакции
+                async function handleCreateTransaction(event) {
+                    event.preventDefault();
+
+                    try {
+                        const form = event.target;
+                        const formData = {
+                            property_id: form.querySelector('[name="property_id"]').value,
+                            new_owner_id: parseInt(form.querySelector('[name="new_owner_id"]').value),
+                            total_amount: parseFloat(form.querySelector('[name="total_amount"]').value),
+                            witnesses: {
+                                witness1: {
+                                    name: form.querySelector('[name="witness1Name"]').value,
+                                    cnic: form.querySelector('[name="witness1CNIC"]').value,
+                                    phone: form.querySelector('[name="witness1Phone"]').value
+                                },
+                                witness2: {
+                                    name: form.querySelector('[name="witness2Name"]').value,
+                                    cnic: form.querySelector('[name="witness2CNIC"]').value,
+                                    phone: form.querySelector('[name="witness2Phone"]').value
+                                }
+                            }
+                        };
+
+                        // Validate data
+                        if (!formData.property_id || isNaN(formData.new_owner_id) || isNaN(formData.total_amount)) {
+                            showNotification('warning', 'Please fill in all required fields correctly');
+                            return;
+                        }
+
+                        console.log('Creating transaction with data:', formData);
+
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify(formData)
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Error creating transaction');
+                        }
+
+                        showNotification('success', 'Transaction created successfully');
+                        closeModal('createTransactionModal');
+                        loadTransactions();
+                    } catch (error) {
+                        console.error('Error handling transaction:', error);
+                        showNotification('error', error.message || 'Error handling transaction');
+                    }
+                }
+
+                // Функция для открытия модального окна загрузки одного файла
+                function openUploadModal(category) {
+                    document.getElementById('uploadCategory').value = category;
+                    document.getElementById('uploadTransactionId').value = currentTransactionId;
+                    openModal('uploadFileModal');
+                }
+
+                // Функция для открытия модального окна множественной загрузки
+                function openMultipleUploadModal() {
+                    document.getElementById('multiUploadTransactionId').value = currentTransactionId;
+                    openModal('multipleUploadModal');
+                }
+
+                // Функции для работы с платежами
+                function openAddPaymentModal() {
+                    const transactionId = document.getElementById('currentTransactionId').value;
+                    if (!transactionId) {
+                        showNotification('success', 'Transaction ID not found');
+                        return;
+                    }
+                    document.getElementById('paymentTransactionId').value = transactionId;
+                    document.getElementById('addPaymentForm').reset();
+                    openModal('addPaymentModal');
+                }
+
+                // Функция для обновления информации о транзакции
+                async function loadTransactionDetails(transactionId) {
+                    try {
+                        transactionId = document.getElementById('currentTransactionId').value;
+                        const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}`, {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            method: 'GET',
+                            credentials: 'include',
+                        });
+
+                        if (!response.ok) {
+                            showNotification('error', "Failed to fetch transaction details")
+                            return;
+                        }
+
+                        const transaction = await response.json();
+
+                        // Fill main transaction data
+                        document.getElementById('transactionId').textContent = transaction.id;
+                        document.getElementById('propertyName').textContent = transaction.property_id;
+                        document.getElementById('previousOwner').textContent = transaction.previous_owner_name || 'N/A';
+                        document.getElementById('newOwner').textContent = transaction.new_owner_name || 'N/A';
+                        document.getElementById('transactionStatus').textContent = transaction.status || 'N/A';
+                        document.getElementById('createdAt').textContent = new Date(transaction.created_at).toLocaleString();
+
+                        // Fill financial information
+                        document.getElementById('totalAmount').textContent = formatAmount(transaction.total_amount) || 'N/A';
+                        document.getElementById('paidAmount').textContent = formatAmount(transaction.paid_amount) || 'N/A';
+                        document.getElementById('remainingAmount').textContent = formatAmount(transaction.payment_summary.remaining_amount) || 'N/A';
+
+                        // Fill witness data
+                        if (transaction.witnesses) {
+                            // Witness 1
+                            if (transaction.witnesses.witness1) {
+                                document.getElementById('witness1Name').value = transaction.witnesses.witness1.name || '';
+                                document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
+                                document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
+                            }
+
+                            // Witness 2
+                            if (transaction.witnesses.witness2) {
+                                document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
+                                document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
+                                document.getElementById('witness2Phone').value = transaction.witnesses.witness2.phone || '';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading transaction details:', error);
+                        showNotification('error', 'Failed to load transaction details');
+                    }
+                }
+
+                async function updatePaymentStatus(paymentId, status) {
+                    try {
+                        let transactionId = Number(document.getElementById('currentTransactionId').value)
+                        const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${paymentId}/payment-status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ payment_status: status, transactionId: transactionId })
+                        });
+
+                        if (!response.ok) {
+                            showNotification('error', "Failed to fetch update")
+                            return;
+                        }
+
+                        const result = await response.json();
+
+                        if (result.status_updated_to_completed) {
+                            showNotification('success', 'Payment marked as paid and transaction status updated to Completed');
+                        } else {
+                            showNotification('success', 'Payment status updated successfully');
+                        }
+
+                        // Reload transaction details
+                        loadTransactionDetails(transactionId);
+
+                    } catch (error) {
+                        console.error('Error updating payment status:', error);
+                        showNotification('error', 'Failed to update payment status');
+                    }
+                }
+
+                async function uploadSingleFile(event) {
+                    event.preventDefault();
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const transactionId = document.getElementById('currentTransactionId').value;
+                    const category = document.getElementById('uploadCategory').value;
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Error uploading file');
+                        }
+
+                        const result = await response.json();
+
+                        // Добавляем новый файл в соответствующую категорию
+                        const filesContainer = document.getElementById('filesContainer');
+                        const categoryDiv = filesContainer.querySelector(`[data-category="${category}"]`) ||
+                            createCategoryDiv(category);
+
+                        const filesList = categoryDiv.querySelector('.files-list');
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item';
+                        fileItem.innerHTML = `
+                    <a href="uploads/${result.files[0].fileName}" target="_blank">
+                        ${result.files[0].originalName}
+                    </a>
+                    <span class="file-date">${new Date().toLocaleString()}</span>
+                `;
+                        filesList.appendChild(fileItem);
+
+                        showNotification('success', 'File uploaded successfully');
+                        closeModal('uploadFileModal');
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', error.message || 'Error uploading file');
+                    }
+                }
+
+                function createCategoryDiv(category) {
+                    const filesContainer = document.getElementById('filesContainer');
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'files-category';
+                    categoryDiv.setAttribute('data-category', category);
+                    categoryDiv.innerHTML = `
+                <h4 class="category-title">${category.charAt(0).toUpperCase() + category.slice(1)}</h4>
+                <div class="files-list"></div>
+            `;
+                    filesContainer.appendChild(categoryDiv);
+                    return categoryDiv;
+                }
+
+                async function uploadMultipleFiles(event) {
+                    event.preventDefault();
+
+                    const form = event.target;
+                    const formData = new FormData(form);
+                    const transactionId = document.getElementById('multiUploadTransactionId').value;
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                            method: 'POST',
+                            credentials: 'include',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || 'Error uploading files');
+                        }
+
+                        const result = await response.json();
+                        showNotification('success', 'Files uploaded successfully');
+                        closeModal('multipleUploadModal');
+                        await loadTransactionFiles(transactionId);
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', error.message || 'Error uploading files');
+                    }
+                }
+
+
+                // Предпросмотр квитанции
+                document.getElementById('receiptFile')?.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    const preview = document.getElementById('receiptPreview');
+
+                    if (file) {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview" style="max-width: 200px; margin-top: 10px;">`;
+                            };
+                            reader.readAsDataURL(file);
+                        } else if (file.type === 'application/pdf') {
+                            preview.innerHTML = '<i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>';
+                        }
+                    } else {
+                        preview.innerHTML = '';
+                    }
+                });
+
+                // Функция для загрузки свойств
+                async function loadProperties() {
+                    try {
+                        const propertySelect = document.getElementById('propertyId');
+                        if (propertySelect) {
+                            propertySelect.innerHTML = '<option value="">Select Property</option>';
+
+                            Object.entries(properties).forEach(([category, items]) => {
+                                const group = document.createElement('optgroup');
+                                group.label = category.charAt(0).toUpperCase() + category.slice(1);
+
+                                items.forEach(property => {
+                                    const option = document.createElement('option');
+                                    option.value = property.id;
+                                    option.textContent = `${property.name} (${property.type})`;
+                                    group.appendChild(option);
+                                });
+
+                                propertySelect.appendChild(group);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Error loading properties:', error);
+                        showNotification('error', 'Error loading properties');
+                    }
+                }
+
+                // Функция для создания транзакции
+                async function createTransaction(event) {
+                    event.preventDefault();
+
+                    const formData = new FormData(event.target);
+                    const data = {
+                        property_id: formData.get('propertyId'),
+                        new_owner_id: parseInt(formData.get('newOwnerId')),
+                        total_amount: parseFloat(formData.get('totalAmount')),
+                        payment_schedule: []
+                    };
+
+                    console.log('Creating transaction:', {
+                        url: `${API_BASE_URL}/v1/admin/transactions`,
+                        data
+                    });
+
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify(data)
+                        });
+
+                        console.log('Response status:', response.status);
+                        const result = await response.json();
+                        console.log('Response data:', result);
+
+                        if (!response.ok) {
+                            throw new Error(result.message || 'Error creating transaction');
+                        }
+
+                        showNotification('success', 'Transaction created successfully');
+                        closeModal('createTransactionModal');
+                        loadTransactions();
+                    } catch (error) {
+                        console.error('Error:', error);
+                        showNotification('error', 'Error creating transaction');
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', (event) => {
+                    const buttonOpen = document.getElementById('create')
+                    buttonOpen.addEventListener('click', (event) => openCreateTransactionModal())
+                })
+                // Добавляем вызов загрузки свойств при открытии модального окна создания транзакции
+                function openCreateTransactionModal() {
+                    loadProperties();
+                    openModal('createTransactionModal');
+                }
+
+                // Добавляем обработку формы
+                document.getElementById('newTransactionForm').addEventListener('submit', async function (e) {
+                    e.preventDefault();
+
+                    // Собираем данные о свидетелях
+                    const witnesses = {
+                        witness1: {
+                            name: document.getElementById('witness1Name').value,
+                            cnic: document.getElementById('witness1CNIC').value,
+                            phone: document.getElementById('witness1Phone').value
+                        },
+                        witness2: {
+                            name: document.getElementById('witness2Name').value,
+                            cnic: document.getElementById('witness2CNIC').value,
+                            phone: document.getElementById('witness2Phone').value
+                        }
+                    };
+
+                    const formData = {
+                        witnesses: witnesses
+                    };
+
+                    try {
+                        const response = await fetch(API_BASE_URL + '/v1/admin/transactions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(formData)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to create transaction');
+                        }
+
+                        showNotification('success', 'Transaction created successfully');
+                        // Очищаем форму или перенаправляем пользователя
+                        this.reset();
+                    } catch (error) {
+                        showNotification('error', 'Error creating transaction: ' + error.message);
+                    }
+                });
+
+                // Добавляем валидацию CNIC
+                function validateCNIC(input) {
+                    if (input && input.length == 0) {
+                        console.log(input)
+                        input.setCustomValidity('Please enter CNIC');
+                    }
+                }
+
+                // Добавляем валидацию телефона
+                function validatePhone(input) {
+                    if (input && input.length == 0) {
+                        console.log(input)
+                        input.setCustomValidity('Please enter phone');
+                    }
+                }
+
+                // Функция загрузки transfer requests
+                async function loadTransferRequestsAdmin() {
+                    try {
+                        const status = document.getElementById('transferRequestStatus').value;
+                        const response = await fetch(`${API_BASE_URL}/v1/admin/transfer-requests${status ? `?status=${status}` : ''}`, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            },
+                            credentials: 'include'
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to load transfer requests');
+                        }
+
+                        const data = await response.json();
+                        const tbody = document.getElementById('transferRequestsTableBody');
+
+                        // Очищаем текущее содержимое
+                        tbody.innerHTML = '';
+
+                        // Добавляем строки с данными
+                        data.requests.forEach(request => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                <td>${request.id}</td>
+                <td>${request.property_id}</td>
+                <td>${request.requester_name}</td>
+                <td>${request.requester_cnic}</td>
+                <td>
+                    <span class="status-badge ${request.status.toLowerCase()}">
+                        ${request.status}
+                    </span>
+                </td>
+                <td>${new Date(request.created_at).toLocaleDateString()}</td>
+                <td>
+                    ${request.status === 'pending' ? `
+                        <button class="action-btn btn-approve" data-id="${request.id}" data-action="approved">Approve</button>
+                        <button class="action-btn btn-reject" data-id="${request.id}" data-action="rejected">Reject</button>
+                    ` : ''}
+                    <button class="action-btn btn-view" data-id="${request.id}">View Details</button>
+                </td>
+            `;
+                            tbody.appendChild(row);
+                        });
+
+                        // Привязываем обработчик событий только один раз
+                        attachActionHandlers1();
+
+                    } catch (error) {
+                        console.error('Error loading transfer requests:', error);
+                        showNotification('error', 'Failed to load transfer requests');
+                    }
+                }
+
+
+                // Функция для привязки обработчиков событий
+                function attachActionHandlers1() {
+                    document.getElementById('transferRequestsTableBody').addEventListener('click', function (e) {
+                        const button = e.target.closest('.action-btn');
+                        if (!button) return;
+
+                        const action = button.classList.contains('btn-approve') ? 'approved' :
+                            button.classList.contains('btn-reject') ? 'rejected' :
+                                button.classList.contains('btn-view') ? 'view' : null;
+
+                        const requestId = button.getAttribute('data-id');
+
+                        if (action === 'approved' || action === 'rejected') {
+                            handleTransferRequestAction(requestId, action);
+                        } else if (action === 'view') {
+                            showTransferRequestDetails(requestId);
+                        }
+                    });
+                }
+                // Функция загрузки запросов на сделку
+                async function loadTransferRequests() {
+                    try {
+                        const status = document.getElementById('transferRequestStatusFilter').value;
+
+                        const data = await apiRequest(`/v1/admin/transfer-requests${status !== 'all' ? `?status=${status}` : ''}`);
+
+                        const tbody = document.getElementById('transferRequestsTableBody');
+                        tbody.innerHTML = '';
+
+                        if (!data || !Array.isArray(data.requests) || data.requests.length === 0) {
+                            tbody.innerHTML = `<tr><td colspan="7" class="text-center">No requests found</td></tr>`;
+                            return;
+                        }
+
+                        data.requests.forEach(request => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                <td>${request.id}</td>
+                <td>${request.property_id}</td>
+                <td>${request.requester_name}</td>
+                <td>${request.requester_cnic}</td>
+                <td>
+                    <span class="status-badge ${request.status.toLowerCase()}">
+                        ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                    </span>
+                </td>
+                <td>${new Date(request.created_at).toLocaleString()}</td>
+                <td class="actions-cell">
+                    ${request.status === 'pending' ? `
+                        <button class="action-btn btn-approve" data-id="${request.id}" data-action="approved">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="action-btn btn-reject" data-id="${request.id}" data-action="rejected">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    ` : `
+                        <span class="action-text">${request.status === 'approved' ? 'Approved' : 'Rejected'}</span>
+                        ${request.admin_notes ? `
+                            <i class="fas fa-info-circle" title="${request.admin_notes}"></i>
+                        ` : ''}
+                    `}
+                </td>
+            `;
+                            tbody.appendChild(row);
+                        });
+
+                        attachActionHandlers();
+
+                    } catch (error) {
+                        console.error('Error loading transfer requests:', error);
+                        showNotification('error', 'Failed to load requests');
+                    }
+                }
+
+                // Функция для привязки обработчиков событий
+                function attachActionHandlers() {
+                    const tableBody = document.getElementById('transferRequestsTableBody');
+
+                    if (!tableBody) return;
+
+                    tableBody.addEventListener('click', function (e) {
+                        const button = e.target.closest('.action-btn');
+                        if (!button) return;
+
+                        const action = button.classList.contains('btn-approve') ? 'approved' :
+                            button.classList.contains('btn-reject') ? 'rejected' : null;
+
+                        const requestId = button.getAttribute('data-id');
+
+                        if (!action || !requestId) return;
+
+                        handleTransferRequestAction(requestId, action);
+                    });
+                }
+
+                // Функция обработки действий с запросом
+                async function handleTransferRequestAction(requestId, action) {
+                    try {
+                        let notes = null;
+                        if (action === 'rejected') {
+                            notes = prompt('Please provide a reason for rejection:');
+                            if (notes === null) return; // Пользователь нажал "Отмена"
+                        }
+
+                        const response = await apiRequest(`/v1/admin/transfer-requests/${requestId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                                status: action,
+                                admin_notes: notes
+                            })
+                        });
+
+                        if (response.success) {
+                            showNotification('success', `Request ${action} successfully`);
+                            await loadTransferRequests(); // Перезагружаем список запросов
+                        } else {
+                            showNotification('error', response.message || 'Error updating request');
+                        }
+                    } catch (error) {
+                        console.error('Error handling transfer request action:', error);
+                        showNotification('error', 'Error updating request');
+                    }
+                }
+                // Оберните добавление обработчиков событий в проверку готовности DOM
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Закрытие модальных окон по кнопке "×"
+                    document.querySelectorAll('.modal-close, .close').forEach(button => {
+                        button.addEventListener('click', function () {
+                            const modalId = this.getAttribute('data-modal');
+                            closeModal(modalId);
+                        });
+                    });
+
+                    // Закрытие модального окна при клике вне его содержимого
+                    document.addEventListener('click', function (event) {
+                        if (event.target.classList.contains('modal')) {
+                            event.target.style.display = 'none';
+                        }
+                    });
+
+                    // Обработчик для редактирования суммы транзакции
+                    document.querySelector('.edit-amount-btn')?.addEventListener('click', toggleAmountEdit);
+
+                    // Обработчик для сохранения новой суммы
+                    document.querySelector('.save-amount-btn')?.addEventListener('click', updateTransactionAmount);
+
+                    // Обработчик для отмены редактирования суммы
+                    document.querySelector('.cancel-amount-btn')?.addEventListener('click', cancelAmountEdit);
+
+                    // Обработчик для сохранения свидетелей
+                    document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
+                });
+
+                // Загружаем запросы при загрузке страницы
+                document.addEventListener('DOMContentLoaded', () => {
+                    if (document.getElementById('transferRequestsSection')) {
+                        loadTransferRequests();
+                    }
+                })
+
+                // Показ деталей запроса
+                function showTransferRequestDetails(requestId) {
+                    // Здесь можно добавить модальное окно с подробной информацией
+                    // о запросе, включая историю изменений и комментарии
+                }
+
+                // Добавляем обработчики событий
+                document.getElementById('transferRequestStatus')?.addEventListener('change', loadTransferRequestsAdmin);
+
+                // Добавляем загрузку transfer requests при инициализации админ-панели
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (document.getElementById('transferRequestsSection')) {
+                        loadTransferRequestsAdmin();
+                    }
+                });
+
+                function toggleAmountEdit() {
+                    const editSection = document.getElementById('amountEditSection');
+                    editSection.style.display = editSection.style.display === 'none' ? 'block' : 'none';
+                }
+
+                function updateTransactionAmount() {
+                    const newAmount = document.getElementById('newTotalAmount').value;
+                    // Здесь реализуйте логику отправки новых данных на сервер
+                    console.log('Updating transaction amount to:', newAmount);
+                }
+
+                function cancelAmountEdit() {
+                    const editSection = document.getElementById('amountEditSection');
+                    editSection.style.display = 'none';
+                }
+
+                async function updateTransactionAmount() {
+                    try {
+                        const transactionId = document.getElementById('currentTransactionId').value;
+                        const newAmount = document.getElementById('newTotalAmount').value;
+
+                        if (!newAmount || isNaN(newAmount) || newAmount < 0) {
+                            showNotification('error', 'Please enter a valid amount');
+                            return;
+                        }
+
+                        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/update-amount`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                                total_amount: parseFloat(newAmount)
+                            })
+                        });
+
+                        if (response.success) {
+                            document.getElementById('totalAmount').textContent = formatCurrency(newAmount);
+                            document.getElementById('amountEditSection').style.display = 'none';
+                            showNotification('success', 'Amount updated successfully');
+
+                            // Обновляем оставшуюся сумму
+                            const paidAmount = parseFloat(document.getElementById('paidAmount').textContent.replace(/[^0-9]/g, '')) || 0;
+                            document.getElementById('remainingAmount').textContent = formatCurrency(newAmount - paidAmount);
+                        } else {
+                            showNotification('error', response.message || 'Failed to update amount');
+                        }
+                    } catch (error) {
+                        console.error('Error updating transaction amount:', error);
+                        showNotification('error', 'Failed to update amount');
+                    }
+                }
+
+                function formatCurrency(amount) {
+                    return new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'PKR'
+                    }).format(amount);
+                }
+
+                async function loadWitnesses(transactionId) {
+                    try {
+                        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`);
+
+                        if (response.success && response.witnesses) {
+                            const { witness1, witness2 } = response.witnesses;
+
+                            if (witness1) {
+                                document.getElementById('witness1Name').value = witness1.name || '';
+                                document.getElementById('witness1CNIC').value = witness1.cnic || '';
+                                document.getElementById('witness1Phone').value = witness1.phone || '';
+                            }
+
+                            if (witness2) {
+                                document.getElementById('witness2Name').value = witness2.name || '';
+                                document.getElementById('witness2CNIC').value = witness2.cnic || '';
+                                document.getElementById('witness2Phone').value = witness2.phone || '';
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading witnesses:', error);
+                        showNotification('error', 'Failed to load witnesses information');
+                    }
+                }
+
+                async function updateWitnesses() {
+                    try {
+                        const transactionId = document.getElementById('currentTransactionId').value;
+
+                        const witnessesData = {
+                            witness1: {
+                                name: document.getElementById('witness1Name').value.trim(),
+                                cnic: document.getElementById('witness1CNIC').value.trim(),
+                                phone: document.getElementById('witness1Phone').value.trim()
+                            },
+                            witness2: {
+                                name: document.getElementById('witness2Name').value.trim(),
+                                cnic: document.getElementById('witness2CNIC').value.trim(),
+                                phone: document.getElementById('witness2Phone').value.trim()
+                            }
+                        };
+
+                        // Валидация
+                        for (const witness of [witnessesData.witness1, witnessesData.witness2]) {
+                            if (!witness.name) {
+                                showNotification('error', 'Witness name is required');
+                                return;
+                            }
+                            if (!validateCNIC(witness.cnic)) {
+                                showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
+                                return;
+                            }
+                            if (witness.phone && !validatePhone(witness.phone)) {
+                                showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
+                                return;
+                            }
+                        }
+
+                        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {
+                            method: 'PUT',
+                            body: JSON.stringify(witnessesData)
+                        });
+
+                        if (response.success) {
+                            showNotification('success', 'Witnesses information updated successfully');
+                        } else {
+                            showNotification('error', response.message || 'Failed to update witnesses');
+                        }
+                    } catch (error) {
+                        console.error('Error updating witnesses:', error);
+                        showNotification('error', 'Failed to update witnesses');
+                    }
+                }
+
+                function formatAmount(amount) {
+                    return new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD'
+                    }).format(amount);
+                }
+
+                function getStatusBadgeClass(status) {
+                    const statusClasses = {
+                        'pending': 'warning',
+                        'approved': 'success',
+                        'rejected': 'danger',
+                        'cancelled': 'secondary',
+                        'paid': 'success',
+                        'not_started': 'secondary',
+                        'in_progress': 'primary',
+                        'completed': 'success'
+                    };
+                    return statusClasses[status] || 'secondary';
+                }
+
+
+// Форматирование суммы в долларах
+function formatUSD(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+
+function parseNumber(value) {
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    const [integer, ...decimals] = cleanValue.split('.');
+    const decimalPart = decimals.join('');
+    
+    return parseFloat(`${integer}.${decimalPart}`) || 0;
+}
+
+// 🔥 ИСПРАВЛЕНО: Замена внешнего API на внутренний через apiRequest
+async function getExchangeRatePKRtoUSD() {
+    try {
+        // Запрашиваем курс через внутренний API
+        const data = await apiRequest('/v1/admin/latest/PKR', {
+            method: 'GET'
+        });
+        
+        // Проверяем структуру ответа
+        if (data.success && typeof data.USD === 'number') {
+            return data.USD;
+        }
+        
+        throw new Error('Invalid API response structure');
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; // Fallback курс
+    }
+}
+
+// 🔥 ИСПРАВЛЕНО: Полностью переработанный обработчик ввода
+function attachCurrencyConverter() {
+    const usdOutput = document.getElementById('toUSD');
+
+    if (!totalAmountInput || !usdOutput) {
+        console.error('Элементы #totalAmount или #toUSD не найдены!');
+        return;
+    }
+
+    let isFormatting = false;
+    let rawValue = 0;
+
+    // Динамическое форматирование ВО ВРЕМЯ ввода
+    totalAmountInput.addEventListener('input', function(e) {
+        if (isFormatting) return;
+        
+        const cursorStart = this.selectionStart;
+        const cursorEnd = this.selectionEnd;
+        const oldValue = this.value;
+
+        // Чистим ввод, сохраняя цифры и разделители
+        let cleanValue = this.value
+            .replace(/[^0-9.,]/g, '')
+            .replace(/(,)/g, '.') // Заменяем запятые на точки
+            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
+
+        // Парсим значение
+        rawValue = parseNumber(cleanValue);
+        
+        // Форматируем СРАЗУ при вводе
+        isFormatting = true;
+        this.value = formatPKR(rawValue);
+        isFormatting = false;
+
+        // Корректируем позицию курсора
+        if (this.value !== oldValue) {
+            const diff = this.value.length - oldValue.length;
+            this.setSelectionRange(
+                Math.max(0, cursorStart + diff),
+                Math.max(0, cursorEnd + diff)
+            );
+        }
+
+        // Обновляем USD
+        clearTimeout(conversionDebounce);
+        conversionDebounce = setTimeout(() => {
+            updateUSD(rawValue);
+        }, 300);
+    });
+
+    // Упрощённая обработка blur
+    totalAmountInput.addEventListener('blur', function() {
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+            updateUSD(0);
+        }
+    });
+
+    // Упрощённая обработка focus
+    totalAmountInput.addEventListener('focus', function() {
+        if (this.value === '0.00') {
+            this.value = '';
+            rawValue = 0;
+        } else {
+            this.value = rawValue.toString();
+        }
+    });
+
+    // Обновление USD
+    async function updateUSD(pkrAmount) {
+        if (pkrAmount <= 0) {
+            usdOutput.textContent = '';
+            return;
+        }
+
+        try {
+            const exchangeRate = await getCachedExchangeRate();
+            const usdAmount = pkrAmount * exchangeRate;
+            
+            usdOutput.innerHTML = `
+                ≈ ${formatUSD(usdAmount)} USD
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                </span>
+            `;
+        } catch (error) {
+            usdOutput.innerHTML = `
+                <span style="color: #dc3545">Ошибка конвертации</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Проверьте подключение к интернету
+                </span>
+            `;
+        }
+    }
+
+    // Инициализация
+    if (totalAmountInput.value) {
+        rawValue = parseNumber(totalAmountInput.value);
+        totalAmountInput.value = formatPKR(rawValue);
+    } else {
+        totalAmountInput.value = '0.00';
+        rawValue = 0;
+    }
+    updateUSD(rawValue);
+}
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("REFRWEFWEF")
+    attachCurrencyConverter();
+});

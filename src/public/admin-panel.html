@@ -1326,6 +1326,38 @@
                 </table>
             </div>
         </div>
+        <div id="users-archive" class="section">
+            <div class="section-header">
+                <h2 class="section-title">Archive</h2>
+                <button class="action-btn btn-edit" id="openAddUserModal">
+                    <i class="fas fa-user-plus"></i> Add User
+                </button>
+            </div>
+            <div class="search-box">asd
+                <input type="text" class="search-input" placeholder="Search users...">
+                <button class="search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>CNIC</th>
+                            <th>Login</th>
+                            <th>Properties</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Данные будут добавлены через JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
         <!-- Основной контент -->
         <div class="main-content">
             <!-- Модальное окно для просмотра пользователя -->
@@ -2303,7 +2335,10 @@
                     document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
                         button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
                     });
-                } async function loadUsers(status = 'active') {
+                }
+                
+                
+                async function loadUsers(status = 'active') {
                     // Определяем, в каком разделе мы находимся
                     const section = status === 'archived'
                         ? document.getElementById('users-archive')
@@ -4211,14 +4246,14 @@
                                 showNotification('error', 'Witness name is required');
                                 return;
                             }
-                            /** if (!validateCNIC(witness.cnic)) {
+                            if (!validateCNIC(witness.cnic)) {
                                  showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
                                  return;
                              }
                              if (witness.phone && !validatePhone(witness.phone)) {
                                  showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
                                  return;
-                             }**/
+                             }
                         }
 
                         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {

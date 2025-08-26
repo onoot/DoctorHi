@@ -216,15 +216,16 @@ router.get('/transactions/:transactionId/witnesses', adminAuth, async (req, res)
         });
     }
 });
-
 router.put('/transactions/:transactionId/witnesses', [
     adminAuth,
     body('witness1.name').notEmpty().withMessage('Witness 1 name is required'),
-    body('witness1.cnic').matches(/^\d{5}-\d{7}-\d$/).withMessage('Invalid CNIC format for Witness 1'),
-    body('witness1.phone').optional().matches(/^\+\d{12}$/).withMessage('Invalid phone format for Witness 1'),
+    body('witness1.cnic').notEmpty().withMessage('CNIC is required for Witness 1'),
+    body('witness1.cnic').matches(/^\d{5}-\d{7}-\d$/).withMessage('Invalid CNIC format for Witness 1 (XXXXX-XXXXXXX-X)'),
+    body('witness1.phone').optional().matches(/^\+\d{12}$/).withMessage('Invalid phone format for Witness 1 (+XXXXXXXXXXXX)'),
     body('witness2.name').notEmpty().withMessage('Witness 2 name is required'),
-    body('witness2.cnic').matches(/^\d{5}-\d{7}-\d$/).withMessage('Invalid CNIC format for Witness 2'),
-    body('witness2.phone').optional().matches(/^\+\d{12}$/).withMessage('Invalid phone format for Witness 2')
+    body('witness2.cnic').notEmpty().withMessage('CNIC is required for Witness 2'),
+    body('witness2.cnic').matches(/^\d{5}-\d{7}-\d$/).withMessage('Invalid CNIC format for Witness 2 (XXXXX-XXXXXXX-X)'),
+    body('witness2.phone').optional().matches(/^\+\d{12}$/).withMessage('Invalid phone format for Witness 2 (+XXXXXXXXXXXX)')
 ], async (req, res) => {
     try {
         const transactionId = parseInt(req.params.transactionId);
@@ -234,24 +235,89 @@ router.put('/transactions/:transactionId/witnesses', [
         try {
             await connection.beginTransaction();
 
-            // Удаляем существующих свидетелей
+            // Удаляем существующих свидетелей для этой транзакции
             await connection.query(
                 'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
                 [transactionId]
             );
 
-            // Добавляем новых свидетелей
-            await connection.query(
-                `INSERT INTO transaction_witnesses 
-                (transaction_id, witness_type, name, cnic, phone) 
-                VALUES 
-                (?, 'witness1', ?, ?, ?),
-                (?, 'witness2', ?, ?, ?)`,
-                [
-                    transactionId, witness1.name, witness1.cnic, witness1.phone || null,
-                    transactionId, witness2.name, witness2.cnic, witness2.phone || null
-                ]
-            );
+            // Обработка первого свидетеля
+            if (witness1) {
+                // Поиск существующих свидетелей по CNIC
+                let [existingWitness] = await connection.query(
+                    'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+                    [witness1.cnic]
+                );
+                
+                // Если свидетель не найден, добавляем нового
+                if (existingWitness.length === 0) {
+                    await connection.query(
+                        `INSERT INTO transaction_witnesses 
+                        (name, cnic, phone) 
+                        VALUES (?, ?, ?)`,
+                        [witness1.name, witness1.cnic, witness1.phone || null]
+                    );
+                    
+                    // Получаем ID вновь созданного свидетеля
+                    const [newWitness] = await connection.query(
+                        'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
+                        [witness1.cnic]
+                    );
+                    existingWitness = newWitness;
+                }
+                
+                // Связываем свидетеля с транзакцией
+                await connection.query(
+                    `INSERT INTO transaction_witnesses 
+                    (transaction_id, witness_type, name, cnic, phone) 
+                    VALUES (?, 'witness1', ?, ?, ?)`,
+                    [
+                        transactionId, 
+                        witness1.name, 
+                        witness1.cnic, 
+                        witness1.phone || null
+                    ]
+                );
+            }
+
+            // Обработка второго свидетеля (аналогично первому)
+            if (witness2) {
+                // Поиск существующих свидетелей по CNIC
+                let [existingWitness] = await connection.query(
+                    'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
+                    [witness2.cnic]
+                );
+                
+                // Если свидетель не найден, добавляем нового
+                if (existingWitness.length === 0) {
+                    await connection.query(
+                        `INSERT INTO transaction_witnesses 
+                        (name, cnic, phone) 
+                        VALUES (?, ?, ?)`,
+                        [witness2.name, witness2.cnic, witness2.phone || null]
+                    );
+                    
+                    // Получаем ID вновь созданного свидетеля
+                    const [newWitness] = await connection.query(
+                        'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
+                        [witness2.cnic]
+                    );
+                    existingWitness = newWitness;
+                }
+                
+                // Связываем свидетеля с транзакцией
+                await connection.query(
+                    `INSERT INTO transaction_witnesses 
+                    (transaction_id, witness_type, name, cnic, phone) 
+                    VALUES (?, 'witness2', ?, ?, ?)`,
+                    [
+                        transactionId, 
+                        witness2.name, 
+                        witness2.cnic, 
+                        witness2.phone || null
+                    ]
+                );
+            }
 
             await connection.commit();
 
@@ -269,7 +335,8 @@ router.put('/transactions/:transactionId/witnesses', [
         console.error('Error updating witnesses:', error);
         res.status(500).json({
             success: false,
-            message: 'Error updating witnesses'
+            message: 'Error updating witnesses',
+            details: error.message
         });
     }
 });

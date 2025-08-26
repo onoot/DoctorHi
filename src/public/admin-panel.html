@@ -1724,9 +1724,11 @@
                 </form>
             </div>
 <script>
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
+        async function govno(){
+            const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
 
         console.log(response.data.rates.USD)
+        }
 const amountInput = document.getElementById('totalAmount');
     const usdOutput = document.getElementById('toUSD');
 

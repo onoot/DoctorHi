@@ -4538,58 +4538,6 @@ function attachCurrencyConverter() {
     updateUSD(rawValue);
 }
 
-// 🔥 ИСПРАВЛЕНО: Добавляем глобальную функцию apiRequest (если её нет)
-// ВАЖНО: Убедитесь что API_BASE_URL определён в вашем проекте
-if (typeof apiRequest !== 'function') {
-    async function apiRequest(endpoint, options = {}) {
-        console.log('Making API request to:', endpoint);
-        const API_BASE_URL = '/api'; // Укажите ваш базовый URL
-        
-        const defaultOptions = {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            credentials: 'include'
-        };
-
-        try {
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                ...defaultOptions,
-                ...options,
-                headers: {
-                    ...defaultOptions.headers,
-                    ...(options.headers || {})
-                },
-                credentials: 'include',
-            });
-
-            console.log('API response status:', response.status);
-
-            let data = null;
-            try {
-                data = await response.json();
-            } catch (e) {
-                const text = await response.text();
-                console.log('API response text:', text);
-                data = { message: text || 'Unknown error' };
-            }
-
-            console.log('API response data:', data);
-
-            if (!response.ok) {
-                console.log('API request failed:', data);
-                throw new Error(data.message || 'API request failed');
-            }
-
-            return data;
-        } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
-        }
-    }
-}
-
 // Запускаем только после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
     attachCurrencyConverter();

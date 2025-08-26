@@ -3694,20 +3694,6 @@
                     }
                 }
 
-                // Добавляем обработчики валидации
-                document.getElementById('witness1CNIC').addEventListener('input', function () {
-                    validateCNIC(this);
-                });
-                document.getElementById('witness2CNIC').addEventListener('input', function () {
-                    validateCNIC(this);
-                });
-                document.getElementById('witness1Phone').addEventListener('input', function () {
-                    validatePhone(this);
-                });
-                document.getElementById('witness2Phone').addEventListener('input', function () {
-                    validatePhone(this);
-                });
-
                 // Функция загрузки transfer requests
                 async function loadTransferRequestsAdmin() {
                     try {

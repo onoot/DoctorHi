@@ -2295,6 +2295,10 @@
                         if (user.status === 'archived') {
                             actionsHTML = `
                 <div class="actions-footer">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
                         <i class="fas fa-undo"></i> Restore
                     </button>

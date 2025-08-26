@@ -84,7 +84,7 @@ export const updateTransactionStatus = async (req, res) => {
 
     // Обновляем статус сделки
     const [result] = await pool.query(
-      'UPDATE transactions SET status = ?, updated_at = NOW() WHERE id = ?',
+      'UPDATE transactions SET status = ?, updated_at = NOW() WHERE property_id = ?',
       [status, transactionId]
     );
 

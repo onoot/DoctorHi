@@ -35,6 +35,7 @@ export const getUsers = async (req, res) => {
     const totalPages = Math.ceil(total / limit);
 
     res.json({
+      success: true,
       users,
       total,
       page: parseInt(page),
@@ -64,7 +65,10 @@ export const updateUserStatus = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json({ message: 'User status updated' });
+    res.json({ 
+      success: true,
+      message: 'User status updated' 
+    });
   } catch (error) {
     console.error('Error updating user status:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -121,6 +125,7 @@ export const updateTransactionStatus = async (req, res) => {
 
     await pool.query('COMMIT');
     res.json({ 
+      success: true,
       message: 'Transaction status updated successfully',
       transaction_id: transactionId
     });
@@ -151,6 +156,7 @@ export const clearTransactionHistory = async (req, res) => {
     const [result] = await pool.query(query, [status, older_than]);
 
     res.json({
+      success: true,
       message: 'Transaction history cleared',
       deleted_count: result.affectedRows
     });

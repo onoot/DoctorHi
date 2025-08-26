@@ -3676,7 +3676,7 @@
 
                 // Добавляем валидацию CNIC
                 function validateCNIC(input) {
-                    if (input.value.length==0) {
+                    if (input&&input.length==0) {
                         console.log(input)
                         input.setCustomValidity('Please enter CNIC');
                     } else {
@@ -3686,7 +3686,7 @@
 
                 // Добавляем валидацию телефона
                 function validatePhone(input) {
-                    if (input.value.length==0) {
+                    if (input&&input.length==0) {
                         console.log(input)
                         input.setCustomValidity('Please enter phone');
                     } else {

@@ -4031,15 +4031,6 @@
                     }).format(amount);
                 }
 
-                // Функции для работы со свидетелями
-                function validateCNIC(cnic) {
-                    return /^\d{5}-\d{7}-\d$/.test(cnic);
-                }
-
-                function validatePhone(phone) {
-                    return !phone || /^\+\d{12}$/.test(phone);
-                }
-
                 async function loadWitnesses(transactionId) {
                     try {
                         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`);

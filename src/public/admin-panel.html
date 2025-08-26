@@ -2235,82 +2235,59 @@
                         showNotification('error', 'Error restoring user');
                     }
                 }
-                function renderUsersTable(users) {
-                    const tbody = document.getElementById('usersTableBody');
+                function renderUsersTable(users, tbody) {
                     if (!tbody) {
-                        console.error('Users table body not found');
+                        console.error('No tbody provided to renderUsersTable');
                         return;
                     }
 
-                    // Проверяем, что users - это массив
-                    if (!Array.isArray(users)) {
-                        console.error('Expected users to be an array, but got:', users);
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Invalid data format</td></tr>';
-                        return;
-                    }
+                    tbody.innerHTML = ''; // Очищаем
 
-                    tbody.innerHTML = '';
-
-                    if (users.length === 0) {
+                    if (!users || users.length === 0) {
                         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
                         return;
                     }
 
                     users.forEach(user => {
                         const row = document.createElement('tr');
-
-                        // Убедимся, что у пользователя есть статус
-                        const userStatus = user.status || 'active';
-
-                        // Используем безопасный доступ к свойствам и предоставляем fallback значения
                         row.innerHTML = `
-      <td>${user.id || ''}</td>
-      <td>${user.name || ''}</td>
-      <td>${user.cnic || ''}</td>
-      <td>${user.email || user.login || ''}</td>
-      <td>${user.properties_count !== undefined ? user.properties_count : 0}</td>
-      <td><span class="status-badge ${userStatus}">${userStatus}</span></td>
-      <td class="actions-cell"></td>
-    `;
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.cnic}</td>
+            <td>${user.login}</td>
+            <td>${user.properties_count || 0}</td>
+            <td><span class="status-badge ${user.status}">${user.status}</span></td>
+            <td class="actions-cell"></td>
+        `;
 
                         const actionsCell = row.querySelector('.actions-cell');
-
-                        // Создаем структуру с правильным расположением кнопок
                         let actionsHTML = '';
 
-                        if (userStatus === 'archived') {
-                            // Для архивных пользователей показываем только кнопку восстановления
+                        if (status === 'archived') {
                             actionsHTML = `
-        <div class="actions-footer">
-          <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
-            <i class="fas fa-undo"></i> Restore
-          </button>
-        </div>
-      `;
+                <div class="actions-footer">
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                </div>`;
                         } else {
-                            // Для активных пользователей показываем все кнопки действий с правильным расположением
                             actionsHTML = `
-        <div class="actions-column">
-          <button class="action-btn btn-view" data-id="${user.id}" data-action="view">
-            <i class="fas fa-eye"></i> View
-          </button>
-          <button class="action-btn btn-edit" data-id="${user.id}" data-status="${userStatus === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
-            <i class="fas ${userStatus === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${userStatus === 'active' ? 'Block' : 'Activate'}
-          </button>
-        </div>
-        <div class="actions-footer">
-          <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
-            <i class="fas fa-archive"></i> Archive
-          </button>
-        </div>
-      `;
+                <div class="actions-column">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                </div>`;
                         }
 
                         actionsCell.innerHTML = actionsHTML;
                         tbody.appendChild(row);
                     });
 
-                    // Привязываем обработчики событий
+                    // Привязываем обработчики
                     document.querySelectorAll('.btn-view').forEach(button => {
                         button.addEventListener('click', (e) => viewUser(e.target.dataset.id));
                     });
@@ -2326,9 +2303,12 @@
                     document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
                         button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
                     });
-                }
-                async function loadUsers(status = 'active') {
-                    const section = document.getElementById('users');
+                } async function loadUsers(status = 'active') {
+                    // Определяем, в каком разделе мы находимся
+                    const section = status === 'archived'
+                        ? document.getElementById('users-archive')
+                        : document.getElementById('users');
+
                     const loadingIndicator = document.createElement('div');
                     loadingIndicator.className = 'loading-indicator';
                     loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
@@ -2364,6 +2344,9 @@
                         // Удаляем индикатор загрузки
                         loadingIndicator.remove();
 
+                        // --- ОПРЕДЕЛЯЕМ УНИКАЛЬНЫЙ ID ДЛЯ tbody ---
+                        const tbodyId = status === 'archived' ? 'archivedUsersTableBody' : 'activeUsersTableBody';
+
                         // Находим или создаем таблицу
                         let table = section.querySelector('.data-table');
                         if (!table) {
@@ -2374,19 +2357,19 @@
                             table = document.createElement('table');
                             table.className = 'data-table';
                             table.innerHTML = `
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>CNIC</th>
-            <th>Login</th>
-            <th>Properties</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="usersTableBody"></tbody>
-      `;
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>CNIC</th>
+                        <th>Login</th>
+                        <th>Properties</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="${tbodyId}"></tbody>
+            `;
 
                             tableContainer.appendChild(table);
 
@@ -2399,12 +2382,16 @@
                             }
                         }
 
-                        // Рендерим данные
-                        if (data && Array.isArray(data)) {
-                            // Если сервер возвращает простой массив
-                            renderUsersTable(data);
+                        // --- РЕНДЕРИМ ДАННЫЕ В СООТВЕТСТВУЮЩУЮ ТАБЛИЦУ ---
+                        const tbody = document.getElementById(tbodyId);
+                        if (!tbody) {
+                            console.error(`Failed to find tbody with id: ${tbodyId}`);
+                            return;
+                        }
 
-                            // Добавляем или обновляем пагинацию
+                        if (data && Array.isArray(data)) {
+                            // Простой массив
+                            renderUsersTable(data, tbody);
                             const pagination = createPagination(data.length, currentPage, itemsPerPage);
                             const existingPagination = section.querySelector('.pagination');
                             if (existingPagination) {
@@ -2413,10 +2400,8 @@
                                 section.appendChild(pagination);
                             }
                         } else if (data && Array.isArray(data.users)) {
-                            // Если сервер возвращает структурированный ответ с пагинацией
-                            renderUsersTable(data.users);
-
-                            // Добавляем или обновляем пагинацию
+                            // Структурированный ответ
+                            renderUsersTable(data.users, tbody);
                             const pagination = createPagination(data.total, currentPage, itemsPerPage);
                             const existingPagination = section.querySelector('.pagination');
                             if (existingPagination) {
@@ -2426,21 +2411,15 @@
                             }
                         } else {
                             console.error('Invalid users data format:', data);
-                            const tbody = document.getElementById('usersTableBody');
-                            if (tbody) {
-                                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
-                            }
+                            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
                         }
 
-                        // Привязываем обработчики событий к динамическим кнопкам
+                        // Привязываем обработчики событий
                         attachActionHandlers();
                     } catch (error) {
                         console.error('Error loading users:', error);
-
-                        // Удаляем индикатор загрузки
                         loadingIndicator.remove();
 
-                        // Показываем сообщение об ошибке
                         let errorContainer = section.querySelector('.error-message');
                         if (!errorContainer) {
                             errorContainer = document.createElement('div');
@@ -2450,13 +2429,12 @@
                         }
 
                         errorContainer.innerHTML = `
-      <i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
-      <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-        Retry
-      </button>
-    `;
+            <i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
+            <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
+                Retry
+            </button>
+        `;
 
-                        // Добавляем обработчик для кнопки повторной попытки
                         const retryBtn = errorContainer.querySelector('.retry-btn');
                         if (retryBtn) {
                             retryBtn.addEventListener('click', () => {
@@ -2465,7 +2443,7 @@
                             });
                         }
                     }
-                }// Добавляем обработчик для поиска
+                }
                 document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
                     currentPage = 1;
                     const activeSection = document.querySelector('.section.active').id;

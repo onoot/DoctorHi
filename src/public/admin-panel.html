@@ -2187,12 +2187,13 @@
                         // Убедимся, что у пользователя есть статус
                         const userStatus = user.status || 'active';
 
+                        // Используем безопасный доступ к свойствам и предоставляем fallback значения
                         row.innerHTML = `
-      <td>${user.id}</td>
-      <td>${user.name}</td>
-      <td>${user.cnic}</td>
+      <td>${user.id || ''}</td>
+      <td>${user.name || ''}</td>
+      <td>${user.cnic || ''}</td>
       <td>${user.email || user.login || ''}</td>
-      <td>${user.properties_count || 0}</td>
+      <td>${user.properties_count !== undefined ? user.properties_count : 0}</td>
       <td><span class="status-badge ${userStatus}">${userStatus}</span></td>
       <td class="actions-cell"></td>
     `;
@@ -2437,7 +2438,6 @@
                         }
                     }
                 }
-
                 // Добавляем обработчик для поиска
                 document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
                     currentPage = 1;

@@ -1086,21 +1086,60 @@
             color: white;
         }
 
+        /* Контейнер для действий */
         .actions-cell {
             display: flex;
-            gap: 8px;
-            align-items: center;
+            flex-direction: column;
+            height: 100%;
+            padding: 8px 0;
         }
 
+        /* Основные действия в столбце */
+        .actions-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Дополнительные действия внизу */
+        .actions-footer {
+            margin-top: auto;
+        }
+
+        /* Стили для кнопок */
         .action-btn {
             padding: 6px 12px;
+            margin: 0 2px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 12px;
-            display: flex;
+            font-size: 0.85em;
+            display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 5px;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-view {
+            background-color: #e6f7ee;
+            color: #1a7f37;
+        }
+
+        .btn-edit {
+            background-color: #e6f7ee;
+            color: #1a7f37;
+        }
+
+        .btn-delete {
+            background-color: #fff1f0;
+            color: #d92d20;
         }
 
         .btn-approve {
@@ -1296,7 +1335,7 @@
                             <th>ID</th>
                             <th>Name</th>
                             <th>CNIC</th>
-                            <th>Email</th>
+                            <th>Login</th>
                             <th>Properties</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -2160,88 +2199,6 @@
                     // Привязываем обработчики событий к динамическим кнопкам
                     attachActionHandlers3();
                 }
-                function renderUsersTable(users) {
-                    const tbody = document.getElementById('usersTableBody');
-                    if (!tbody) {
-                        console.error('Users table body not found');
-                        return;
-                    }
-
-                    // Проверяем, что users - это массив
-                    if (!Array.isArray(users)) {
-                        console.error('Expected users to be an array, but got:', users);
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Invalid data format</td></tr>';
-                        return;
-                    }
-
-                    tbody.innerHTML = '';
-
-                    if (users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
-                        return;
-                    }
-
-                    users.forEach(user => {
-                        const row = document.createElement('tr');
-
-                        // Убедимся, что у пользователя есть статус
-                        const userStatus = user.status || 'active';
-
-                        // Используем безопасный доступ к свойствам и предоставляем fallback значения
-                        row.innerHTML = `
-      <td>${user.id || ''}</td>
-      <td>${user.name || ''}</td>
-      <td>${user.cnic || ''}</td>
-      <td>${user.email || user.login || ''}</td>
-      <td>${user.properties_count !== undefined ? user.properties_count : 0}</td>
-      <td><span class="status-badge ${userStatus}">${userStatus}</span></td>
-      <td class="actions-cell"></td>
-    `;
-
-                        const actionsCell = row.querySelector('.actions-cell');
-
-                        // Для архивных пользователей показываем только кнопку восстановления
-                        if (userStatus === 'archived') {
-                            actionsCell.innerHTML = `
-        <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
-          <i class="fas fa-undo"></i> Restore
-        </button>
-      `;
-                        } else {
-                            // Для активных пользователей показываем все кнопки действий
-                            actionsCell.innerHTML = `
-        <button class="action-btn btn-view" data-id="${user.id}" data-action="view">
-          <i class="fas fa-eye"></i> View
-        </button>
-        <button class="action-btn btn-edit" data-id="${user.id}" data-status="${userStatus === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
-          <i class="fas ${userStatus === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${userStatus === 'active' ? 'Block' : 'Activate'}
-        </button>
-        <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
-          <i class="fas fa-archive"></i> Archive
-        </button>
-      `;
-                        }
-
-                        tbody.appendChild(row);
-                    });
-
-                    // Привязываем обработчики событий
-                    document.querySelectorAll('.btn-view').forEach(button => {
-                        button.addEventListener('click', (e) => viewUser(e.target.dataset.id));
-                    });
-
-                    document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
-                        button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
-                    });
-
-                    document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
-                        button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
-                    });
-
-                    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
-                        button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
-                    });
-                }
                 // Архивация пользователя
                 async function archiveUser(userId) {
                     if (!confirm('Are you sure you want to archive this user?')) {
@@ -2299,6 +2256,98 @@
                         showNotification('error', 'Error restoring user');
                     }
                 }
+                function renderUsersTable(users) {
+                    const tbody = document.getElementById('usersTableBody');
+                    if (!tbody) {
+                        console.error('Users table body not found');
+                        return;
+                    }
+
+                    // Проверяем, что users - это массив
+                    if (!Array.isArray(users)) {
+                        console.error('Expected users to be an array, but got:', users);
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Invalid data format</td></tr>';
+                        return;
+                    }
+
+                    tbody.innerHTML = '';
+
+                    if (users.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
+                        return;
+                    }
+
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+
+                        // Убедимся, что у пользователя есть статус
+                        const userStatus = user.status || 'active';
+
+                        // Используем безопасный доступ к свойствам и предоставляем fallback значения
+                        row.innerHTML = `
+      <td>${user.id || ''}</td>
+      <td>${user.name || ''}</td>
+      <td>${user.cnic || ''}</td>
+      <td>${user.email || user.login || ''}</td>
+      <td>${user.properties_count !== undefined ? user.properties_count : 0}</td>
+      <td><span class="status-badge ${userStatus}">${userStatus}</span></td>
+      <td class="actions-cell"></td>
+    `;
+
+                        const actionsCell = row.querySelector('.actions-cell');
+
+                        // Создаем структуру с правильным расположением кнопок
+                        let actionsHTML = '';
+
+                        if (userStatus === 'archived') {
+                            // Для архивных пользователей показываем только кнопку восстановления
+                            actionsHTML = `
+        <div class="actions-footer">
+          <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
+            <i class="fas fa-undo"></i> Restore
+          </button>
+        </div>
+      `;
+                        } else {
+                            // Для активных пользователей показываем все кнопки действий с правильным расположением
+                            actionsHTML = `
+        <div class="actions-column">
+          <button class="action-btn btn-view" data-id="${user.id}" data-action="view">
+            <i class="fas fa-eye"></i> View
+          </button>
+          <button class="action-btn btn-edit" data-id="${user.id}" data-status="${userStatus === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
+            <i class="fas ${userStatus === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${userStatus === 'active' ? 'Block' : 'Activate'}
+          </button>
+        </div>
+        <div class="actions-footer">
+          <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
+            <i class="fas fa-archive"></i> Archive
+          </button>
+        </div>
+      `;
+                        }
+
+                        actionsCell.innerHTML = actionsHTML;
+                        tbody.appendChild(row);
+                    });
+
+                    // Привязываем обработчики событий
+                    document.querySelectorAll('.btn-view').forEach(button => {
+                        button.addEventListener('click', (e) => viewUser(e.target.dataset.id));
+                    });
+
+                    document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
+                        button.addEventListener('click', (e) => toggleUserStatus(e.target.dataset.id, e.target.dataset.status));
+                    });
+
+                    document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
+                        button.addEventListener('click', (e) => archiveUser(e.target.dataset.id));
+                    });
+
+                    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
+                        button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
+                    });
+                }
                 async function loadUsers(status = 'active') {
                     const section = document.getElementById('users');
                     const loadingIndicator = document.createElement('div');
@@ -2351,7 +2400,7 @@
             <th>ID</th>
             <th>Name</th>
             <th>CNIC</th>
-            <th>Email</th>
+            <th>Login</th>
             <th>Properties</th>
             <th>Status</th>
             <th>Actions</th>
@@ -2437,8 +2486,7 @@
                             });
                         }
                     }
-                }
-                // Добавляем обработчик для поиска
+                }// Добавляем обработчик для поиска
                 document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
                     currentPage = 1;
                     const activeSection = document.querySelector('.section.active').id;

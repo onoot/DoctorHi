@@ -1798,6 +1798,8 @@ function attachCurrencyConverter() {
         if (this.value) {
             this.value = rawValue;
         }
+        updateUSD(rawValue);
+
     });
 
     // Обработчик ввода с дебаунсом
@@ -1807,13 +1809,9 @@ function attachCurrencyConverter() {
         
         // Сохраняем сырое значение
         rawValue = parseNumber(this.value.replace(/,/g, '.'));
-            updateUSD(rawValue);
+        updateUSD(rawValue);
         
-        // Дебаунс для конвертации
-        clearTimeout(conversionDebounce);
-        conversionDebounce = setTimeout(() => {
-            updateUSD(rawValue);
-        }, 500);
+       
     });
 
     // Обновление USD

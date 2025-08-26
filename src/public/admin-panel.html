@@ -1740,11 +1740,18 @@ function formatUSD(amount) {
 }
 
 // Форматирование денег с разделителями тысяч
+
 function formatPKR(amount) {
-    return new Intl.NumberFormat('en-PK', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(amount);
+    try {
+        // Используем en-US — работает везде и даёт нужный формат (1,000.00)
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    } catch (e) {
+        // Fallback для очень старых браузеров
+        return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
 }
 
 function parseNumber(value) {
@@ -1783,79 +1790,81 @@ function attachCurrencyConverter() {
         return;
     }
 
-    // Сохраняем "сырое" значение для вычислений
+    let isFormatting = false; // Защита от рекурсии
     let rawValue = 0;
 
-    // Форматируем при потере фокуса
-    amountInput.addEventListener('blur', function() {
-        rawValue = parseNumber(this.value);
+    // 🔥 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Динамическое форматирование ВО ВРЕМЯ ввода
+    amountInput.addEventListener('input', function(e) {
+        if (isFormatting) return;
+        
+        // Сохраняем позицию курсора ДО изменений
+        const cursorStart = this.selectionStart;
+        const cursorEnd = this.selectionEnd;
+        const oldValue = this.value;
+
+        // Чистим ввод, но сохраняем запятые и точки
+        let cleanValue = this.value
+            .replace(/[^0-9.,]/g, '')
+            .replace(/(,)/g, '.') // Заменяем запятые на точки для парсинга
+            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
+
+        // Парсим значение
+        rawValue = parseFloat(cleanValue) || 0;
+        
+        // 🔥 Форматируем СРАЗУ при вводе
+        isFormatting = true;
         this.value = formatPKR(rawValue);
-        updateUSD(rawValue);
+        isFormatting = false;
+
+        // Корректируем позицию курсора
+        if (this.value !== oldValue) {
+            const diff = this.value.length - oldValue.length;
+            this.setSelectionRange(
+                Math.max(0, cursorStart + diff),
+                Math.max(0, cursorEnd + diff)
+            );
+        }
+
+        // Обновляем USD
+        clearTimeout(conversionDebounce);
+        conversionDebounce = setTimeout(() => {
+            updateUSD(rawValue);
+        }, 300);
     });
 
-    // При фокусе показываем "сырое" значение
+    // Упрощаем обработку blur (теперь форматирование уже происходит при вводе)
+    amountInput.addEventListener('blur', function() {
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+            updateUSD(0);
+        }
+    });
+
+    // Упрощаем обработку focus
     amountInput.addEventListener('focus', function() {
-        if (this.value) {
-            this.value = rawValue;
+        if (this.value === '0.00') {
+            this.value = '';
+            rawValue = 0;
+        } else {
+            // Показываем "сырое" значение без форматирования
+            this.value = rawValue.toString();
         }
-        updateUSD(rawValue);
-
     });
-
-    // Обработчик ввода с дебаунсом
-    amountInput.addEventListener('input', function() {
-        // Чистим ввод
-        this.value = this.value.replace(/[^0-9.,]/g, '');
-        
-        // Сохраняем сырое значение
-        rawValue = parseNumber(this.value.replace(/,/g, '.'));
-        updateUSD(rawValue);
-        
-       
-    });
-
-    // Обновление USD
-    async function updateUSD(pkrAmount) {
-        if (pkrAmount <= 0) {
-            usdOutput.textContent = '';
-            return;
-        }
-
-        try {
-            const exchangeRate = await getCachedExchangeRate();
-            const usdAmount = pkrAmount * exchangeRate;
-            
-            usdOutput.innerHTML = `
-                ≈ ${formatUSD(usdAmount)} USD
-                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
-                </span>
-            `;
-        } catch (error) {
-            usdOutput.innerHTML = `
-                <span style="color: #dc3545">Ошибка конвертации</span>
-                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    Проверьте подключение к интернету
-                </span>
-            `;
-        }
-    }
 
     // Инициализация
     if (amountInput.value) {
         rawValue = parseNumber(amountInput.value);
         amountInput.value = formatPKR(rawValue);
-        updateUSD(rawValue);
     } else {
         amountInput.value = '0.00';
-        updateUSD(0);
+        rawValue = 0;
     }
+    updateUSD(rawValue);
 }
 
-// Запускаем только после загрузки DOM
-document.addEventListener('DOMContentLoaded', () => {
     attachCurrencyConverter();
-});
+
 </script>
             <script>
     

@@ -2292,25 +2292,25 @@
                         const actionsCell = row.querySelector('.actions-cell');
                         let actionsHTML = '';
 
-                         if (user.status === 'archived') {
-      // Для архивных пользователей показываем только кнопку восстановления
-      actionsHTML = `<div class="actions-footer">
-        <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
-          <i class="fas fa-undo"></i> Restore
-        </button>
-      </div>`;
-    } else {
-      // Для активных пользователей показываем все кнопки действий
-      actionsHTML = `<div class="actions-column">
-        <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
-        <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
-          <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
-        </button>
-        <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
-          <i class="fas fa-archive"></i> Archive
-        </button>
-      </div>`;
-    }
+                        if (user.status === 'archived') {
+                            actionsHTML = `
+                <div class="actions-footer">
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                </div>`;
+                        } else {
+                            actionsHTML = `
+                <div class="actions-column">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                </div>`;
+                        }
 
                         actionsCell.innerHTML = actionsHTML;
                         tbody.appendChild(row);

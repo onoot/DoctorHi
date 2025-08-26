@@ -1723,17 +1723,7 @@
                     <button type="submit" class="action-btn btn-edit">Create Transaction</button>
                 </form>
             </div>
-<script>
-        async function govno(){
-            const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
 
-        console.log(response.data.rates.USD)
-        }govno()
-const amountInput = document.getElementById('totalAmount');
-    const usdOutput = document.getElementById('toUSD');
-
-
-</script>
             <script>
     
 
@@ -4372,6 +4362,238 @@ const amountInput = document.getElementById('totalAmount');
                     };
                     return statusClasses[status] || 'secondary';
                 }
+            </script>   
+            <script>
+                const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+let exchangeRateCache = null;
+let lastFetchTime = 0;
+let conversionDebounce = null;
+
+// Форматирование суммы в долларах
+function formatUSD(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+
+// 🔥 ИСПРАВЛЕНО: Корректное форматирование PKR с en-US
+function formatPKR(amount) {
+    try {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    } catch (e) {
+        // Fallback для старых браузеров
+        return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+}
+
+function parseNumber(value) {
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    const [integer, ...decimals] = cleanValue.split('.');
+    const decimalPart = decimals.join('');
+    
+    return parseFloat(`${integer}.${decimalPart}`) || 0;
+}
+
+// 🔥 ИСПРАВЛЕНО: Замена внешнего API на внутренний через apiRequest
+async function getExchangeRatePKRtoUSD() {
+    try {
+        // Запрашиваем курс через внутренний API
+        const data = await apiRequest('/latest/PKR', {
+            method: 'GET'
+        });
+        
+        // Проверяем структуру ответа
+        if (data.success && typeof data.USD === 'number') {
+            return data.USD;
+        }
+        
+        throw new Error('Invalid API response structure');
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; // Fallback курс
+    }
+}
+
+async function getCachedExchangeRate() {
+    const now = Date.now();
+    if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
+        return exchangeRateCache;
+    }
+    exchangeRateCache = await getExchangeRatePKRtoUSD();
+    lastFetchTime = now;
+    return exchangeRateCache;
+}
+
+// 🔥 ИСПРАВЛЕНО: Полностью переработанный обработчик ввода
+function attachCurrencyConverter() {
+    const amountInput = document.getElementById('totalAmount');
+    const usdOutput = document.getElementById('toUSD');
+
+    if (!amountInput || !usdOutput) {
+        console.error('Элементы #totalAmount или #toUSD не найдены!');
+        return;
+    }
+
+    let isFormatting = false;
+    let rawValue = 0;
+
+    // Динамическое форматирование ВО ВРЕМЯ ввода
+    amountInput.addEventListener('input', function(e) {
+        if (isFormatting) return;
+        
+        const cursorStart = this.selectionStart;
+        const cursorEnd = this.selectionEnd;
+        const oldValue = this.value;
+
+        // Чистим ввод, сохраняя цифры и разделители
+        let cleanValue = this.value
+            .replace(/[^0-9.,]/g, '')
+            .replace(/(,)/g, '.') // Заменяем запятые на точки
+            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
+
+        // Парсим значение
+        rawValue = parseNumber(cleanValue);
+        
+        // Форматируем СРАЗУ при вводе
+        isFormatting = true;
+        this.value = formatPKR(rawValue);
+        isFormatting = false;
+
+        // Корректируем позицию курсора
+        if (this.value !== oldValue) {
+            const diff = this.value.length - oldValue.length;
+            this.setSelectionRange(
+                Math.max(0, cursorStart + diff),
+                Math.max(0, cursorEnd + diff)
+            );
+        }
+
+        // Обновляем USD
+        clearTimeout(conversionDebounce);
+        conversionDebounce = setTimeout(() => {
+            updateUSD(rawValue);
+        }, 300);
+    });
+
+    // Упрощённая обработка blur
+    amountInput.addEventListener('blur', function() {
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+            updateUSD(0);
+        }
+    });
+
+    // Упрощённая обработка focus
+    amountInput.addEventListener('focus', function() {
+        if (this.value === '0.00') {
+            this.value = '';
+            rawValue = 0;
+        } else {
+            this.value = rawValue.toString();
+        }
+    });
+
+    // Обновление USD
+    async function updateUSD(pkrAmount) {
+        if (pkrAmount <= 0) {
+            usdOutput.textContent = '';
+            return;
+        }
+
+        try {
+            const exchangeRate = await getCachedExchangeRate();
+            const usdAmount = pkrAmount * exchangeRate;
+            
+            usdOutput.innerHTML = `
+                ≈ ${formatUSD(usdAmount)} USD
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                </span>
+            `;
+        } catch (error) {
+            usdOutput.innerHTML = `
+                <span style="color: #dc3545">Ошибка конвертации</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Проверьте подключение к интернету
+                </span>
+            `;
+        }
+    }
+
+    // Инициализация
+    if (amountInput.value) {
+        rawValue = parseNumber(amountInput.value);
+        amountInput.value = formatPKR(rawValue);
+    } else {
+        amountInput.value = '0.00';
+        rawValue = 0;
+    }
+    updateUSD(rawValue);
+}
+
+// 🔥 ИСПРАВЛЕНО: Добавляем глобальную функцию apiRequest (если её нет)
+// ВАЖНО: Убедитесь что API_BASE_URL определён в вашем проекте
+if (typeof apiRequest !== 'function') {
+    async function apiRequest(endpoint, options = {}) {
+        console.log('Making API request to:', endpoint);
+        const API_BASE_URL = '/api'; // Укажите ваш базовый URL
+        
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'include'
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...defaultOptions,
+                ...options,
+                headers: {
+                    ...defaultOptions.headers,
+                    ...(options.headers || {})
+                },
+                credentials: 'include',
+            });
+
+            console.log('API response status:', response.status);
+
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (e) {
+                const text = await response.text();
+                console.log('API response text:', text);
+                data = { message: text || 'Unknown error' };
+            }
+
+            console.log('API response data:', data);
+
+            if (!response.ok) {
+                console.log('API request failed:', data);
+                throw new Error(data.message || 'API request failed');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+}
+
+// Запускаем только после загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    attachCurrencyConverter();
+});
             </script>
 </body>
 

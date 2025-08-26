@@ -1298,6 +1298,7 @@
                             <th>CNIC</th>
                             <th>Email</th>
                             <th>Properties</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -1895,7 +1896,7 @@
                         // Если авторизация успешна, загружаем данные
                         await Promise.all([
                             loadTransactions(),
-                            loadUsers()
+                            loadUsers('active')
                         ]);
 
                     } catch (error) {
@@ -2054,7 +2055,10 @@
                             loadTransactions();
                             break;
                         case 'users':
-                            loadUsers();
+                            loadUsers('active');
+                            break;
+                        case 'users-archive':
+                            loadUsers('archive');
                             break;
                     }
                 }
@@ -2634,8 +2638,10 @@
                             currentPage = 1;
                             const section = this.closest('.section').id;
                             if (section === 'users') {
-                                loadUsers();
-                            } else if (section === 'transactions') {
+                                loadUsers('active');
+                            } else if (section === 'users-archive') {
+                                loadUsers('archive');
+                            }else if (section === 'transactions') {
                                 loadTransactions();
                             }
                         }, 300));
@@ -3179,7 +3185,7 @@
                     if (response) {
                         showNotification('success', 'User created successfully');
                         closeModal('addUserModal');
-                        loadUsers();
+                        loadUsers('active');
                     }
                 }
 

@@ -1555,13 +1555,12 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="totalAmount">Total Amount (PKR)</label>
-                                <!-- сделать чтобы число отображаось в денеэжнос формате напрммер 1.000.000 -->
-                                <input type="number" id="totalAmount" name="total_amount" class="form-control" required
-                                    min="0" step="0.01" placeholder="0.00">
+    <label for="totalAmount">Total Amount (PKR)</label>
+    <input type="text" id="totalAmount" name="total_amount" class="form-control" required
+           placeholder="0.00" inputmode="decimal">
                                 <p>USD</p>
-                                <p id="toUSD">0</p>
-                            </div>
+    <p id="toUSD" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;"></p>
+</div>
 
                             <!-- Witnesses Information -->
                             <div class="form-section">
@@ -1722,9 +1721,9 @@
                     <button type="submit" class="action-btn btn-edit">Create Transaction</button>
                 </form>
             </div>
+<script>
 
-            <script>
-                const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+   const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let exchangeRateCache = null;
 let lastFetchTime = 0;
 let conversionDebounce = null;
@@ -1738,13 +1737,21 @@ function formatUSD(amount) {
     }).format(amount);
 }
 
-// Функция парсинга числа (удаляет всё, кроме цифр и точки)
+// Форматирование PKR с разделителями тысяч
+function formatPKR(amount) {
+    return new Intl.NumberFormat('en-PK', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
+
+// Парсинг числа (поддержка запятых как разделителей)
 function parseNumber(value) {
     const cleanValue = value.replace(/[^0-9.]/g, '');
     return parseFloat(cleanValue) || 0;
 }
 
-// Получение курса PKR → USD
+// Исправленный URL (убраны пробелы!)
 async function getExchangeRatePKRtoUSD() {
     try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
@@ -1752,15 +1759,14 @@ async function getExchangeRatePKRtoUSD() {
         return data.rates.USD;
     } catch (error) {
         console.error('Ошибка получения курса:', error);
-        showNotification('error', 'Не удалось получить курс. Используется приблизительное значение.');
-        return 0.0036; // Примерный курс
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; 
     }
 }
 
-// Получение курса из кэша или API
 async function getCachedExchangeRate() {
     const now = Date.now();
-    if (exchangeRateCache && now - lastFetchTime < CACHE_DURATION) {
+    if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
         return exchangeRateCache;
     }
     exchangeRateCache = await getExchangeRatePKRtoUSD();
@@ -1768,81 +1774,92 @@ async function getCachedExchangeRate() {
     return exchangeRateCache;
 }
 
-// Основная функция: прикрепляет обработчики к полю ввода
 function attachCurrencyConverter() {
     const amountInput = document.getElementById('totalAmount');
     const usdOutput = document.getElementById('toUSD');
 
     if (!amountInput || !usdOutput) {
-        console.warn('Поля #totalAmount или #toUSD не найдены');
+        console.error('Элементы #totalAmount или #toUSD не найдены!');
         return;
     }
-        console.warn('Поля #totalAmount или #toUSD найдены');
 
-    // При вводе — обновляем конвертацию с дебаунсом
-    amountInput.addEventListener('input', function () {
-        // Очищаем предыдущий таймер
-        clearTimeout(conversionDebounce);
+    // Сохраняем "сырое" значение для вычислений
+    let rawValue = 0;
 
-        // Фильтруем ввод: только цифры, точка, запятая
+    // Форматируем при потере фокуса
+    amountInput.addEventListener('blur', function() {
+        rawValue = parseNumber(this.value);
+        this.value = formatPKR(rawValue);
+        updateUSD(rawValue);
+    });
+
+    // При фокусе показываем "сырое" значение
+    amountInput.addEventListener('focus', function() {
+        if (this.value) {
+            this.value = rawValue;
+        }
+    });
+
+    // Обработчик ввода с дебаунсом
+    amountInput.addEventListener('input', function() {
+        // Чистим ввод
         this.value = this.value.replace(/[^0-9.,]/g, '');
-
-        // Заменяем запятую на точку для парсинга
-        const rawValue = this.value.replace(/,/g, '.');
-
-        // Парсим число
-        const pkrAmount = parseNumber(rawValue);
-
-        // Устанавливаем таймер на 500 мс
-        conversionDebounce = setTimeout(async () => {
-            if (pkrAmount > 0) {
-                try {
-                    const exchangeRate = await getCachedExchangeRate();
-                    const usdAmount = pkrAmount * exchangeRate;
-                    usdOutput.textContent = `≈ ${formatUSD(usdAmount)} USD`;
-                } catch (error) {
-                    usdOutput.textContent = 'Ошибка конвертации';
-                    usdOutput.style.color = 'red';
-                }
-            } else {
-                usdOutput.textContent = '';
-            }
+        
+        // Сохраняем сырое значение
+        rawValue = parseNumber(this.value.replace(/,/g, '.'));
+        
+        // Дебаунс для конвертации
+        clearTimeout(conversionDebounce);
+        conversionDebounce = setTimeout(() => {
+            updateUSD(rawValue);
         }, 500);
     });
 
-    // Дополнительно: при потере фокуса — мгновенно обновить
-    amountInput.addEventListener('blur', function () {
-        const rawValue = this.value.replace(/,/g, '.');
-        const pkrAmount = parseNumber(rawValue);
-        if (pkrAmount > 0) {
-            clearTimeout(conversionDebounce); // Отменяем дебаунс
-            updateUSD(pkrAmount);
-        }
-    });
-
-    // Функция мгновенного обновления (для blur)
+    // Обновление USD
     async function updateUSD(pkrAmount) {
+        if (pkrAmount <= 0) {
+            usdOutput.textContent = '';
+            return;
+        }
+
         try {
             const exchangeRate = await getCachedExchangeRate();
             const usdAmount = pkrAmount * exchangeRate;
-            usdOutput.textContent = `≈ ${formatUSD(usdAmount)} USD`;
+            
+            usdOutput.innerHTML = `
+                ≈ ${formatUSD(usdAmount)} USD
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                </span>
+            `;
         } catch (error) {
-            usdOutput.textContent = 'Ошибка конвертации';
-            usdOutput.style.color = 'red';
+            usdOutput.innerHTML = `
+                <span style="color: #dc3545">Ошибка конвертации</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Проверьте подключение к интернету
+                </span>
+            `;
         }
     }
 
-    // При загрузке, если уже есть значение — обновить
+    // Инициализация
     if (amountInput.value) {
-        const rawValue = amountInput.value.replace(/,/g, '.');
-        const pkrAmount = parseNumber(rawValue);
-        if (pkrAmount > 0) {
-            updateUSD(pkrAmount);
-        }
+        rawValue = parseNumber(amountInput.value);
+        amountInput.value = formatPKR(rawValue);
+        updateUSD(rawValue);
+    } else {
+        amountInput.value = '0.00';
+        updateUSD(0);
     }
 }
-attachCurrencyConverter()
 
+// Запускаем только после загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    attachCurrencyConverter();
+});
+</script>
+            <script>
+    
 
                 function openCreateTransactionModal() {
                     loadProperties();

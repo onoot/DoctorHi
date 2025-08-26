@@ -1724,43 +1724,125 @@
 
             <script>
                 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
-                let exchangeRateCache = null;
-                let lastFetchTime = 0;
-                let conversionDebounce = null;
+let exchangeRateCache = null;
+let lastFetchTime = 0;
+let conversionDebounce = null;
 
-                // Форматирование суммы в долларах
-                function formatUSD(amount) {
-                    return new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: 'USD',
-                        minimumFractionDigits: 2
-                    }).format(amount);
+// Форматирование суммы в долларах
+function formatUSD(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+
+// Функция парсинга числа (удаляет всё, кроме цифр и точки)
+function parseNumber(value) {
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+    return parseFloat(cleanValue) || 0;
+}
+
+// Получение курса PKR → USD
+async function getExchangeRatePKRtoUSD() {
+    try {
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
+        const data = await response.json();
+        return data.rates.USD;
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Не удалось получить курс. Используется приблизительное значение.');
+        return 0.0036; // Примерный курс
+    }
+}
+
+// Получение курса из кэша или API
+async function getCachedExchangeRate() {
+    const now = Date.now();
+    if (exchangeRateCache && now - lastFetchTime < CACHE_DURATION) {
+        return exchangeRateCache;
+    }
+    exchangeRateCache = await getExchangeRatePKRtoUSD();
+    lastFetchTime = now;
+    return exchangeRateCache;
+}
+
+// Основная функция: прикрепляет обработчики к полю ввода
+function attachCurrencyConverter() {
+    const amountInput = document.getElementById('totalAmount');
+    const usdOutput = document.getElementById('toUSD');
+
+    if (!amountInput || !usdOutput) {
+        console.warn('Поля #totalAmount или #toUSD не найдены');
+        return;
+    }
+
+    // При вводе — обновляем конвертацию с дебаунсом
+    amountInput.addEventListener('input', function () {
+        // Очищаем предыдущий таймер
+        clearTimeout(conversionDebounce);
+
+        // Фильтруем ввод: только цифры, точка, запятая
+        this.value = this.value.replace(/[^0-9.,]/g, '');
+
+        // Заменяем запятую на точку для парсинга
+        const rawValue = this.value.replace(/,/g, '.');
+
+        // Парсим число
+        const pkrAmount = parseNumber(rawValue);
+
+        // Устанавливаем таймер на 500 мс
+        conversionDebounce = setTimeout(async () => {
+            if (pkrAmount > 0) {
+                try {
+                    const exchangeRate = await getCachedExchangeRate();
+                    const usdAmount = pkrAmount * exchangeRate;
+                    usdOutput.textContent = `≈ ${formatUSD(usdAmount)} USD`;
+                } catch (error) {
+                    usdOutput.textContent = 'Ошибка конвертации';
+                    usdOutput.style.color = 'red';
                 }
+            } else {
+                usdOutput.textContent = '';
+            }
+        }, 500);
+    });
 
-                // Получение курса обмена PKR к USD
-                async function getExchangeRatePKRtoUSD() {
-                    try {
-                        // Исправлено: убраны лишние пробелы в URL
-                        const externalResponse = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
-                        const data = await externalResponse.json();
-                        return data.rates.USD;
-                    } catch (error) {
-                        console.error('Error fetching exchange rate:', error);
-                        showNotification('error', 'Could not get current exchange rate. Using approximate value.');
-                        return 0.0036; // Приблизительный курс
-                    }
-                }
+    // Дополнительно: при потере фокуса — мгновенно обновить
+    amountInput.addEventListener('blur', function () {
+        const rawValue = this.value.replace(/,/g, '.');
+        const pkrAmount = parseNumber(rawValue);
+        if (pkrAmount > 0) {
+            clearTimeout(conversionDebounce); // Отменяем дебаунс
+            updateUSD(pkrAmount);
+        }
+    });
 
-                async function getCachedExchangeRate() {
-                    const now = Date.now();
-                    if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
-                        return exchangeRateCache;
-                    }
+    // Функция мгновенного обновления (для blur)
+    async function updateUSD(pkrAmount) {
+        try {
+            const exchangeRate = await getCachedExchangeRate();
+            const usdAmount = pkrAmount * exchangeRate;
+            usdOutput.textContent = `≈ ${formatUSD(usdAmount)} USD`;
+        } catch (error) {
+            usdOutput.textContent = 'Ошибка конвертации';
+            usdOutput.style.color = 'red';
+        }
+    }
 
-                    exchangeRateCache = await getExchangeRatePKRtoUSD();
-                    lastFetchTime = now;
-                    return exchangeRateCache;
-                }
+    // При загрузке, если уже есть значение — обновить
+    if (amountInput.value) {
+        const rawValue = amountInput.value.replace(/,/g, '.');
+        const pkrAmount = parseNumber(rawValue);
+        if (pkrAmount > 0) {
+            updateUSD(pkrAmount);
+        }
+    }
+}
+
+// Вызовите эту функцию после загрузки DOM
+document.addEventListener('DOMContentLoaded', attachCurrencyConverter);
+
 
                 function openCreateTransactionModal() {
                     loadProperties();

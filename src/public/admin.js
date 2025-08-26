@@ -2449,6 +2449,12 @@ async function getExchangeRatePKRtoUSD() {
         return 0.0036; // Fallback курс
     }
 }
+function formatPKR(amount) {
+    return new Intl.NumberFormat('en-PK', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(amount);
+}
 
 // 🔥 ИСПРАВЛЕНО: Полностью переработанный обработчик ввода
 function attachCurrencyConverter() {

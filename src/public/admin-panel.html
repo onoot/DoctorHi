@@ -4060,14 +4060,14 @@
                                 showNotification('error', 'Witness name is required');
                                 return;
                             }
-                            if (!validateCNIC(witness.cnic)) {
+                           /** if (!validateCNIC(witness.cnic)) {
                                 showNotification('error', 'Invalid CNIC format (XXXXX-XXXXXXX-X)');
                                 return;
                             }
                             if (witness.phone && !validatePhone(witness.phone)) {
-                                showNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
+                                fshowNotification('error', 'Invalid phone format (+XXXXXXXXXXXX)');
                                 return;
-                            }
+                            }**/
                         }
 
                         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {

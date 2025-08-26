@@ -1674,6 +1674,7 @@
             </div>
 
             <script>
+
                 let exchangeRateCache = null;
                 let lastFetchTime = 0;
                 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
@@ -1867,21 +1868,13 @@
 
 
                         if (!response.ok) {
-                            showNotification('error', 'Authentication failed')
-                            window.location.href = '/login.html';
-                            return;
+                            throw new Error('Not authenticated');
                         }
 
-                        const data = await response.json();
+                        const userData = await response.json();
+                        const currentUser = userData.user;
 
-                        if (!data.valid || !data.user || data.user.role !== 'admin') {
-                            console.error('Not an admin user:', data);
-                            showNotification('error', 'Not authorized as admin')
-                            window.location.href = '/login.html';
-                            return;
-                        }
-
-                        // Настраиваем обработчики для навигации
+                        // Настройка обработчиков для навигации
                         document.querySelectorAll('.nav-link').forEach(link => {
                             link.addEventListener('click', function (e) {
                                 e.preventDefault();
@@ -1894,11 +1887,23 @@
                         setupSearch();
 
                         // Если авторизация успешна, загружаем данные
-                        await Promise.all([
-                            loadTransactions(),
-                            loadUsers('active'),
-                            loadUsers('archived')
-                        ]);
+                        // Определяем, какой раздел показать по умолчанию
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const initialSection = urlParams.get('section') || 'transactions';
+
+                        showSection(initialSection);
+
+                        // Добавляем обработчик для поиска
+                        document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
+                            currentPage = 1;
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        }, 300));
+
 
                     } catch (error) {
                         console.error('Authentication error:', error);
@@ -2198,7 +2203,7 @@
                     document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
                         button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
                     });
-                }// Архивация пользователя
+                }
                 // Архивация пользователя
                 async function archiveUser(userId) {
                     if (!confirm('Are you sure you want to archive this user?')) {
@@ -2212,7 +2217,7 @@
 
                         if (response.success) {
                             showNotification('success', 'User archived successfully');
-                            // Перезагружаем список пользователей
+                            // Перезагружаем список пользователей с учетом текущего раздела
                             const activeSection = document.querySelector('.section.active').id;
                             if (activeSection === 'users') {
                                 loadUsers('active');
@@ -2241,36 +2246,13 @@
 
                         if (response.success) {
                             showNotification('success', 'User restored successfully');
-                            // Перезагружаем список архивных пользователей
+                            // Перезагружаем список пользователей с учетом текущего раздела
                             const activeSection = document.querySelector('.section.active').id;
                             if (activeSection === 'users') {
                                 loadUsers('active');
                             } else if (activeSection === 'users-archive') {
                                 loadUsers('archived');
                             }
-                        } else {
-                            showNotification('error', response.message || 'Error restoring user');
-                        }
-                    } catch (error) {
-                        console.error('Restore error:', error);
-                        showNotification('error', 'Error restoring user');
-                    }
-                }
-                // Восстановление пользователя из архива
-                async function restoreUser(userId) {
-                    if (!confirm('Are you sure you want to restore this user from archive?')) {
-                        return;
-                    }
-
-                    try {
-                        const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, {
-                            method: 'POST'
-                        });
-
-                        if (response.success) {
-                            showNotification('success', 'User restored successfully');
-                            // Перезагружаем список архивных пользователей
-                            loadUsers('archived');
                         } else {
                             showNotification('error', response.message || 'Error restoring user');
                         }
@@ -2418,6 +2400,17 @@
                         }
                     }
                 }
+
+                // Добавляем обработчик для поиска
+                document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
+                    currentPage = 1;
+                    const activeSection = document.querySelector('.section.active').id;
+                    if (activeSection === 'users') {
+                        loadUsers('active');
+                    } else if (activeSection === 'users-archive') {
+                        loadUsers('archived');
+                    }
+                }, 300));
                 function attachActionHandlers3() {
                     document.body.addEventListener('click', function (e) {
                         const button = e.target.closest('.action-btn');
@@ -2642,7 +2635,7 @@
                                 loadUsers('active');
                             } else if (section === 'users-archive') {
                                 loadUsers('archived');
-                            }else if (section === 'transactions') {
+                            } else if (section === 'transactions') {
                                 loadTransactions();
                             }
                         }, 300));

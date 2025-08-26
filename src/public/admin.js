@@ -2,7 +2,6 @@ const totalAmountInput = document.getElementById('totalAmount');
 
 let exchangeRateCache = null;
 let lastFetchTime = 0;
-let conversionDebounce = null;
 
 function openCreateTransactionModal() {
     loadProperties();
@@ -2503,11 +2502,7 @@ function attachCurrencyConverter() {
             );
         }
 
-        // Обновляем USD
-        clearTimeout(conversionDebounce);
-        conversionDebounce = setTimeout(() => {
-            updateUSD(rawValue);
-        }, 300);
+        updateUSD(rawValue);
     });
 
     // Упрощённая обработка blur

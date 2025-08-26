@@ -2099,14 +2099,14 @@
                     // Проверяем, что users - это массив
                     if (!Array.isArray(users)) {
                         console.error('Expected users to be an array, but got:', users);
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Invalid data format</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Invalid data format</td></tr>';
                         return;
                     }
 
                     tbody.innerHTML = '';
 
                     if (users.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
                         return;
                     }
 
@@ -2117,8 +2117,9 @@
       <td>${user.id}</td>
       <td>${user.name}</td>
       <td>${user.cnic}</td>
-      <td>${user.email || user.login}</td>
+      <td>${user.email || user.login || ''}</td>
       <td>${user.properties_count || 0}</td>
+      <td><span class="status-badge ${user.status}">${user.status}</span></td>
       <td class="actions-cell"></td>
     `;
 

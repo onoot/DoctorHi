@@ -4403,7 +4403,7 @@ function parseNumber(value) {
 async function getExchangeRatePKRtoUSD() {
     try {
         // Запрашиваем курс через внутренний API
-        const data = await apiRequest('/v1/admin//latest/PKR', {
+        const data = await apiRequest('/v1/admin/latest/PKR', {
             method: 'GET'
         });
         
@@ -4432,10 +4432,9 @@ async function getCachedExchangeRate() {
 
 // 🔥 ИСПРАВЛЕНО: Полностью переработанный обработчик ввода
 function attachCurrencyConverter() {
-    const amountInput = document.getElementById('totalAmount');
     const usdOutput = document.getElementById('toUSD');
 
-    if (!amountInput || !usdOutput) {
+    if (!totalAmountInput || !usdOutput) {
         console.error('Элементы #totalAmount или #toUSD не найдены!');
         return;
     }
@@ -4444,7 +4443,7 @@ function attachCurrencyConverter() {
     let rawValue = 0;
 
     // Динамическое форматирование ВО ВРЕМЯ ввода
-    amountInput.addEventListener('input', function(e) {
+    totalAmountInput.addEventListener('input', function(e) {
         if (isFormatting) return;
         
         const cursorStart = this.selectionStart;
@@ -4482,7 +4481,7 @@ function attachCurrencyConverter() {
     });
 
     // Упрощённая обработка blur
-    amountInput.addEventListener('blur', function() {
+    totalAmountInput.addEventListener('blur', function() {
         if (!this.value || parseFloat(this.value) === 0) {
             this.value = '0.00';
             rawValue = 0;
@@ -4491,7 +4490,7 @@ function attachCurrencyConverter() {
     });
 
     // Упрощённая обработка focus
-    amountInput.addEventListener('focus', function() {
+    totalAmountInput.addEventListener('focus', function() {
         if (this.value === '0.00') {
             this.value = '';
             rawValue = 0;
@@ -4528,18 +4527,21 @@ function attachCurrencyConverter() {
     }
 
     // Инициализация
-    if (amountInput.value) {
-        rawValue = parseNumber(amountInput.value);
-        amountInput.value = formatPKR(rawValue);
+    if (totalAmountInput.value) {
+        rawValue = parseNumber(totalAmountInput.value);
+        totalAmountInput.value = formatPKR(rawValue);
     } else {
-        amountInput.value = '0.00';
+        totalAmountInput.value = '0.00';
         rawValue = 0;
     }
     updateUSD(rawValue);
 }
 
 
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("REFRWEFWEF")
     attachCurrencyConverter();
+});
             </script>
 </body>
 

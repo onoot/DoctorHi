@@ -1780,7 +1780,33 @@ async function getCachedExchangeRate() {
     lastFetchTime = now;
     return exchangeRateCache;
 }
+ // Обновление USD
+    async function updateUSD(pkrAmount) {
+        if (pkrAmount <= 0) {
+            usdOutput.textContent = '';
+            return;
+        }
 
+        try {
+            const exchangeRate = await getCachedExchangeRate();
+            const usdAmount = pkrAmount * exchangeRate;
+            
+            usdOutput.innerHTML = `
+                ≈ ${formatUSD(usdAmount)} USD
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                </span>
+            `;
+        } catch (error) {
+            usdOutput.innerHTML = `
+                <span style="color: #dc3545">Ошибка конвертации</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Проверьте подключение к интернету
+                </span>
+            `;
+        }
+    }
+   
 function attachCurrencyConverter() {
     const amountInput = document.getElementById('totalAmount');
     const usdOutput = document.getElementById('toUSD');

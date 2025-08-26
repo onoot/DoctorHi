@@ -1,5 +1,9 @@
 const totalAmountInput = document.getElementById('totalAmount');
 
+let exchangeRateCache = null;
+let lastFetchTime = 0;
+let conversionDebounce = null;
+
 function openCreateTransactionModal() {
     loadProperties();
     openModal('createTransactionModal');

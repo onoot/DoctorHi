@@ -3974,22 +3974,6 @@
                     editSection.style.display = 'none';
                 }
 
-                async function updateWitnesses() {
-                    const witness1Name = document.getElementById('witness1Name').value;
-                    const witness1CNIC = document.getElementById('witness1CNIC').value;
-                    const witness1Phone = document.getElementById('witness1Phone').value;
-
-                    const witness2Name = document.getElementById('witness2Name').value;
-                    const witness2CNIC = document.getElementById('witness2CNIC').value;
-                    const witness2Phone = document.getElementById('witness2Phone').value;
-
-                    // Логика отправки данных о свидетелях на сервер
-                    console.log({
-                        witness1: { name: witness1Name, cnic: witness1CNIC, phone: witness1Phone },
-                        witness2: { name: witness2Name, cnic: witness2CNIC, phone: witness2Phone }
-                    });
-                }
-
                 async function updateTransactionAmount() {
                     try {
                         const transactionId = document.getElementById('currentTransactionId').value;

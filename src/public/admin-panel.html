@@ -9,6 +9,30 @@
         media='all' />
 
     <style>
+        /* Стили для статусов */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-badge.active {
+            background-color: #e6f7ee;
+            color: #1a7f37;
+        }
+
+        .status-badge.blocked {
+            background-color: #fff1f0;
+            color: #d92d20;
+        }
+
+        .status-badge.archived {
+            background-color: #f5f5f5;
+            color: #5e6675;
+        }
+
         :root {
             --primary-color: #007bff;
             --secondary-color: #6c757d;
@@ -2113,31 +2137,36 @@
                     users.forEach(user => {
                         const row = document.createElement('tr');
 
+                        // Убедимся, что у пользователя есть статус
+                        const userStatus = user.status || 'active';
+
                         row.innerHTML = `
       <td>${user.id}</td>
       <td>${user.name}</td>
       <td>${user.cnic}</td>
       <td>${user.email || user.login || ''}</td>
       <td>${user.properties_count || 0}</td>
-      <td><span class="status-badge ${user.status}">${user.status}</span></td>
+      <td><span class="status-badge ${userStatus}">${userStatus}</span></td>
       <td class="actions-cell"></td>
     `;
 
                         const actionsCell = row.querySelector('.actions-cell');
 
-                        if (user.status === 'archived') {
+                        // Для архивных пользователей показываем только кнопку восстановления
+                        if (userStatus === 'archived') {
                             actionsCell.innerHTML = `
         <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
           <i class="fas fa-undo"></i> Restore
         </button>
       `;
                         } else {
+                            // Для активных пользователей показываем все кнопки действий
                             actionsCell.innerHTML = `
         <button class="action-btn btn-view" data-id="${user.id}" data-action="view">
           <i class="fas fa-eye"></i> View
         </button>
-        <button class="action-btn btn-edit" data-id="${user.id}" data-status="${user.status === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
-          <i class="fas ${user.status === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${user.status === 'active' ? 'Block' : 'Activate'}
+        <button class="action-btn btn-edit" data-id="${user.id}" data-status="${userStatus === 'active' ? 'blocked' : 'active'}" data-action="toggle-status">
+          <i class="fas ${userStatus === 'active' ? 'fa-ban' : 'fa-check'}"></i> ${userStatus === 'active' ? 'Block' : 'Activate'}
         </button>
         <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
           <i class="fas fa-archive"></i> Archive
@@ -2164,7 +2193,7 @@
                     document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
                         button.addEventListener('click', (e) => restoreUser(e.target.dataset.id));
                     });
-                }
+                }// Архивация пользователя
                 // Архивация пользователя
                 async function archiveUser(userId) {
                     if (!confirm('Are you sure you want to archive this user?')) {
@@ -2179,7 +2208,12 @@
                         if (response.success) {
                             showNotification('success', 'User archived successfully');
                             // Перезагружаем список пользователей
-                            loadUsers('active');
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
                         } else {
                             showNotification('error', response.message || 'Error archiving user');
                         }
@@ -2189,6 +2223,34 @@
                     }
                 }
 
+                // Восстановление пользователя из архива
+                async function restoreUser(userId) {
+                    if (!confirm('Are you sure you want to restore this user from archive?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, {
+                            method: 'POST'
+                        });
+
+                        if (response.success) {
+                            showNotification('success', 'User restored successfully');
+                            // Перезагружаем список архивных пользователей
+                            const activeSection = document.querySelector('.section.active').id;
+                            if (activeSection === 'users') {
+                                loadUsers('active');
+                            } else if (activeSection === 'users-archive') {
+                                loadUsers('archived');
+                            }
+                        } else {
+                            showNotification('error', response.message || 'Error restoring user');
+                        }
+                    } catch (error) {
+                        console.error('Restore error:', error);
+                        showNotification('error', 'Error restoring user');
+                    }
+                }
                 // Восстановление пользователя из архива
                 async function restoreUser(userId) {
                     if (!confirm('Are you sure you want to restore this user from archive?')) {
@@ -2234,7 +2296,8 @@
                             limit: itemsPerPage
                         });
 
-                        if (status !== 'all') {
+                        // Добавляем параметр статуса только если он не 'all'
+                        if (status && status !== 'all') {
                             searchParams.append('status', status);
                         }
 
@@ -2265,6 +2328,7 @@
             <th>CNIC</th>
             <th>Email</th>
             <th>Properties</th>
+            <th>Status</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -2283,7 +2347,20 @@
                         }
 
                         // Рендерим данные
-                        if (data && Array.isArray(data.users)) {
+                        if (data && Array.isArray(data)) {
+                            // Если сервер возвращает простой массив
+                            renderUsersTable(data);
+
+                            // Добавляем или обновляем пагинацию
+                            const pagination = createPagination(data.length, currentPage, itemsPerPage);
+                            const existingPagination = section.querySelector('.pagination');
+                            if (existingPagination) {
+                                existingPagination.replaceWith(pagination);
+                            } else {
+                                section.appendChild(pagination);
+                            }
+                        } else if (data && Array.isArray(data.users)) {
+                            // Если сервер возвращает структурированный ответ с пагинацией
                             renderUsersTable(data.users);
 
                             // Добавляем или обновляем пагинацию
@@ -2298,7 +2375,7 @@
                             console.error('Invalid users data format:', data);
                             const tbody = document.getElementById('usersTableBody');
                             if (tbody) {
-                                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No users found or error loading data</td></tr>';
+                                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
                             }
                         }
 
@@ -2597,7 +2674,7 @@
 
                     // Загрузить данные для активного раздела
                     if (sectionId === 'users') {
-                        console.log('Loading users for users section');
+                        console.log('Loading users for active users section');
                         loadUsers('active');
                     } else if (sectionId === 'users-archive') {
                         console.log('Loading archived users');
@@ -2607,7 +2684,6 @@
                         loadTransactions();
                     }
                 }
-
                 // Переключение категорий объектов
                 function toggleCategory(header) {
                     const category = header.parentElement;

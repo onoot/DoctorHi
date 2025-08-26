@@ -1866,7 +1866,6 @@
                             }
                         });
 
-
                         if (!response.ok) {
                             throw new Error('Not authenticated');
                         }
@@ -1886,17 +1885,57 @@
                         // Настраиваем поиск
                         setupSearch();
 
-                        // Если авторизация успешна, загружаем данные
+                        // Проверяем, существует ли элемент с id="users-archive"
+                        if (!document.getElementById('users-archive')) {
+                            // Создаем элемент для архивных пользователей, если его нет
+                            const usersArchiveSection = document.createElement('div');
+                            usersArchiveSection.id = 'users-archive';
+                            usersArchiveSection.className = 'section';
+                            usersArchiveSection.style.display = 'none';
+                            usersArchiveSection.innerHTML = `
+        <div class="section-header">
+          <h2 class="section-title">Archived Users</h2>
+        </div>
+        <div class="search-box">
+          <input type="text" class="search-input" placeholder="Search archived users...">
+          <button class="search-btn">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>CNIC</th>
+              <th>Email</th>
+              <th>Properties</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      `;
+                            document.querySelector('.main-content').appendChild(usersArchiveSection);
+                        }
+
                         // Определяем, какой раздел показать по умолчанию
                         const urlParams = new URLSearchParams(window.location.search);
                         const initialSection = urlParams.get('section') || 'transactions';
 
-                        showSection(initialSection);
+                        // Проверяем, существует ли элемент с таким id
+                        if (document.getElementById(initialSection)) {
+                            showSection(initialSection);
+                        } else {
+                            console.error(`Initial section "${initialSection}" not found, defaulting to transactions`);
+                            showSection('transactions');
+                        }
 
                         // Добавляем обработчик для поиска
                         document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
                             currentPage = 1;
-                            const activeSection = document.querySelector('.section.active').id;
+                            const activeSection = document.querySelector('.section.active')?.id;
                             if (activeSection === 'users') {
                                 loadUsers('active');
                             } else if (activeSection === 'users-archive') {
@@ -1904,13 +1943,11 @@
                             }
                         }, 300));
 
-
                     } catch (error) {
                         console.error('Authentication error:', error);
                         window.location.href = '/login.html';
                     }
                 });
-
                 // Функция выхода
                 async function logout() {
                     try {
@@ -2668,9 +2705,41 @@
                     });
 
                     // Показать выбранный раздел
-                    document.getElementById(sectionId).style.display = 'block';
-                    document.getElementById(sectionId).classList.add('active');
-                    document.querySelector(`[href="#${sectionId}"]`).classList.add('active');
+                    const sectionElement = document.getElementById(sectionId);
+                    if (!sectionElement) {
+                        console.error(`Section with id "${sectionId}" not found in DOM`);
+
+                        // Если раздел не найден, переключаемся на раздел транзакций
+                        const transactionsSection = document.getElementById('transactions');
+                        if (transactionsSection) {
+                            transactionsSection.style.display = 'block';
+                            transactionsSection.classList.add('active');
+
+                            // Активируем соответствующую ссылку навигации
+                            const navLink = document.querySelector('[href="#transactions"]');
+                            if (navLink) {
+                                navLink.classList.add('active');
+                            }
+
+                            // Загружаем данные для раздела транзакций
+                            loadTransactions();
+
+                            return;
+                        } else {
+                            console.error('Transactions section not found either');
+                            return;
+                        }
+                    }
+
+                    // Элемент найден, показываем его
+                    sectionElement.style.display = 'block';
+                    sectionElement.classList.add('active');
+
+                    // Активируем соответствующую ссылку навигации
+                    const navLink = document.querySelector(`[href="#${sectionId}"]`);
+                    if (navLink) {
+                        navLink.classList.add('active');
+                    }
 
                     // Загрузить данные для активного раздела
                     if (sectionId === 'users') {

@@ -1667,7 +1667,26 @@ async function handleCreateTransaction(event) {
         showNotification('error', error.message || 'Error handling transaction');
     }
 }
+function updateRemainingAmount() {
+  const totalAmountText = document.getElementById('totalAmountView').textContent.replace(/,/g, '');
+  const paidAmountText = document.getElementById('paidAmount').textContent.replace(/,/g, '');
+  
+  const totalAmount = parseFloat(totalAmountText) || 0;
+  const paidAmount = parseFloat(paidAmountText) || 0;
+  
+  const remainingAmount = totalAmount - paidAmount;
+  
+  // Форматируем оставшуюся сумму с разделителями тысяч
+  const formattedRemaining = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(remainingAmount);
+  
+  document.getElementById('remainingAmount').textContent = formattedRemaining;
+}
 
+// Вызовите эту функцию после загрузки платежей
+// Например, в конце функции loadTransactionPayments
 // Функция для открытия модального окна загрузки одного файла
 function openUploadModal(category) {
     document.getElementById('uploadCategory').value = category;
@@ -2228,13 +2247,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Обработчик для редактирования суммы транзакции
     document.querySelector('.edit-amount-btn')?.addEventListener('click', toggleAmountEdit);
-
-    // Обработчик для сохранения новой суммы
-    document.querySelector('.save-amount-btn')?.addEventListener('click', updateTransactionAmount);
-
-    // Обработчик для отмены редактирования суммы
-    document.querySelector('.cancel-amount-btn')?.addEventListener('click', cancelAmountEdit);
-
     // Обработчик для сохранения свидетелей
     document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
 });
@@ -2568,122 +2580,95 @@ function attachCurrencyConverter() {
 }
 
 
-// Добавляем обработчик для всех действий в модальном окне транзакции
-document.addEventListener('DOMContentLoaded', function() {
-    // Делегирование событий для кнопок в модальном окне
-    document.body.addEventListener('click', function(e) {
-        const button = e.target.closest('.action-btn');
-        if (!button) return;
-        
-        const action = button.getAttribute('data-action');
-        const transactionId = document.getElementById('currentTransactionId')?.value;
-        
-        if (!action || !transactionId) return;
-        
-        switch(action) {
-            case 'upload-modal':
-                const category = button.getAttribute('data-category');
-                openUploadModal(category);
-                break;
-                
-            case 'upload-multiple':
-                openMultipleUploadModal();
-                break;
-                
-            case 'add-payment':
-                openAddPaymentModal();
-                break;
-                
-            case 'edit-amount':
-                // Логика для редактирования суммы
-                const amountSection = document.getElementById('amountEditSection');
-                if (amountSection) {
-                    amountSection.style.display = 'block';
-                    document.getElementById('newTotalAmount').focus();
-                }
-                break;
-                
-            case 'save-amount':
-                saveTransactionAmount();
-                break;
-                
-            case 'cancel-amount':
-                document.getElementById('amountEditSection').style.display = 'none';
-                break;
-                
-            case 'update-witnesses':
-                updateWitnesses();
-                break;
+// Инициализация обработчиков для платежей
+function initPaymentHandlers() {
+    // Обработчик для кнопки "Add Payment"
+    document.querySelector('[data-action="add-payment"]')?.addEventListener('click', function() {
+        const transactionId = document.getElementById('currentTransactionId').value;
+        if (!transactionId) {
+            showNotification('error', 'Transaction ID not found');
+            return;
         }
-    });
-    
-    // Обработчик для кнопки редактирования суммы
-    document.querySelector('.edit-amount-btn')?.addEventListener('click', function() {
-        document.getElementById('amountEditSection').style.display = 'block';
-        document.getElementById('newTotalAmount').focus();
-    });
-    
-    // Обработчик для кнопки сохранения суммы
-    document.querySelector('.save-amount-btn')?.addEventListener('click', saveTransactionAmount);
-    
-    // Обработчик для кнопки отмены редактирования суммы
-    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function() {
-        document.getElementById('amountEditSection').style.display = 'none';
-    });
-    
-    // Обработчик для кнопки сохранения свидетелей
-    document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
-});
-
-// Функция сохранения суммы транзакции
-async function saveTransactionAmount() {
-    const transactionId = document.getElementById('currentTransactionId').value;
-    const newAmount = parseFloat(document.getElementById('newTotalAmount').value);
-    
-    if (isNaN(newAmount) || newAmount <= 0) {
-        showNotification('error', 'Please enter a valid amount');
-        return;
-    }
-    
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/update-amount`, {
-            method: 'PUT',
-            body: JSON.stringify({ total_amount: newAmount })
-        });
         
-        if (response.success) {
-            document.getElementById('totalAmountView').textContent = newAmount.toFixed(2);
-            document.getElementById('amountEditSection').style.display = 'none';
-            showNotification('success', 'Amount updated successfully');
-            
-            // Обновляем оставшуюся сумму
-            updateRemainingAmount();
+        document.getElementById('paymentTransactionId').value = transactionId;
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentMethod').value = 'cash';
+        document.getElementById('receiptFile').value = '';
+        document.getElementById('receiptPreview').innerHTML = '';
+        
+        openModal('addPaymentModal');
+    });
+
+    // Обработчик для предпросмотра квитанции
+    document.getElementById('receiptFile')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const preview = document.getElementById('receiptPreview');
+        if (file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = `<p>File: ${file.name}</p>`;
+            }
         } else {
-            throw new Error(response.message || 'Failed to update amount');
+            preview.innerHTML = '';
         }
-    } catch (error) {
-        showNotification('error', 'Error updating amount: ' + error.message);
-    }
+    });
+
+    // Обработчик формы добавления платежа
+    document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const transactionId = document.getElementById('paymentTransactionId').value;
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const method = document.getElementById('paymentMethod').value;
+        const receiptFile = document.getElementById('receiptFile').files[0];
+        
+        if (isNaN(amount) || amount <= 0) {
+            showNotification('error', 'Please enter a valid amount');
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('amount', amount);
+            formData.append('method', method);
+            if (receiptFile) {
+                formData.append('receipt', receiptFile);
+            }
+            
+            const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.success) {
+                closeModal('addPaymentModal');
+                // Обновляем платежи и оставшуюся сумму
+                loadTransactionPayments(transactionId);
+                loadTransactionDetails(transactionId);
+                showNotification('success', 'Payment added successfully');
+            } else {
+                throw new Error(response.message || 'Failed to add payment');
+            }
+        } catch (error) {
+            showNotification('error', 'Error adding payment: ' + error.message);
+        }
+    });
+
+    // Обработчики для кнопок отмены
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+        closeModal('addPaymentModal');
+    });
 }
 
-// Функция обновления оставшейся суммы
-function updateRemainingAmount() {
-    const totalAmountText = document.getElementById('totalAmountView').textContent.replace(/,/g, '');
-    const paidAmountText = document.getElementById('paidAmount').textContent.replace(/,/g, '');
-    
-    const totalAmount = parseFloat(totalAmountText) || 0;
-    const paidAmount = parseFloat(paidAmountText) || 0;
-    
-    const remainingAmount = totalAmount - paidAmount;
-    
-    // Форматируем оставшуюся сумму с разделителями тысяч
-    const formattedRemaining = new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(remainingAmount);
-    
-    document.getElementById('remainingAmount').textContent = formattedRemaining;
-}
+// Вызовите эту функцию после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    initPaymentHandlers();
+});
 // Предпросмотр квитанции
 document.getElementById('receiptFile')?.addEventListener('change', function (e) {
   const file = e.target.files[0];
@@ -2702,5 +2687,80 @@ document.getElementById('receiptFile')?.addEventListener('change', function (e) 
     preview.innerHTML = '';
   }
 });
+// Загрузка платежей для конкретной транзакции
+async function loadTransactionPayments(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+        
+        if (response.success && response.payments) {
+            const tbody = document.getElementById('paymentsTableBody');
+            tbody.innerHTML = '';
+            
+            if (response.payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments yet</td></tr>';
+                return;
+            }
+            
+            response.payments.forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${payment.id}</td>
+                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                    <td>${parseFloat(payment.amount).toFixed(2)}</td>
+                    <td>${payment.method}</td>
+                    <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
+                    <td>
+                        ${payment.receipt_url ? 
+                            `<a href="${payment.receipt_url}" target="_blank" class="receipt-link">View</a>` : 
+                            'No receipt'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading payments:', error);
+        const tbody = document.getElementById('paymentsTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
+    }
+}
+
+// Загрузка деталей транзакции (включая сумму)
+async function loadTransactionDetails(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
+        
+        if (response.success && response.transaction) {
+            const transaction = response.transaction;
+            
+            // Обновляем суммы
+            document.getElementById('totalAmountView').textContent = 
+                new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(transaction.total_amount);
+                
+            document.getElementById('paidAmount').textContent = 
+                new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(transaction.paid_amount);
+                
+            // Обновляем оставшуюся сумму
+            const remaining = transaction.total_amount - transaction.paid_amount;
+            document.getElementById('remainingAmount').textContent = 
+                new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(remaining);
+                
+            // Обновляем дату создания
+            document.getElementById('createdAt').textContent = 
+                new Date(transaction.created_at).toLocaleDateString();
+        }
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+    }
+}
 
     attachCurrencyConverter();

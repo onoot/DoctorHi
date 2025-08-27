@@ -2990,7 +2990,7 @@ async function loadArchivedUsers(page = 1, limit = 10) {
                     <td>${user.properties_count || 0}</td>
                     <td><span class="status-badge ${user.status}">${user.status}</span></td>
                     <td>
-                        <button class="action-btn btn-edit view-user-btn" data-user-id="${user.id}">
+                        <button class="action-btn btn-view view-user-btn" data-user-id="${user.id}">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </td>

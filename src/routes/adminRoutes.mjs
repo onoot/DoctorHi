@@ -343,23 +343,35 @@ router.put('/transactions/:transactionId/witnesses', [
 
 router.get('/latest/PKR', async (req, res) => {
     try {
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR  ');
         
-        if(response.status ==404||response.status==500){
+        if (!response.ok) {
             return res.status(502).json({
-            success: false,
-            message: response.status
-        });
+                success: false,
+                message: `External API error: ${response.status}`
+            });
         }
-        const data = response.json()
+        
+        // 🔥 ОСНОВНОЕ ИСПРАВЛЕНИЕ: Добавляем await перед response.json()
+        const data = await response.json();
+        
+        // Добавляем проверку структуры ответа
+        if (!data || !data.rates || typeof data.rates.USD === 'undefined') {
+            return res.status(502).json({
+                success: false,
+                message: 'Invalid response structure from external API'
+            });
+        }
+        
         return res.json({
             success: true,
             USD: data.rates.USD
         });
     } catch (e) {
-        console.error(e)
+        console.error(e);
         return res.status(500).json({
             success: false,
+            message: e.message
         });
     }
 })

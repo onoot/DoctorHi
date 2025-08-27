@@ -2149,6 +2149,7 @@ function initPaymentHandlers() {
         const amount = parseFloat(document.getElementById('paymentAmount').value);
         const method = document.getElementById('paymentMethod').value;
         const receiptFile = document.getElementById('receiptFile').files[0];
+        const paymentDate = new Date().toISOString();
         
         if (isNaN(amount) || amount <= 0) {
             showNotification('error', 'Please enter a valid amount');
@@ -2157,12 +2158,16 @@ function initPaymentHandlers() {
 
         try {
             const formData = new FormData();
-            formData.append('amount', amount);
-            formData.append('method', method);
+            formData.append('amount', amount.toString());
+            formData.append('payment_method', method); // Исправлено имя поля
+            formData.append('payment_date', paymentDate); // Добавьте это поле
+            if (notes) {
+                formData.append('notes', notes);
+            }
             if (receiptFile) {
                 formData.append('receipt', receiptFile);
             }
-            
+
             const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
                 method: 'POST',
                 body: formData

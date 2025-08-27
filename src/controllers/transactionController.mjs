@@ -88,9 +88,9 @@ export const upload = multer({
 // Предопределенные объекты недвижимости
 const properties = {
   'Parking': [
-      { id: 'DH01', name: 'Parking DH01', type: 'parking' },
-      { id: 'DH02', name: 'Parking DH02', type: 'parking' },
-      { id: 'DH03', name: 'Parking DH03', type: 'parking' }
+    { id: 'DH01', name: 'Parking DH01', type: 'parking' },
+    { id: 'DH02', name: 'Parking DH02', type: 'parking' },
+    { id: 'DH03', name: 'Parking DH03', type: 'parking' }
   ],
   "Lower Basement": [
     { "id": "LB01", "name": "Parking LB01", "type": "parking" },
@@ -105,8 +105,8 @@ const properties = {
     { "id": "LB10", "name": "Parking LB10", "type": "parking" },
     { "id": "LB11", "name": "Parking LB11", "type": "parking" },
     { "id": "LB12", "name": "Parking LB12", "type": "parking" }
-],
-"Upper Basement": [
+  ],
+  "Upper Basement": [
     { "id": "UB01", "name": "Parking UB01", "type": "parking" },
     { "id": "UB02", "name": "Parking UB02", "type": "parking" },
     { "id": "UB03", "name": "Parking UB03", "type": "parking" },
@@ -119,112 +119,112 @@ const properties = {
     { "id": "UB10", "name": "Parking UB10", "type": "parking" },
     { "id": "UB11", "name": "Parking UB11", "type": "parking" },
     { "id": "UB12", "name": "Parking UB12", "type": "parking" }
-],
+  ],
   'Ground Floor': [
-      { id: 'DH01', name: 'Shop DH01', type: 'commercial' },
-      { id: 'DH02', name: 'Shop DH02', type: 'commercial' },
-      { id: 'DH03', name: 'Shop DH03', type: 'commercial' }
+    { id: 'DH01', name: 'Shop DH01', type: 'commercial' },
+    { id: 'DH02', name: 'Shop DH02', type: 'commercial' },
+    { id: 'DH03', name: 'Shop DH03', type: 'commercial' }
   ],
   '1st Floor': [
-      { id: 'DH101', name: 'Office DH101', type: 'commercial' },
-      { id: 'DH102', name: 'Office DH102', type: 'commercial' },
-      { id: 'DH103', name: 'Office DH103', type: 'commercial' }
+    { id: 'DH101', name: 'Office DH101', type: 'commercial' },
+    { id: 'DH102', name: 'Office DH102', type: 'commercial' },
+    { id: 'DH103', name: 'Office DH103', type: 'commercial' }
   ],
   '2nd Floor': [
-      { id: 'DH201', name: 'Office DH201', type: 'commercial' },
-      { id: 'DH202', name: 'Office DH202', type: 'commercial' },
-      { id: 'DH203', name: 'Office DH203', type: 'commercial' }
+    { id: 'DH201', name: 'Office DH201', type: 'commercial' },
+    { id: 'DH202', name: 'Office DH202', type: 'commercial' },
+    { id: 'DH203', name: 'Office DH203', type: 'commercial' }
   ],
   '3rd Floor': [
-      { id: 'DH301', name: 'Apartment DH301 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH302', name: 'Apartment DH302 (973.7 Sft)', type: 'residential' },
-      { id: 'DH303', name: 'Apartment DH303 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH304', name: 'Apartment DH304 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH305', name: 'Apartment DH305 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH306', name: 'Apartment DH306 (1,686.00 Sft)', type: 'residential' }
+    { id: 'DH301', name: 'Apartment DH301 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH302', name: 'Apartment DH302 (973.7 Sft)', type: 'residential' },
+    { id: 'DH303', name: 'Apartment DH303 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH304', name: 'Apartment DH304 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH305', name: 'Apartment DH305 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH306', name: 'Apartment DH306 (1,686.00 Sft)', type: 'residential' }
   ],
   '4th Floor': [
-      { id: 'DH401', name: 'Apartment DH401 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH402', name: 'Apartment DH402 (973.7 Sft)', type: 'residential' },
-      { id: 'DH403', name: 'Apartment DH403 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH404', name: 'Apartment DH404 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH405', name: 'Apartment DH405 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH406', name: 'Apartment DH406 (1,686.00 Sft)', type: 'residential' }
+    { id: 'DH401', name: 'Apartment DH401 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH402', name: 'Apartment DH402 (973.7 Sft)', type: 'residential' },
+    { id: 'DH403', name: 'Apartment DH403 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH404', name: 'Apartment DH404 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH405', name: 'Apartment DH405 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH406', name: 'Apartment DH406 (1,686.00 Sft)', type: 'residential' }
   ],
   '5th Floor': [
-      { id: 'DH501', name: 'Apartment DH501 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH502', name: 'Apartment DH502 (973.7 Sft)', type: 'residential' },
-      { id: 'DH503', name: 'Apartment DH503 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH504', name: 'Apartment DH504 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH505', name: 'Apartment DH505 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH506', name: 'Apartment DH506 (1,686.00 Sft)', type: 'residential' }
+    { id: 'DH501', name: 'Apartment DH501 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH502', name: 'Apartment DH502 (973.7 Sft)', type: 'residential' },
+    { id: 'DH503', name: 'Apartment DH503 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH504', name: 'Apartment DH504 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH505', name: 'Apartment DH505 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH506', name: 'Apartment DH506 (1,686.00 Sft)', type: 'residential' }
   ],
   '6th Floor': [
-      { id: 'DH601', name: 'Apartment DH601 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH602', name: 'Apartment DH602 (973.7 Sft)', type: 'residential' },
-      { id: 'DH603', name: 'Apartment DH603 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH604', name: 'Apartment DH604 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH605', name: 'Apartment DH605 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH606', name: 'Apartment DH606 (1,686.00 Sft)', type: 'residential' }
+    { id: 'DH601', name: 'Apartment DH601 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH602', name: 'Apartment DH602 (973.7 Sft)', type: 'residential' },
+    { id: 'DH603', name: 'Apartment DH603 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH604', name: 'Apartment DH604 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH605', name: 'Apartment DH605 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH606', name: 'Apartment DH606 (1,686.00 Sft)', type: 'residential' }
   ],
   '7th Floor': [
-      { id: 'DH701', name: 'Apartment DH701 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH702', name: 'Apartment DH702 (973.7 Sft)', type: 'residential' },
-      { id: 'DH703', name: 'Apartment DH703 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH704', name: 'Apartment DH704 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH705', name: 'Apartment DH705 (1,198.3 Sft)', type: 'residential' },
-      { id: 'DH706', name: 'Apartment DH706 (1,686.00 Sft)', type: 'residential' }
+    { id: 'DH701', name: 'Apartment DH701 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH702', name: 'Apartment DH702 (973.7 Sft)', type: 'residential' },
+    { id: 'DH703', name: 'Apartment DH703 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH704', name: 'Apartment DH704 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH705', name: 'Apartment DH705 (1,198.3 Sft)', type: 'residential' },
+    { id: 'DH706', name: 'Apartment DH706 (1,686.00 Sft)', type: 'residential' }
   ],
   'Penthouse': [
-      { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
+    { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
   ]
 };
 
 // Функция для проверки существования объекта недвижимости
 function getPropertyById(propertyId) {
-    for (const category of Object.values(properties)) {
-        const property = category.find(p => p.id === propertyId);
-        if (property) return property;
-    }
-    return null;
+  for (const category of Object.values(properties)) {
+    const property = category.find(p => p.id === propertyId);
+    if (property) return property;
+  }
+  return null;
 }
 
 // Get previous owner from ownership history
 async function getPreviousOwner(propertyId) {
-    const [owners] = await pool.query(`
+  const [owners] = await pool.query(`
         SELECT owner_id
         FROM ownership_history
         WHERE property_id = ?
         ORDER BY from_date DESC
         LIMIT 1
     `, [propertyId]);
-    
-    return owners.length > 0 ? owners[0].owner_id : null;
+
+  return owners.length > 0 ? owners[0].owner_id : null;
 }
 
 // Update file naming function
 function generateFileName(originalName, category, userLogin) {
-    const date = new Date().toISOString().split('T')[0];
-    const ext = path.extname(originalName);
-    const categoryNames = {
-        agreement: 'Agreement',
-        receipt: 'Receipt',
-        proof_documents: 'Document',
-        video: 'Video'
-    };
-    
-    return `${categoryNames[category]}_${userLogin}_${date}${ext}`;
+  const date = new Date().toISOString().split('T')[0];
+  const ext = path.extname(originalName);
+  const categoryNames = {
+    agreement: 'Agreement',
+    receipt: 'Receipt',
+    proof_documents: 'Document',
+    video: 'Video'
+  };
+
+  return `${categoryNames[category]}_${userLogin}_${date}${ext}`;
 }
 
 const transactionController = {
   // Получение сделок пользователя
   async getUserTransactions(req, res) {
-  try {
-    const { status, page = 1, limit = 10 } = req.query;
-    const userId = req.user.id;
-    const offset = (page - 1) * limit;
+    try {
+      const { status, page = 1, limit = 10 } = req.query;
+      const userId = req.user.id;
+      const offset = (page - 1) * limit;
 
-    let query = `
+      let query = `
       SELECT t.*, 
              u1.name as previous_owner_name,
              u2.name as new_owner_name
@@ -233,26 +233,26 @@ const transactionController = {
         LEFT JOIN users u2 ON t.new_owner_id = u2.id
       WHERE (t.previous_owner_id = ? OR t.new_owner_id = ?)
     `;
-    const queryParams = [userId, userId];
+      const queryParams = [userId, userId];
 
-    if (status) {
-      query += ' AND t.status = ?';
-      queryParams.push(status);
-    }
+      if (status) {
+        query += ' AND t.status = ?';
+        queryParams.push(status);
+      }
 
-    query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(limit), offset);
+      query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?';
+      queryParams.push(parseInt(limit), offset);
 
-    const [transactions] = await pool.query(query, queryParams);
+      const [transactions] = await pool.query(query, queryParams);
 
-    // Получаем общее количество
-    const [totalRows] = await pool.query(
-      'SELECT COUNT(*) as count FROM transactions WHERE previous_owner_id = ? OR new_owner_id = ?',
-      [userId, userId]
-    );
+      // Получаем общее количество
+      const [totalRows] = await pool.query(
+        'SELECT COUNT(*) as count FROM transactions WHERE previous_owner_id = ? OR new_owner_id = ?',
+        [userId, userId]
+      );
 
-    const total = totalRows[0].count;
-    const totalPages = Math.ceil(total / limit);
+      const total = totalRows[0].count;
+      const totalPages = Math.ceil(total / limit);
 
       // Добавляем информацию о свойствах
       const enrichedTransactions = transactions.map(transaction => {
@@ -264,12 +264,12 @@ const transactionController = {
         };
       });
 
-    res.json({
+      res.json({
         transactions: enrichedTransactions,
-      total,
-      page: parseInt(page),
-      pages: totalPages
-    });
+        total,
+        page: parseInt(page),
+        pages: totalPages
+      });
     } catch (error) {
       console.error('Error getting transactions:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -363,18 +363,18 @@ const transactionController = {
         'SELECT witness_type, name, cnic, phone FROM transaction_witnesses WHERE transaction_id = ?',
         [transactionId]
       );
-      
+
       // Преобразуем массив в объект с witness1 и witness2
       const witnesses = dbWitnesses.reduce((acc, witness) => {
-          acc[witness.witness_type] = {
-              name: witness.name,
-              cnic: witness.cnic,
-              phone: witness.phone
-          };
-          return acc;
+        acc[witness.witness_type] = {
+          name: witness.name,
+          cnic: witness.cnic,
+          phone: witness.phone
+        };
+        return acc;
       }, {});
 
-      
+
 
       // Получаем все платежи для транзакции
       const [payments] = await pool.query(`
@@ -400,7 +400,7 @@ const transactionController = {
       const currentTransaction = transactions[0];
       const property = getPropertyById(currentTransaction.property_id);
 
-      const {witnesses: transactionWitnesses, ...transactionData} = currentTransaction;
+      const { witnesses: transactionWitnesses, ...transactionData } = currentTransaction;
       const response = {
         ...transactionData,
         witnesses,
@@ -452,83 +452,83 @@ const transactionController = {
   },
 
   // Обновление статуса транзакции
-  
+
   // Обновление статуса транзакции
-async update(req, res) {
-  try {
-    const transactionId = parseInt(req.params.id);
-    const { status, admin_notes } = req.body;
-    
-    // Проверка прав доступа
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Forbidden' });
-    }
-    
-    // Валидация статуса
-    const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-    
-    // Обновление транзакции
-    const [result] = await pool.query(
-      'UPDATE transactions SET status = ?, admin_notes = ? WHERE id = ?',
-      [status, admin_notes, transactionId]
-    );
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Transaction not found' });
-    }
-    
-    // Если транзакция одобрена, создаем запись в истории владения
-    if (status === 'approved') {
-      const [transaction] = await pool.query(
-        'SELECT * FROM transactions WHERE id = ?',
-        [transactionId]
+  async update(req, res) {
+    try {
+      const transactionId = parseInt(req.params.id);
+      const { status, admin_notes } = req.body;
+
+      // Проверка прав доступа
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+
+      // Валидация статуса
+      const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ message: 'Invalid status' });
+      }
+
+      // Обновление транзакции
+      const [result] = await pool.query(
+        'UPDATE transactions SET status = ?, admin_notes = ? WHERE id = ?',
+        [status, admin_notes, transactionId]
       );
-      
-      if (transaction.length > 0) {
-        // Проверяем, что у транзакции есть необходимые данные
-        if (transaction[0].property_id && transaction[0].new_owner_id) {
-          const newOwnership = {
-            property_id: transaction[0].property_id,
-            owner_id: transaction[0].new_owner_id,
-            from_date: new Date(),
-            to_date: null
-          };
-          
-          await pool.query(
-            'INSERT INTO ownership_history SET ?',
-            [newOwnership]
-          );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: 'Transaction not found' });
+      }
+
+      // Если транзакция одобрена, создаем запись в истории владения
+      if (status === 'approved') {
+        const [transaction] = await pool.query(
+          'SELECT * FROM transactions WHERE id = ?',
+          [transactionId]
+        );
+
+        if (transaction.length > 0) {
+          // Проверяем, что у транзакции есть необходимые данные
+          if (transaction[0].property_id && transaction[0].new_owner_id) {
+            const newOwnership = {
+              property_id: transaction[0].property_id,
+              owner_id: transaction[0].new_owner_id,
+              from_date: new Date(),
+              to_date: null
+            };
+
+            await pool.query(
+              'INSERT INTO ownership_history SET ?',
+              [newOwnership]
+            );
+          } else {
+            console.error('Transaction data incomplete for ownership history', transaction[0]);
+            return res.status(500).json({
+              message: 'Transaction data incomplete for ownership history'
+            });
+          }
         } else {
-          console.error('Transaction data incomplete for ownership history', transaction[0]);
-          return res.status(500).json({ 
-            message: 'Transaction data incomplete for ownership history' 
+          console.error('Transaction not found after update', transactionId);
+          return res.status(500).json({
+            message: 'Transaction not found after update'
           });
         }
-      } else {
-        console.error('Transaction not found after update', transactionId);
-        return res.status(500).json({ 
-          message: 'Transaction not found after update' 
-        });
       }
+
+      res.json({ success: true, message: 'Transaction updated successfully' });
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      console.error('Request details:', {
+        params: req.params,
+        body: req.body,
+        user: req.user
+      });
+      res.status(500).json({
+        message: 'Internal server error',
+        details: error.message
+      });
     }
-    
-    res.json({ success: true, message: 'Transaction updated successfully' });
-  } catch (error) {
-    console.error('Error updating transaction:', error);
-    console.error('Request details:', {
-      params: req.params,
-      body: req.body,
-      user: req.user
-    });
-    res.status(500).json({ 
-      message: 'Internal server error',
-      details: error.message 
-    });
-  }
-},
+  },
 
   // Загрузка файлов к сделке
   async uploadFiles(req, res) {
@@ -552,12 +552,12 @@ async update(req, res) {
       }
 
       const savedFiles = [];
-      
+
       if (type === 'single') {
         // Для одиночной загрузки
         const file = files.file[0]; // Ожидаем один файл с полем 'file'
         const category = req.body.category; // Категория файла (agreement, receipt, etc.)
-        
+
         // Проверяем существование файлов той же категории
         const [existingFiles] = await pool.query(
           'SELECT * FROM transaction_files WHERE transaction_id = ? AND category = ?',
@@ -601,7 +601,7 @@ async update(req, res) {
         for (const fieldName in files) {
           for (const file of files[fieldName]) {
             const relativePath = path.relative(UPLOAD_PATH, file.path);
-            
+
             const [result] = await pool.query(
               'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
               [
@@ -613,7 +613,7 @@ async update(req, res) {
                 fieldName
               ]
             );
-            
+
             savedFiles.push({
               id: result.insertId,
               fileName: file.filename,
@@ -625,7 +625,7 @@ async update(req, res) {
         }
       }
 
-      res.json({ 
+      res.json({
         message: 'Файлы успешно загружены',
         files: savedFiles
       });
@@ -691,136 +691,89 @@ async update(req, res) {
       res.status(500).json({ message: 'Internal server error' });
     }
   },
-async create(req, res) {
-  try {
-    const { property_id, new_owner_id, total_amount, witnesses } = req.body;
-    
-    // Проверяем, что свойство существует (через ваш массив свойств)
-    const property = getPropertyById(property_id);
-    if (!property) {
-      console.log('Property not found:', property_id);
-      return res.status(404).json({ message: 'Property not found' });
-    }
-    
-    // Получаем предыдущего владельца
-    const previous_owner_id = await getPreviousOwner(property_id);
-    
-    // Создаем транзакцию
-    const [result] = await pool.query(
-      `INSERT INTO transactions 
+  async create(req, res) {
+    try {
+      const { property_id, new_owner_id, total_amount, witnesses } = req.body;
+
+      // Проверяем, что свойство существует
+      const property = getPropertyById(property_id);
+      if (!property) {
+        console.log('Property not found:', property_id);
+        return res.status(404).json({ message: 'Property not found' });
+      }
+
+      // Получаем предыдущего владельца
+      const previous_owner_id = await getPreviousOwner(property_id);
+
+      // СОЗДАЕМ ТРАНЗАКЦИЮ СНАЧАЛА
+      const [result] = await pool.query(
+        `INSERT INTO transactions 
        (property_id, previous_owner_id, new_owner_id, status, total_amount, paid_amount)
        VALUES (?, ?, ?, 'pending', ?, 0)`,
-      [property_id, previous_owner_id, new_owner_id, total_amount]
-    );
-    
-    const transactionId = result.insertId;
+        [property_id, previous_owner_id, new_owner_id, total_amount]
+      );
 
-    // Обрабатываем данные о свидетелях
-    if (witnesses) {
-      const connection = await pool.getConnection();
-      try {
-        await connection.beginTransaction();
-        
-        // Удаляем существующих свидетелей (на случай повторной попытки)
-        await connection.query(
-          'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
-          [transactionId]
-        );
-        
-        // Обработка первого свидетеля
-        if (witnesses.witness1) {
-          const { name, cnic, phone } = witnesses.witness1;
-          
-          // Поиск существующих свидетелей по CNIC
-          let [existingWitnesses] = await connection.query(
-            'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-            [cnic]
+      const transactionId = result.insertId;
+
+      // ТЕПЕРЬ ДОБАВЛЯЕМ СВИДЕТЕЛЕЙ С ИСПОЛЬЗОВАНИЕМ transactionId
+      if (witnesses) {
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+
+          // Удаляем существующих свидетелей (на случай повторной попытки)
+          await connection.query(
+            'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
+            [transactionId]
           );
-          
-          // Если свидетель не найден, добавляем нового
-          if (existingWitnesses.length === 0) {
+
+          // Обработка первого свидетеля
+          if (witnesses.witness1) {
+            const { name, cnic, phone } = witnesses.witness1;
+
+            // ДОБАВЛЯЕМ СВИДЕТЕЛЯ НАПРЯМУЮ С transaction_id
             await connection.query(
               `INSERT INTO transaction_witnesses 
-               (name, cnic, phone) 
-               VALUES (?, ?, ?)`,
-              [name, cnic, phone || null]
-            );
-            
-            // Получаем ID вновь созданного свидетеля
-            const [newWitness] = await connection.query(
-              'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
-              [cnic]
-            );
-            existingWitnesses = newWitness;
-          }
-          
-          // Связываем свидетеля с транзакцией
-          await connection.query(
-            `INSERT INTO transaction_witnesses 
              (transaction_id, witness_type, name, cnic, phone) 
              VALUES (?, 'witness1', ?, ?, ?)`,
-            [transactionId, name, cnic, phone || null]
-          );
-        }
-        
-        // Обработка второго свидетеля
-        if (witnesses.witness2) {
-          const { name, cnic, phone } = witnesses.witness2;
-          
-          // Поиск существующих свидетелей по CNIC
-          let [existingWitnesses] = await connection.query(
-            'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-            [cnic]
-          );
-          
-          // Если свидетель не найден, добавляем нового
-          if (existingWitnesses.length === 0) {
+              [transactionId, name, cnic, phone || null]
+            );
+          }
+
+          // Обработка второго свидетеля
+          if (witnesses.witness2) {
+            const { name, cnic, phone } = witnesses.witness2;
+
+            // ДОБАВЛЯЕМ СВИДЕТЕЛЯ НАПРЯМУЮ С transaction_id
             await connection.query(
               `INSERT INTO transaction_witnesses 
-               (name, cnic, phone) 
-               VALUES (?, ?, ?)`,
-              [name, cnic, phone || null]
-            );
-            
-            // Получаем ID вновь созданного свидетеля
-            const [newWitness] = await connection.query(
-              'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
-              [cnic]
-            );
-            existingWitnesses = newWitness;
-          }
-          
-          // Связываем свидетеля с транзакцией
-          await connection.query(
-            `INSERT INTO transaction_witnesses 
              (transaction_id, witness_type, name, cnic, phone) 
              VALUES (?, 'witness2', ?, ?, ?)`,
-            [transactionId, name, cnic, phone || null]
-          );
-        }
-        
-        await connection.commit();
-      } catch (error) {
-        await connection.rollback();
-        throw error;
-      } finally {
-        connection.release();
-      }
-    }
+              [transactionId, name, cnic, phone || null]
+            );
+          }
 
-    res.status(201).json({
-      message: 'Transaction created successfully',
-      transaction_id: transactionId
-    });
-  } catch (error) {
-    console.error('Error creating transaction:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error creating transaction',
-      details: error.message
-    });
-  }
-},
+          await connection.commit();
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
+        }
+      }
+
+      res.status(201).json({
+        message: 'Transaction created successfully',
+        transaction_id: transactionId
+      });
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error creating transaction',
+      });
+    }
+  },
 
   // Запрос на создание транзакции от пользователя
   async requestTransaction(req, res) {
@@ -938,10 +891,10 @@ async create(req, res) {
         total,
         page: parseInt(page),
         totalPages: Math.ceil(total / limit)
-    });
-  } catch (error) {
-    console.error('Ошибка при получении сделок:', error);
-    res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      });
+    } catch (error) {
+      console.error('Ошибка при получении сделок:', error);
+      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
     }
   },
 
@@ -1026,7 +979,7 @@ async create(req, res) {
 
       // Проверяем, не превышает ли сумма нового платежа оставшуюся нераспределенную сумму
       if (attemptedAmount > remainingUnallocated) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: 'Payment amount exceeds remaining unallocated amount',
           total_amount: totalAmount,
           total_allocated: totalAllocated,
@@ -1206,16 +1159,16 @@ async create(req, res) {
    */
   async getObjectTransactions(req, res) {
     try {
-        const { property_id } = req.query;
+      const { property_id } = req.query;
 
-        // Проверяем валидацию
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+      // Проверяем валидацию
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
 
-        // Получаем текущего владельца из истории владения
-        const [ownerHistory] = await pool.query(`
+      // Получаем текущего владельца из истории владения
+      const [ownerHistory] = await pool.query(`
             SELECT oh.*, u.name as owner_name, u.cnic as owner_cnic
             FROM ownership_history oh
             LEFT JOIN users u ON oh.owner_id = u.id
@@ -1224,8 +1177,8 @@ async create(req, res) {
             LIMIT 1
         `, [property_id]);
 
-        // Получаем активные транзакции для данного объекта
-        const [activeTransactions] = await pool.query(`
+      // Получаем активные транзакции для данного объекта
+      const [activeTransactions] = await pool.query(`
             SELECT 
                 t.*,
                 u1.name as previous_owner_name,
@@ -1239,8 +1192,8 @@ async create(req, res) {
             ORDER BY t.created_at DESC
         `, [property_id]);
 
-        // Получаем историю владения
-        const [ownershipHistory] = await pool.query(`
+      // Получаем историю владения
+      const [ownershipHistory] = await pool.query(`
             SELECT 
                 oh.*,
                 u.name as owner_name,
@@ -1251,13 +1204,13 @@ async create(req, res) {
             ORDER BY oh.from_date DESC
         `, [property_id]);
 
-        // Получаем файлы и платежи только для активных транзакций
-        const transactionIds = activeTransactions.map(t => t.id);
-        let files = [], payments = [];
-        
-        if (transactionIds.length > 0) {
-            // Получаем все файлы для транзакций
-            const [transactionFiles] = await pool.query(`
+      // Получаем файлы и платежи только для активных транзакций
+      const transactionIds = activeTransactions.map(t => t.id);
+      let files = [], payments = [];
+
+      if (transactionIds.length > 0) {
+        // Получаем все файлы для транзакций
+        const [transactionFiles] = await pool.query(`
                 SELECT 
                     transaction_id,
                     original_name,
@@ -1267,11 +1220,11 @@ async create(req, res) {
                 FROM transaction_files
                 WHERE transaction_id IN (?)
             `, [transactionIds]);
-            
-            files = transactionFiles;
 
-            // Получаем все платежи с информацией о квитанциях
-            const [transactionPayments] = await pool.query(`
+        files = transactionFiles;
+
+        // Получаем все платежи с информацией о квитанциях
+        const [transactionPayments] = await pool.query(`
                 SELECT 
                     tp.*,
                     tf.original_name as receipt_name,
@@ -1281,70 +1234,70 @@ async create(req, res) {
                 LEFT JOIN transaction_files tf ON tp.receipt_file_id = tf.id
                 WHERE tp.transaction_id IN (?)
             `, [transactionIds]);
-            
-            payments = transactionPayments;
-        }
 
-        // Формируем ответ
-        const response = {
-            property_id,
-            current_owner: ownerHistory.length > 0 ? {
-                id: ownerHistory[0].owner_id,
-                name: ownerHistory[0].owner_name,
-                cnic: ownerHistory[0].owner_cnic,
-                since: ownerHistory[0].from_date
-            } : null,
-            active_transactions: activeTransactions.map(t => ({
-                id: t.id,
-                status: t.status,
-                new_owner: {
-                    name: t.new_owner_name,
-                    cnic: t.new_owner_cnic
-                },
-                created_at: t.created_at,
-                total_amount: t.total_amount,
-                paid_amount: t.paid_amount || 0,
-                files: files
-                    .filter(f => f.transaction_id === t.id)
-                    .map(f => ({
-                        name: f.original_name,
-                        category: f.category,
-                        upload_date: f.created_at,
-                        path: f.file_path
-                    })),
-                payments: payments
-                    .filter(p => p.transaction_id === t.id)
-                    .map(p => ({
-                        id: p.id,
-                        amount: p.amount,
-                        date: p.payment_date,
-                        status: p.status,
-                        method: p.payment_method,
-                        receipt: p.receipt_name ? {
-                            name: p.receipt_name,
-                            upload_date: p.receipt_upload_date,
-                            path: p.receipt_path
-                        } : null
-                    }))
+        payments = transactionPayments;
+      }
+
+      // Формируем ответ
+      const response = {
+        property_id,
+        current_owner: ownerHistory.length > 0 ? {
+          id: ownerHistory[0].owner_id,
+          name: ownerHistory[0].owner_name,
+          cnic: ownerHistory[0].owner_cnic,
+          since: ownerHistory[0].from_date
+        } : null,
+        active_transactions: activeTransactions.map(t => ({
+          id: t.id,
+          status: t.status,
+          new_owner: {
+            name: t.new_owner_name,
+            cnic: t.new_owner_cnic
+          },
+          created_at: t.created_at,
+          total_amount: t.total_amount,
+          paid_amount: t.paid_amount || 0,
+          files: files
+            .filter(f => f.transaction_id === t.id)
+            .map(f => ({
+              name: f.original_name,
+              category: f.category,
+              upload_date: f.created_at,
+              path: f.file_path
             })),
-            ownership_history: ownershipHistory.map(h => ({
-                owner: {
-                    id: h.owner_id,
-                    name: h.owner_name,
-                    cnic: h.owner_cnic
-                },
-                from_date: h.from_date,
-                to_date: h.to_date
+          payments: payments
+            .filter(p => p.transaction_id === t.id)
+            .map(p => ({
+              id: p.id,
+              amount: p.amount,
+              date: p.payment_date,
+              status: p.status,
+              method: p.payment_method,
+              receipt: p.receipt_name ? {
+                name: p.receipt_name,
+                upload_date: p.receipt_upload_date,
+                path: p.receipt_path
+              } : null
             }))
-        };
+        })),
+        ownership_history: ownershipHistory.map(h => ({
+          owner: {
+            id: h.owner_id,
+            name: h.owner_name,
+            cnic: h.owner_cnic
+          },
+          from_date: h.from_date,
+          to_date: h.to_date
+        }))
+      };
 
-        res.json(response);
+      res.json(response);
     } catch (error) {
-        console.error('Error in getObjectTransactions:', error);
-        res.status(500).json({ 
-            error: 'Internal server error',
-            message: error.message 
-        });
+      console.error('Error in getObjectTransactions:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error.message
+      });
     }
   }
 };

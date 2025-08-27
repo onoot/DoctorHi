@@ -1,49 +1,5 @@
 const totalAmountInput = document.getElementById('totalAmount');
 
-let exchangeRateCache = null;
-let lastFetchTime = 0;
-
-function openCreateTransactionModal() {
-    loadProperties();
-    openModal('createTransactionModal');
-
-    // Небольшая задержка для гарантированной загрузки модального окна
-    setTimeout(() => {
-        if (totalAmountInput) {
-            // Создаем элемент для отображения конвертации, если его нет
-            let conversionElement = totalAmountInput.parentNode.querySelector('.currency-conversion');
-            if (!conversionElement) {
-                conversionElement = document.createElement('div');
-                conversionElement.className = 'currency-conversion';
-                conversionElement.style.marginTop = '5px';
-                conversionElement.style.color = '#666';
-                conversionElement.style.fontSize = '0.9em';
-                totalAmountInput.parentNode.appendChild(conversionElement);
-            }
-
-            // Добавляем обработчик для пересчета суммы
-            totalAmountInput.addEventListener('input', async function () {
-                const pkrAmount = parseFloat(this.value) || 0;
-                const exchangeRate = await getExchangeRatePKRtoUSD();
-                const usdAmount = pkrAmount * exchangeRate;
-
-                conversionElement.innerHTML = `
-          <span>≈ ${formatUSD(usdAmount)} USD</span>
-          <span style="font-size: 0.8em; display: block; margin-top: 3px; opacity: 0.7">
-            (1 PKR = ${exchangeRate.toFixed(6)} USD)
-          </span>
-        `;
-            });
-
-            // Имитируем событие для первоначального расчета
-            const event = new Event('input', { bubbles: true });
-            totalAmountInput.dispatchEvent(event);
-        }
-        attachCurrencyConverter();
-    }, 100);
-}
-
-
 
 const API_BASE_URL = `https://${window?.location?.host}/api`;
 let currentPage = 1;
@@ -142,6 +98,7 @@ const properties = {
         { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
     ]
 };
+
 // Проверка авторизации при загрузке страницы
 document.addEventListener('DOMContentLoaded', async function () {
     try {
@@ -337,44 +294,6 @@ function showNotification(type, message) {
         }, 300); // Ждем завершения анимации исчезновения
     }, duration);
 }
-// Функции для пагинации
-function createPagination(totalItems, currentPage, itemsPerPage) {
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const pagination = document.createElement('div');
-    pagination.className = 'pagination';
-
-    // Кнопка "Предыдущая"
-    const prevButton = document.createElement('button');
-    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevButton.disabled = currentPage === 1;
-    prevButton.onclick = () => {
-        if (currentPage > 1) {
-            currentPage--;
-            loadCurrentSection();
-        }
-    };
-    pagination.appendChild(prevButton);
-
-    // Текущая страница
-    const pageInfo = document.createElement('span');
-    pageInfo.className = 'current-page';
-    pageInfo.textContent = `${currentPage} / ${totalPages}`;
-    pagination.appendChild(pageInfo);
-
-    // Кнопка "Следующая"
-    const nextButton = document.createElement('button');
-    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.onclick = () => {
-        if (currentPage < totalPages) {
-            currentPage++;
-            loadCurrentSection();
-        }
-    };
-    pagination.appendChild(nextButton);
-
-    return pagination;
-}
 
 // Функция загрузки текущего раздела
 function loadCurrentSection() {
@@ -394,60 +313,6 @@ function loadCurrentSection() {
     }
 }
 
-async function loadTransactions() {
-    const section = document.getElementById('transactions');
-    section.classList.add('loading');
-
-    const searchInput = section.querySelector('.search-input');
-    const searchParams = new URLSearchParams({
-        page: currentPage,
-        limit: itemsPerPage
-    });
-
-    if (searchInput?.value) {
-        searchParams.append('search', searchInput.value);
-    }
-
-    const data = await apiRequest(`/v1/admin/transactions?${searchParams}`);
-    section.classList.remove('loading');
-
-    if (!data) return;
-
-    const tbody = document.getElementById('transactionsTableBody');
-    tbody.innerHTML = data.transactions.map(t => `
-        <tr>
-            <td>${t.id}</td>
-            <td>${t.property_id}</td>
-            <td>${t.previous_owner_id || 'No'}</td>
-            <td>${t.new_owner_id}</td>
-            <td>${new Date(t.created_at).toLocaleDateString()}</td>
-            <td><span class="status-badge ${t.status.toLowerCase()}">${t.status}</span></td>
-            <td>
-                <button class="action-btn btn-view" data-id="${t.id}" data-action="view">
-                    <i class="fas fa-eye"></i> View
-                </button>
-                ${t.status === 'pending' ? `
-                    <button class="action-btn btn-edit" data-id="${t.id}" data-action="approve">
-                        <i class="fas fa-check"></i> Approve
-                    </button>
-                    <button class="action-btn btn-delete" data-id="${t.id}" data-action="reject">
-                        <i class="fas fa-times"></i> Reject
-                    </button>
-                ` : ''}
-            </td>
-        </tr>
-    `).join('');
-
-    // Добавляем пагинацию
-    const existingPagination = section.querySelector('.pagination');
-    if (existingPagination) {
-        existingPagination.remove();
-    }
-    section.appendChild(createPagination(data.total, currentPage, itemsPerPage));
-
-    // Привязываем обработчики событий к динамическим кнопкам
-    attachActionHandlers3();
-}
 // Архивация пользователя
 async function archiveUser(userId) {
     if (!confirm('Are you sure you want to archive this user?')) {
@@ -505,6 +370,7 @@ async function restoreUser(userId) {
         showNotification('error', 'Error restoring user');
     }
 }
+
 function renderUsersTable(users, tbody) {
     if (!tbody) {
         console.error('No tbody provided to renderUsersTable');
@@ -2235,115 +2101,6 @@ function formatPKR(amount) {
         maximumFractionDigits: 2
     }).format(amount);
 }
-function attachCurrencyConverter() {
-    const usdOutput = document.getElementById('toUSD');
-
-    if (!totalAmountInput || !usdOutput) {
-        console.error('Элементы #totalAmount или #toUSD не найдены!');
-        return;
-    }
-
-    let rawValue = 0;
-    let lastInputValue = '';
-
-    // Сохраняем "сырое" значение во время ввода
-    totalAmountInput.addEventListener('input', function(e) {
-        // Сохраняем текущее значение для корректной обработки
-        lastInputValue = this.value;
-        
-        // Чистим ввод, сохраняя цифры и разделители
-        let cleanValue = this.value
-            .replace(/[^0-9.,]/g, '')
-            .replace(/(,)/g, '.') // Заменяем запятые на точки
-            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
-
-        // Парсим значение
-        const newRawValue = parseNumber(cleanValue);
-        
-        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
-        if (newRawValue !== rawValue) {
-            rawValue = newRawValue;
-            // Обновляем конвертацию в USD во время ввода (без форматирования)
-            updateUSD(rawValue);
-        }
-    });
-
-    // Форматируем ТОЛЬКО при потере фокуса
-    totalAmountInput.addEventListener('blur', function() {
-        // Сохраняем позицию курсора (для корректного восстановления при focus)
-        const cursorPosition = this.selectionStart;
-        
-        if (!this.value || parseFloat(this.value) === 0) {
-            this.value = '0.00';
-            rawValue = 0;
-        } else {
-            // Форматируем значение при потере фокуса
-            rawValue = parseNumber(this.value);
-            this.value = formatPKR(rawValue);
-        }
-        
-        // Восстанавливаем позицию курсора (если нужно)
-        if (cursorPosition > 0 && cursorPosition <= this.value.length) {
-            this.setSelectionRange(cursorPosition, cursorPosition);
-        }
-        
-        updateUSD(rawValue);
-    });
-
-    // При фокусе показываем "сырое" значение для редактирования
-    totalAmountInput.addEventListener('focus', function() {
-        if (this.value === '0.00' || this.value === '') {
-            this.value = '';
-            rawValue = 0;
-        } else {
-            // Сохраняем текущее значение как "сырое" для редактирования
-            this.value = rawValue.toString();
-        }
-        
-        // Восстанавливаем последнее введенное значение (если было)
-        if (lastInputValue && lastInputValue !== '0.00') {
-            this.value = lastInputValue;
-        }
-        
-        // Устанавливаем курсор в конец поля
-        setTimeout(() => {
-            this.setSelectionRange(this.value.length, this.value.length);
-        }, 0);
-    });
-
-    // Обновление USD
-    async function updateUSD(pkrAmount) {
-        if (pkrAmount <= 0) {
-            usdOutput.textContent = '';
-            return;
-        }
-        try {
-            const exchangeRate = await getExchangeRatePKRtoUSD();
-            const usdAmount = pkrAmount * exchangeRate;
-            usdOutput.innerHTML = `≈ ${formatUSD(usdAmount)} USD
-                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
-                </span>`;
-        } catch (error) {
-            console.log(error)
-            usdOutput.innerHTML = `
-                <span style="color: #dc3545">Conversion error</span>
-                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    Check your internet connection
-                </span>`;
-        }
-    }
-
-    // Инициализация
-    if (totalAmountInput.value) {
-        rawValue = parseNumber(totalAmountInput.value);
-        totalAmountInput.value = formatPKR(rawValue);
-    } else {
-        totalAmountInput.value = '0.00';
-        rawValue = 0;
-    }
-    updateUSD(rawValue);
-}
 
 
 // Инициализация обработчиков для платежей
@@ -2453,271 +2210,6 @@ document.getElementById('receiptFile')?.addEventListener('change', function (e) 
     preview.innerHTML = '';
   }
 });
-
-// Глобальная переменная для хранения текущего ID транзакции
-let currentTransactionId = null;
-
-// Общая функция для открытия модальных окон
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'block';
-        // Добавляем класс для анимации
-        setTimeout(() => {
-            modal.classList.add('show');
-        }, 10);
-    } else {
-        console.error(`Modal with id "${modalId}" not found`);
-    }
-}
-
-// Общая функция для закрытия модальных окон
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
-    }
-}
-
-// Функция для открытия модального окна загрузки одного файла
-function openUploadModal(category) {
-    // Получаем ID текущей транзакции
-    const transactionIdElement = document.getElementById('currentTransactionId');
-    if (!transactionIdElement || !transactionIdElement.value) {
-        showNotification('error', 'Transaction ID not found');
-        return;
-    }
-    
-    currentTransactionId = transactionIdElement.value;
-    
-    // Устанавливаем значения в скрытые поля формы
-    document.getElementById('uploadTransactionId').value = currentTransactionId;
-    document.getElementById('uploadCategory').value = category;
-    
-    // Обновляем заголовок модального окна
-    const modalTitle = document.querySelector('#uploadFileModal .modal-header h2');
-    if (modalTitle) {
-        let title = 'Upload File';
-        switch(category) {
-            case 'agreement':
-                title = 'Upload Agreement File';
-                break;
-            case 'video':
-                title = 'Upload Video File';
-                break;
-        }
-        modalTitle.textContent = title;
-    }
-    
-    // Сбрасываем форму и предпросмотр
-    const fileInput = document.getElementById('file');
-    if (fileInput) {
-        fileInput.value = '';
-    }
-    
-    const imagePreview = document.getElementById('previewImage');
-    if (imagePreview) {
-        imagePreview.style.display = 'none';
-        imagePreview.src = '';
-    }
-    
-    // Открываем модальное окно
-    openModal('uploadFileModal');
-}
-
-// Функция для открытия модального окна множественной загрузки файлов
-function openMultipleUploadModal() {
-    // Получаем ID текущей транзакции
-    const transactionIdElement = document.getElementById('currentTransactionId');
-    if (!transactionIdElement || !transactionIdElement.value) {
-        showNotification('error', 'Transaction ID not found');
-        return;
-    }
-    
-    currentTransactionId = transactionIdElement.value;
-    
-    // Устанавливаем значение в скрытое поле формы
-    document.getElementById('multiUploadTransactionId').value = currentTransactionId;
-    
-    // Сбрасываем форму
-    const filesInput = document.getElementById('files');
-    if (filesInput) {
-        filesInput.value = '';
-    }
-    
-    // Открываем модальное окно
-    openModal('multipleUploadModal');
-}
-
-// Функция для открытия модального окна добавления платежа
-function openAddPaymentModal() {
-    // Получаем ID текущей транзакции
-    const transactionIdElement = document.getElementById('currentTransactionId');
-    if (!transactionIdElement || !transactionIdElement.value) {
-        showNotification('error', 'Transaction ID not found');
-        return;
-    }
-    
-    const transactionId = transactionIdElement.value;
-    
-    // Устанавливаем значения в форму
-    document.getElementById('paymentTransactionId').value = transactionId;
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentMethod').value = 'cash';
-    
-    // Сбрасываем предпросмотр квитанции
-    document.getElementById('receiptFile').value = '';
-    document.getElementById('receiptPreview').innerHTML = '';
-    
-    // Открываем модальное окно
-    openModal('addPaymentModal');
-}
-
-// Функция для предпросмотра изображения при выборе файла
-function setupFilePreview() {
-    // Для одиночной загрузки
-    const fileInput = document.getElementById('file');
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById('previewImage');
-            
-            if (preview) {
-                if (file && file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        preview.src = e.target.result;
-                        preview.style.display = 'block';
-                    };
-                    
-                    reader.readAsDataURL(file);
-                } else {
-                    preview.style.display = 'none';
-                    preview.src = '';
-                }
-            }
-        });
-    }
-    
-    // Для предпросмотра квитанции платежа
-    const receiptFileInput = document.getElementById('receiptFile');
-    if (receiptFileInput) {
-        receiptFileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const preview = document.getElementById('receiptPreview');
-            
-            if (preview) {
-                preview.innerHTML = '';
-                
-                if (file) {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        
-                        reader.onload = function(e) {
-                            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
-                        };
-                        
-                        reader.readAsDataURL(file);
-                    } else if (file.type === 'application/pdf') {
-                        preview.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>`;
-                    } else {
-                        preview.innerHTML = `<p>File: ${file.name}</p>`;
-                    }
-                }
-            }
-        });
-    }
-}
-
-// Функция для отображения файлов в интерфейсе
-function displayFiles(files, containerId, fileCategory) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    if (!files || files.length === 0) {
-        container.innerHTML = '<p>No files uploaded yet</p>';
-        return;
-    }
-    
-    files.forEach(file => {
-        const fileElement = document.createElement('div');
-        fileElement.className = 'file-item';
-        
-        // Создаем действия с файлом
-        const actions = document.createElement('div');
-        actions.className = 'file-actions';
-        
-        // Кнопка просмотра
-        const viewBtn = document.createElement('button');
-        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
-        viewBtn.onclick = () => window.open(`${API_BASE_URL}/uploads/${file.file_name}`, '_blank');
-        actions.appendChild(viewBtn);
-        
-        // Кнопка скачивания
-        const downloadBtn = document.createElement('button');
-        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
-        downloadBtn.onclick = () => downloadFile(file);
-        actions.appendChild(downloadBtn);
-        
-        // Кнопка удаления (только для администратора)
-        if (isAdmin) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-            deleteBtn.onclick = () => deleteFile(file.id, fileCategory);
-            actions.appendChild(deleteBtn);
-        }
-        
-        // Определяем тип файла для отображения иконки
-        let fileIcon = 'fa-file';
-        if (file.file_name.toLowerCase().endsWith('.pdf')) {
-            fileIcon = 'fa-file-pdf';
-        } else if (file.file_name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
-            fileIcon = 'fa-file-image';
-        } else if (file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
-            fileIcon = 'fa-file-video';
-        }
-        
-        // Формируем отображение файла
-        fileElement.innerHTML = `
-            <i class="fas ${fileIcon}"></i>
-            <span class="file-name">${file.file_name}</span>
-            <span class="file-date">${new Date(file.uploaded_at).toLocaleDateString()}</span>
-        `;
-        
-        fileElement.appendChild(actions);
-        container.appendChild(fileElement);
-    });
-}
-
-// Функция для загрузки файлов транзакции
-async function loadTransactionFiles(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
-            method: 'GET'
-        });
-        
-        if (response.success && response.documents) {
-            // Распределяем файлы по категориям
-            const agreementFiles = response.documents.filter(file => file.category === 'agreement');
-            const videoFiles = response.documents.filter(file => file.category === 'video');
-            const proofFiles = response.documents.filter(file => file.category === 'proof');
-            
-            // Отображаем файлы в соответствующих контейнерах
-            displayFiles(agreementFiles, 'agreementFile', 'agreement');
-            displayFiles(videoFiles, 'videoFile', 'video');
-            displayFiles(proofFiles, 'proofDocuments', 'proof');
-        }
-    } catch (error) {
-        console.error('Error loading transaction files:', error);
-        showNotification('error', 'Error loading files');
-    }
-}
 
 // Инициализация обработчиков событий
 document.addEventListener('DOMContentLoaded', function() {
@@ -2912,6 +2404,694 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
 });
 
+
+// Глобальная переменная для хранения текущего ID транзакции
+let currentTransactionId = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+let exchangeRateCache = null;
+let lastFetchTime = 0;
+let conversionDebounce = null;
+
+// Функция для отображения уведомлений
+function showNotification(type, message, duration = 3000) {
+    // Создаем контейнер для уведомлений, если его еще нет
+    let container = document.getElementById('notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notification-container';
+        document.body.appendChild(container);
+    }
+    
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    // Добавляем уведомление в контейнер
+    container.appendChild(notification);
+    
+    // Показываем уведомление с анимацией
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10); // Небольшая задержка для корректного запуска анимации
+    
+    // Автоматически скрываем и удаляем уведомление через указанное время
+    setTimeout(() => {
+        notification.classList.remove('show'); // Запускаем анимацию исчезновения
+        setTimeout(() => {
+            notification.remove(); // Удаляем элемент из DOM
+        }, 300); // Ждем завершения анимации исчезновения
+    }, duration);
+}
+
+// Функция для пагинации
+function createPagination(totalItems, currentPage, itemsPerPage) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const pagination = document.createElement('div');
+    pagination.className = 'pagination';
+    
+    // Кнопка "Предыдущая"
+    const prevButton = document.createElement('button');
+    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            loadTransactions(currentPage - 1);
+        }
+    });
+    pagination.appendChild(prevButton);
+    
+    // Номера страниц
+    for (let i = 1; i <= totalPages; i++) {
+        const pageButton = document.createElement('button');
+        pageButton.textContent = i;
+        pageButton.className = i === currentPage ? 'active' : '';
+        pageButton.addEventListener('click', () => {
+            loadTransactions(i);
+        });
+        pagination.appendChild(pageButton);
+    }
+    
+    // Кнопка "Следующая"
+    const nextButton = document.createElement('button');
+    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            loadTransactions(currentPage + 1);
+        }
+    });
+    pagination.appendChild(nextButton);
+    
+    return pagination;
+}
+
+// Форматирование суммы в долларах
+function formatUSD(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    }).format(amount);
+}
+
+// Форматирование денег с разделителями тысяч
+function formatPKR(amount) {
+    try {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    } catch (e) {
+        // Fallback для старых браузеров
+        return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+}
+
+function parseNumber(value) {
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    const [integer, ...decimals] = cleanValue.split('.');
+    const decimalPart = decimals.join('');
+    
+    return parseFloat(`${integer}.${decimalPart}`) || 0;
+}
+
+// Функция для получения курса обмена PKR к USD
+async function getExchangeRatePKRtoUSD() {
+    try {
+        // Запрашиваем курс через внутренний API
+        const data = await apiRequest('/v1/admin/latest/PKR', {
+            method: 'GET'
+        });
+        
+        // Проверяем структуру ответа
+        if (data.success && typeof data.USD === 'number') {
+            return data.USD;
+        }
+        
+        throw new Error('Invalid API response structure');
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; // Fallback курс
+    }
+}
+
+async function getCachedExchangeRate() {
+    const now = Date.now();
+    if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
+        return exchangeRateCache;
+    }
+    exchangeRateCache = await getExchangeRatePKRtoUSD();
+    lastFetchTime = now;
+    return exchangeRateCache;
+}
+
+// Общая функция для открытия модальных окон
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'block';
+        // Добавляем класс для анимации
+        setTimeout(() => {
+            modal.classList.add('show');
+        }, 10);
+    } else {
+        console.error(`Modal with id "${modalId}" not found`);
+    }
+}
+
+// Общая функция для закрытия модальных окон
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+// Функция для открытия модального окна загрузки одного файла
+function openUploadModal(category) {
+    // Получаем ID текущей транзакции из скрытого поля в модальном окне
+    const transactionIdElement = document.getElementById('currentTransactionId');
+    if (!transactionIdElement || !transactionIdElement.value) {
+        showNotification('error', 'Transaction ID not found');
+        return;
+    }
+    
+    currentTransactionId = transactionIdElement.value;
+    
+    // Устанавливаем значения в скрытые поля формы
+    const uploadTransactionId = document.getElementById('uploadTransactionId');
+    const uploadCategory = document.getElementById('uploadCategory');
+    
+    if (uploadTransactionId) uploadTransactionId.value = currentTransactionId;
+    if (uploadCategory) uploadCategory.value = category;
+    
+    // Обновляем заголовок модального окна в зависимости от категории
+    const modalHeader = document.querySelector('#uploadFileModal .modal-header h2');
+    if (modalHeader) {
+        let title = 'Upload File';
+        switch(category) {
+            case 'agreement':
+                title = 'Upload Agreement File';
+                break;
+            case 'video':
+                title = 'Upload Video File';
+                break;
+        }
+        modalHeader.textContent = title;
+    }
+    
+    // Сбрасываем форму и предпросмотр
+    const fileInput = document.getElementById('file');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    
+    const imagePreview = document.getElementById('previewImage');
+    if (imagePreview) {
+        imagePreview.style.display = 'none';
+        imagePreview.src = '';
+    }
+    
+    // Открываем модальное окно
+    openModal('uploadFileModal');
+}
+
+// Функция для открытия модального окна множественной загрузки файлов
+function openMultipleUploadModal() {
+    // Получаем ID текущей транзакции
+    const transactionIdElement = document.getElementById('currentTransactionId');
+    if (!transactionIdElement || !transactionIdElement.value) {
+        showNotification('error', 'Transaction ID not found');
+        return;
+    }
+    
+    currentTransactionId = transactionIdElement.value;
+    
+    // Устанавливаем значение в скрытое поле формы
+    const multiUploadTransactionId = document.getElementById('multiUploadTransactionId');
+    if (multiUploadTransactionId) {
+        multiUploadTransactionId.value = currentTransactionId;
+    }
+    
+    // Сбрасываем форму
+    const filesInput = document.getElementById('files');
+    if (filesInput) {
+        filesInput.value = '';
+    }
+    
+    // Открываем модальное окно
+    openModal('multipleUploadModal');
+}
+
+// Функция для открытия модального окна добавления платежа
+function openAddPaymentModal() {
+    // Получаем ID текущей транзакции
+    const transactionIdElement = document.getElementById('currentTransactionId');
+    if (!transactionIdElement || !transactionIdElement.value) {
+        showNotification('error', 'Transaction ID not found');
+        return;
+    }
+    
+    const transactionId = transactionIdElement.value;
+    
+    // Устанавливаем значения в форму
+    const paymentTransactionId = document.getElementById('paymentTransactionId');
+    if (paymentTransactionId) paymentTransactionId.value = transactionId;
+    
+    const paymentAmount = document.getElementById('paymentAmount');
+    if (paymentAmount) paymentAmount.value = '';
+    
+    const paymentMethod = document.getElementById('paymentMethod');
+    if (paymentMethod) paymentMethod.value = 'cash';
+    
+    // Сбрасываем предпросмотр квитанции
+    const receiptFile = document.getElementById('receiptFile');
+    const receiptPreview = document.getElementById('receiptPreview');
+    
+    if (receiptFile) receiptFile.value = '';
+    if (receiptPreview) receiptPreview.innerHTML = '';
+    
+    // Открываем модальное окно
+    openModal('addPaymentModal');
+}
+
+// Функция для предпросмотра изображения при выборе файла
+function setupFilePreview() {
+    // Для одиночной загрузки
+    const fileInput = document.getElementById('file');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('previewImage');
+            
+            if (preview) {
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+                    
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.style.display = 'none';
+                    preview.src = '';
+                }
+            }
+        });
+    }
+    
+    // Для предпросмотра квитанции платежа
+    const receiptFileInput = document.getElementById('receiptFile');
+    if (receiptFileInput) {
+        receiptFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('receiptPreview');
+            
+            if (preview) {
+                preview.innerHTML = '';
+                
+                if (file) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    } else if (file.type === 'application/pdf') {
+                        preview.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>`;
+                    } else {
+                        preview.innerHTML = `<p>File: ${file.name}</p>`;
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Функция для отображения файлов в интерфейсе
+function displayFiles(files, containerId, fileCategory) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!files || files.length === 0) {
+        container.innerHTML = '<p>No files uploaded yet</p>';
+        return;
+    }
+    
+    files.forEach(file => {
+        const fileElement = document.createElement('div');
+        fileElement.className = 'file-item';
+        
+        // Создаем действия с файлом
+        const actions = document.createElement('div');
+        actions.className = 'file-actions';
+        
+        // Кнопка просмотра
+        const viewBtn = document.createElement('button');
+        viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
+        viewBtn.onclick = () => window.open(`${API_BASE_URL}/uploads/${file.file_name}`, '_blank');
+        actions.appendChild(viewBtn);
+        
+        // Кнопка скачивания
+        const downloadBtn = document.createElement('button');
+        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
+        downloadBtn.onclick = () => downloadFile(file);
+        actions.appendChild(downloadBtn);
+        
+        // Определяем тип файла для отображения иконки
+        let fileIcon = 'fa-file';
+        if (file.file_name.toLowerCase().endsWith('.pdf')) {
+            fileIcon = 'fa-file-pdf';
+        } else if (file.file_name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+            fileIcon = 'fa-file-image';
+        } else if (file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
+            fileIcon = 'fa-file-video';
+        }
+        
+        // Формируем отображение файла
+        fileElement.innerHTML = `
+            <i class="fas ${fileIcon}"></i>
+            <span class="file-name">${file.file_name}</span>
+            <span class="file-date">${new Date(file.uploaded_at).toLocaleDateString()}</span>
+        `;
+        
+        fileElement.appendChild(actions);
+        container.appendChild(fileElement);
+    });
+}
+
+// Функция для загрузки файлов транзакции
+async function loadTransactionFiles(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
+            method: 'GET'
+        });
+        
+        if (response.success && response.documents) {
+            // Распределяем файлы по категориям
+            const agreementFiles = response.documents.filter(file => file.category === 'agreement');
+            const videoFiles = response.documents.filter(file => file.category === 'video');
+            const proofFiles = response.documents.filter(file => file.category === 'proof');
+            
+            // Отображаем файлы в соответствующих контейнерах
+            displayFiles(agreementFiles, 'agreementFile', 'agreement');
+            displayFiles(videoFiles, 'videoFile', 'video');
+            displayFiles(proofFiles, 'proofDocuments', 'proof');
+        }
+    } catch (error) {
+        console.error('Error loading transaction files:', error);
+        showNotification('error', 'Error loading files');
+    }
+}
+
+// Функция для загрузки платежей
+async function loadTransactionPayments(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+        
+        if (response.success && response.payments) {
+            const tbody = document.getElementById('paymentsTableBody');
+            tbody.innerHTML = '';
+            
+            if (response.payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments yet</td></tr>';
+                return;
+            }
+            
+            response.payments.forEach(payment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${payment.id}</td>
+                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                    <td>${parseFloat(payment.amount).toFixed(2)}</td>
+                    <td>${payment.method}</td>
+                    <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
+                    <td>
+                        ${payment.receipt_url ? 
+                            `<a href="${payment.receipt_url}" target="_blank" class="receipt-link">View</a>` : 
+                            'No receipt'}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading payments:', error);
+        const tbody = document.getElementById('paymentsTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
+    }
+}
+
+// Функция для загрузки деталей транзакции
+async function loadTransactionDetails(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
+        
+        if (response.success && response.transaction) {
+            const transaction = response.transaction;
+            
+            // Форматируем суммы
+            const formatAmount = (amount) => new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+            
+            // Обновляем суммы
+            const totalAmountView = document.getElementById('totalAmountView');
+            const paidAmount = document.getElementById('paidAmount');
+            
+            if (totalAmountView) totalAmountView.textContent = formatAmount(transaction.total_amount);
+            if (paidAmount) paidAmount.textContent = formatAmount(transaction.paid_amount);
+            
+            // Обновляем оставшуюся сумму
+            const remaining = transaction.total_amount - transaction.paid_amount;
+            const remainingAmount = document.getElementById('remainingAmount');
+            if (remainingAmount) {
+                remainingAmount.textContent = formatAmount(remaining);
+            }
+            
+            // Обновляем дату создания
+            const createdAt = document.getElementById('createdAt');
+            if (createdAt) {
+                createdAt.textContent = new Date(transaction.created_at).toLocaleDateString();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+    }
+}
+
+// Функция для открытия модального окна просмотра транзакции
+function openViewTransactionModal(transactionId) {
+    if (!transactionId) {
+        showNotification('error', 'Transaction ID is required');
+        return;
+    }
+    
+    // Устанавливаем ID транзакции в скрытое поле
+    const currentTransactionIdElement = document.getElementById('currentTransactionId');
+    if (currentTransactionIdElement) {
+        currentTransactionIdElement.value = transactionId;
+    }
+    
+    // Открываем модальное окно
+    openModal('viewTransactionModal');
+    
+    // Загружаем данные транзакции и файлы
+    loadTransactionDetails(transactionId);
+    loadTransactionFiles(transactionId);
+    loadTransactionPayments(transactionId);
+}
+
+// Функция для загрузки транзакций
+async function loadTransactions(page = 1, limit = 10) {
+    try {
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.textContent = 'Loading transactions...';
+        document.getElementById('transactionsTableBody').innerHTML = '';
+        document.getElementById('transactionsTableBody').appendChild(loadingIndicator);
+        
+        const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}`);
+        
+        if (response.success && response.transactions) {
+            const tbody = document.getElementById('transactionsTableBody');
+            tbody.innerHTML = '';
+            
+            response.transactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${transaction.id}</td>
+                    <td>${transaction.property_id}</td>
+                    <td>${transaction.previous_owner_name || 'N/A'}</td>
+                    <td>${transaction.new_owner_name}</td>
+                    <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                    <td><span class="status-badge ${transaction.status}">${transaction.status}</span></td>
+                    <td>
+                        <button class="action-btn btn-edit view-transaction-btn" data-transaction-id="${transaction.id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Добавляем пагинацию
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (paginationContainer) {
+                paginationContainer.innerHTML = '';
+                paginationContainer.appendChild(
+                    createPagination(response.total, page, limit)
+                );
+            }
+        } else {
+            document.getElementById('transactionsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        document.getElementById('transactionsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
+    }
+}
+
+
+// Функция для загрузки архивных пользователей
+async function loadArchivedUsers(page = 1, limit = 10) {
+    try {
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.textContent = 'Loading archived users...';
+        document.getElementById('archivedUsersTableBody').innerHTML = '';
+        document.getElementById('archivedUsersTableBody').appendChild(loadingIndicator);
+        
+        const response = await apiRequest(`/v1/admin/users/archive?page=${page}&limit=${limit}`);
+        
+        if (response.success && response.users) {
+            const tbody = document.getElementById('archivedUsersTableBody');
+            tbody.innerHTML = '';
+            
+            response.users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.name}</td>
+                    <td>${user.cnic}</td>
+                    <td>${user.login}</td>
+                    <td>${user.properties_count || 0}</td>
+                    <td><span class="status-badge ${user.status}">${user.status}</span></td>
+                    <td>
+                        <button class="action-btn btn-edit view-user-btn" data-user-id="${user.id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            // Добавляем пагинацию
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (paginationContainer) {
+                paginationContainer.innerHTML = '';
+                paginationContainer.appendChild(
+                    createPagination(response.total, page, limit)
+                );
+            }
+        } else {
+            document.getElementById('archivedUsersTableBody').innerHTML = '<tr><td colspan="7" class="text-center">No archived users found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading archived users:', error);
+        document.getElementById('archivedUsersTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading archived users</td></tr>';
+    }
+}
+
+// Функция для открытия модального окна создания транзакции
+function openCreateTransactionModal() {
+    loadProperties();
+    loadUsersForSelect();
+    openModal('createTransactionModal');
+}
+
+// Функция для открытия модального окна просмотра пользователя
+async function openViewUserModal(userId) {
+    try {
+        const response = await apiRequest(`/v1/admin/users/${userId}`);
+        
+        if (response.success && response.user) {
+            const user = response.user;
+            const modalBody = document.getElementById('userModalBody');
+            
+            modalBody.innerHTML = `
+                <div class="user-details">
+                    <p><strong>ID:</strong> ${user.id}</p>
+                    <p><strong>Name:</strong> ${user.name}</p>
+                    <p><strong>CNIC:</strong> ${user.cnic}</p>
+                    <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+                    <p><strong>Address:</strong> ${user.address}</p>
+                    <p><strong>Login:</strong> ${user.login}</p>
+                    <p><strong>Status:</strong> <span class="status-badge ${user.status}">${user.status}</span></p>
+                    <p><strong>Properties:</strong> ${user.properties_count || 0}</p>
+                    <p><strong>Created At:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="user-actions">
+                    <button class="action-btn btn-approve activate-user-btn" data-user-id="${user.id}">
+                        <i class="fas fa-check"></i> Activate
+                    </button>
+                    <button class="action-btn btn-reject block-user-btn" data-user-id="${user.id}">
+                        <i class="fas fa-ban"></i> Block
+                    </button>
+                </div>
+            `;
+            
+            openModal('userModal');
+            
+            // Добавляем обработчики для кнопок действий
+            document.querySelector('.activate-user-btn')?.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                updateUserStatus(userId, 'active');
+            });
+            
+            document.querySelector('.block-user-btn')?.addEventListener('click', function() {
+                const userId = this.getAttribute('data-user-id');
+                updateUserStatus(userId, 'blocked');
+            });
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showNotification('error', 'Error loading user details');
+    }
+}
+
+// Функция для обновления статуса пользователя
+async function updateUserStatus(userId, status) {
+    try {
+        const response = await apiRequest(`/v1/admin/users/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status })
+        });
+        
+        if (response.success) {
+            showNotification('success', `User ${status} successfully`);
+            closeModal('userModal');
+            loadUsers();
+        } else {
+            throw new Error(response.message || 'Failed to update user status');
+        }
+    } catch (error) {
+        showNotification('error', 'Error updating user status: ' + error.message);
+    }
+}
+
 // Функция для сохранения суммы транзакции
 async function saveTransactionAmount() {
     const transactionId = document.getElementById('currentTransactionId').value;
@@ -2935,8 +3115,16 @@ async function saveTransactionAmount() {
                 maximumFractionDigits: 2
             }).format(newAmount);
             
-            document.getElementById('totalAmountView').textContent = formattedAmount;
-            document.getElementById('amountEditSection').style.display = 'none';
+            const totalAmountView = document.getElementById('totalAmountView');
+            if (totalAmountView) {
+                totalAmountView.textContent = formattedAmount;
+            }
+            
+            const amountEditSection = document.getElementById('amountEditSection');
+            if (amountEditSection) {
+                amountEditSection.style.display = 'none';
+            }
+            
             showNotification('success', 'Amount updated successfully');
             
             // Обновляем оставшуюся сумму
@@ -2996,74 +3184,422 @@ async function updateWitnesses() {
     }
 }
 
-// Загрузка платежей для конкретной транзакции
-async function loadTransactionPayments(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+// Функция для обработки навигации между секциями
+function navigateToSection(sectionId) {
+    // Скрываем все секции
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Убираем активный класс со всех ссылок
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Показываем выбранную секцию
+    document.getElementById(sectionId).classList.add('active');
+    
+    // Добавляем активный класс к выбранной ссылке
+    document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
+    
+    // Загружаем данные для секции
+    if (sectionId === 'transactions') {
+        loadTransactions();
+    } else if (sectionId === 'users') {
+        loadUsers();
+    } else if (sectionId === 'users-archive') {
+        loadArchivedUsers();
+    }
+}
+
+// Функция для инициализации конвертера валют
+function attachCurrencyConverter() {
+    const totalAmountInput = document.getElementById('totalAmount');
+    const usdOutput = document.getElementById('toUSD');
+
+    if (!totalAmountInput || !usdOutput) {
+        console.error('Элементы #totalAmount или #toUSD не найдены!');
+        return;
+    }
+    
+    let rawValue = 0;
+    let lastInputValue = '';
+
+    // Сохраняем "сырое" значение во время ввода
+    totalAmountInput.addEventListener('input', function(e) {
+        // Сохраняем текущее значение для корректной обработки
+        lastInputValue = this.value;
         
-        if (response.success && response.payments) {
-            const tbody = document.getElementById('paymentsTableBody');
-            tbody.innerHTML = '';
+        // Чистим ввод, сохраняя цифры и разделители
+        let cleanValue = this.value
+            .replace(/[^0-9.,]/g, '')
+            .replace(/(,)/g, '.') // Заменяем запятые на точки
+            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
+
+        // Парсим значение
+        const newRawValue = parseNumber(cleanValue);
+        
+        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+        if (newRawValue !== rawValue) {
+            rawValue = newRawValue;
+            // Обновляем конвертацию в USD во время ввода (без форматирования)
+            updateUSD(rawValue);
+        }
+    });
+
+    // Форматируем ТОЛЬКО при потере фокуса
+    totalAmountInput.addEventListener('blur', function() {
+        // Сохраняем позицию курсора (для корректного восстановления при focus)
+        const cursorPosition = this.selectionStart;
+        
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+        } else {
+            // Форматируем значение при потере фокуса
+            rawValue = parseNumber(this.value);
+            this.value = formatPKR(rawValue);
+        }
+        
+        // Восстанавливаем позицию курсора (если нужно)
+        if (cursorPosition > 0 && cursorPosition <= this.value.length) {
+            this.setSelectionRange(cursorPosition, cursorPosition);
+        }
+        
+        updateUSD(rawValue);
+    });
+
+    // При фокусе показываем "сырое" значение для редактирования
+    totalAmountInput.addEventListener('focus', function() {
+        if (this.value === '0.00' || this.value === '') {
+            this.value = '';
+            rawValue = 0;
+        } else {
+            // Сохраняем текущее значение как "сырое" для редактирования
+            this.value = rawValue.toString();
+        }
+        
+        // Восстанавливаем последнее введенное значение (если было)
+        if (lastInputValue && lastInputValue !== '0.00') {
+            this.value = lastInputValue;
+        }
+        
+        // Устанавливаем курсор в конец поля
+        setTimeout(() => {
+            this.setSelectionRange(this.value.length, this.value.length);
+        }, 0);
+    });
+
+    // Обновление USD
+    async function updateUSD(pkrAmount) {
+        if (pkrAmount <= 0) {
+            usdOutput.textContent = '';
+            return;
+        }
+        try {
+            const exchangeRate = await getCachedExchangeRate();
+            const usdAmount = pkrAmount * exchangeRate;
+            usdOutput.innerHTML = `≈ ${formatUSD(usdAmount)} USD
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    (1 PKR = ${exchangeRate.toFixed(6)} USD)
+                </span>`;
+        } catch (error) {
+            console.log(error)
+            usdOutput.innerHTML = `
+                <span style="color: #dc3545">Conversion error</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Check your internet connection
+                </span>`;
+        }
+    }
+
+    // Инициализация
+    if (totalAmountInput.value) {
+        rawValue = parseNumber(totalAmountInput.value);
+        totalAmountInput.value = formatPKR(rawValue);
+    } else {
+        totalAmountInput.value = '0.00';
+        rawValue = 0;
+    }
+    updateUSD(rawValue);
+}
+
+// Функция для инициализации обработчиков событий
+function initEventHandlers() {
+    // Обработчик навигации
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sectionId = this.getAttribute('data-section');
+            navigateToSection(sectionId);
+        });
+    });
+    
+    // Обработчик кнопки создания транзакции
+    document.getElementById('create')?.addEventListener('click', openCreateTransactionModal);
+    
+    // Обработчик кнопки добавления пользователя
+    document.getElementById('openAddUserModal')?.addEventListener('click', openAddUserModal);
+    
+    // Обработчик формы создания транзакции
+    document.getElementById('createTransactionForm')?.addEventListener('submit', createTransaction);
+    
+    // Обработчик формы добавления пользователя
+    document.getElementById('addUserForm')?.addEventListener('submit', createUser);
+    
+    // Обработчик кнопки генерации логина
+    document.querySelector('.regenerate-login-btn')?.addEventListener('click', regenerateLogin);
+    
+    // Обработчик кнопки генерации пароля
+    document.querySelector('.regenerate-password-btn')?.addEventListener('click', regeneratePassword);
+    
+    // Закрытие модальных окон по кнопке "×"
+    document.querySelectorAll('.modal-close, .close').forEach(button => {
+        button.addEventListener('click', function() {
+            const modalId = this.getAttribute('data-modal');
+            closeModal(modalId);
+        });
+    });
+    
+    // Закрытие модального окна при клике вне его содержимого
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target.id);
+        }
+    });
+    
+    // Инициализация предпросмотра файлов
+    setupFilePreview();
+    
+    // Добавляем обработчик для кнопок действий с транзакцией
+    document.addEventListener('click', function(e) {
+        const button = e.target.closest('[data-action]');
+        if (!button) return;
+        
+        e.preventDefault(); // Предотвращаем всплытие события
+        
+        const action = button.getAttribute('data-action');
+        const category = button.getAttribute('data-category');
+        
+        switch(action) {
+            case 'upload-modal':
+                openUploadModal(category);
+                break;
+            case 'upload-multiple':
+                openMultipleUploadModal();
+                break;
+            case 'add-payment':
+                openAddPaymentModal();
+                break;
+            case 'edit-amount':
+                const amountEditSection = document.getElementById('amountEditSection');
+                if (amountEditSection) {
+                    amountEditSection.style.display = 'block';
+                    const newTotalAmount = document.getElementById('newTotalAmount');
+                    if (newTotalAmount) newTotalAmount.focus();
+                }
+                break;
+            case 'save-amount':
+                saveTransactionAmount();
+                break;
+            case 'cancel-amount':
+                const amountEditSectionCancel = document.getElementById('amountEditSection');
+                if (amountEditSectionCancel) {
+                    amountEditSectionCancel.style.display = 'none';
+                }
+                break;
+            case 'update-witnesses':
+                updateWitnesses();
+                break;
+        }
+    });
+    
+    // Обработчик формы загрузки одного файла
+    const singleFileUploadForm = document.getElementById('singleFileUploadForm');
+    if (singleFileUploadForm) {
+        singleFileUploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            if (response.payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments yet</td></tr>';
+            const transactionId = document.getElementById('uploadTransactionId').value;
+            const category = document.getElementById('uploadCategory').value;
+            const file = document.getElementById('file').files[0];
+            
+            if (!file) {
+                showNotification('error', 'Please select a file');
                 return;
             }
             
-            response.payments.forEach(payment => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${payment.id}</td>
-                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
-                    <td>${parseFloat(payment.amount).toFixed(2)}</td>
-                    <td>${payment.method}</td>
-                    <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
-                    <td>
-                        ${payment.receipt_url ? 
-                            `<a href="${payment.receipt_url}" target="_blank" class="receipt-link">View</a>` : 
-                            'No receipt'}
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-    } catch (error) {
-        console.error('Error loading payments:', error);
-        const tbody = document.getElementById('paymentsTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('category', category);
+                
+                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.success) {
+                    closeModal('uploadFileModal');
+                    // Перезагружаем файлы транзакции
+                    loadTransactionFiles(transactionId);
+                    showNotification('success', 'File uploaded successfully');
+                } else {
+                    throw new Error(response.message || 'Failed to upload file');
+                }
+            } catch (error) {
+                showNotification('error', 'Error uploading file: ' + error.message);
+            }
+        });
     }
-}
-
-// Загрузка деталей транзакции (включая сумму)
-async function loadTransactionDetails(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
+    
+    // Обработчик формы множественной загрузки файлов
+    const multipleFileUploadForm = document.getElementById('multipleFileUploadForm');
+    if (multipleFileUploadForm) {
+        multipleFileUploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const transactionId = document.getElementById('multiUploadTransactionId').value;
+            const files = document.getElementById('files').files;
+            
+            if (files.length === 0) {
+                showNotification('error', 'Please select files');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files', files[i]);
+                }
+                formData.append('category', 'proof');
+                
+                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents/multiple`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.success) {
+                    closeModal('multipleUploadModal');
+                    // Перезагружаем файлы транзакции
+                    loadTransactionFiles(transactionId);
+                    showNotification('success', `${response.uploaded} files uploaded successfully`);
+                } else {
+                    throw new Error(response.message || 'Failed to upload files');
+                }
+            } catch (error) {
+                showNotification('error', 'Error uploading files: ' + error.message);
+            }
+        });
+    }
+    
+    // Обработчик формы добавления платежа
+    const addPaymentForm = document.getElementById('addPaymentForm');
+    if (addPaymentForm) {
+        addPaymentForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const transactionId = document.getElementById('paymentTransactionId').value;
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const method = document.getElementById('paymentMethod').value;
+            const receiptFile = document.getElementById('receiptFile').files[0];
+            
+            if (isNaN(amount) || amount <= 0) {
+                showNotification('error', 'Please enter a valid amount');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('amount', amount);
+                formData.append('method', method);
+                if (receiptFile) {
+                    formData.append('receipt', receiptFile);
+                }
+                
+                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.success) {
+                    closeModal('addPaymentModal');
+                    // Обновляем платежи и оставшуюся сумму
+                    loadTransactionPayments(transactionId);
+                    loadTransactionDetails(transactionId);
+                    showNotification('success', 'Payment added successfully');
+                } else {
+                    throw new Error(response.message || 'Failed to add payment');
+                }
+            } catch (error) {
+                showNotification('error', 'Error adding payment: ' + error.message);
+            }
+        });
+    }
+    
+    // Обработчики для кнопок отмены
+    document.querySelector('.cancel-upload-btn')?.addEventListener('click', function() {
+        closeModal('uploadFileModal');
+    });
+    
+    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
+        closeModal('multipleUploadModal');
+    });
+    
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+        closeModal('addPaymentModal');
+    });
+    
+    // Обработчик для кнопки сохранения суммы
+    document.querySelector('.save-amount-btn')?.addEventListener('click', saveTransactionAmount);
+    
+    // Обработчик для кнопки отмены редактирования суммы
+    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function() {
+        const amountEditSection = document.getElementById('amountEditSection');
+        if (amountEditSection) {
+            amountEditSection.style.display = 'none';
+        }
+    });
+    
+    // Обработчик для кнопки сохранения свидетелей
+    document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
+    
+    // Динамические обработчики для просмотра транзакций и пользователей
+    document.addEventListener('click', function(e) {
+        const viewTransactionBtn = e.target.closest('.view-transaction-btn');
+        if (viewTransactionBtn) {
+            const transactionId = viewTransactionBtn.getAttribute('data-transaction-id');
+            openViewTransactionModal(transactionId);
+        }
         
-        if (response.success && response.transaction) {
-            const transaction = response.transaction;
-            
-            // Форматируем суммы
-            const formatAmount = (amount) => new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(amount);
-            
-            // Обновляем суммы
-            document.getElementById('totalAmountView').textContent = formatAmount(transaction.total_amount);
-            document.getElementById('paidAmount').textContent = formatAmount(transaction.paid_amount);
-            
-            // Обновляем оставшуюся сумму
-            const remaining = transaction.total_amount - transaction.paid_amount;
-            document.getElementById('remainingAmount').textContent = formatAmount(remaining);
-            
-            // Обновляем дату создания
-            document.getElementById('createdAt').textContent = 
-                new Date(transaction.created_at).toLocaleDateString();
+        const viewUserBtn = e.target.closest('.view-user-btn');
+        if (viewUserBtn) {
+            const userId = viewUserBtn.getAttribute('data-user-id');
+            openViewUserModal(userId);
         }
-    } catch (error) {
-        console.error('Error loading transaction details:', error);
+    });
+    
+    // Инициализация конвертера валют
+    attachCurrencyConverter();
+}
+
+// Функция для инициализации приложения
+function initApp() {
+    // Проверяем, что все необходимые элементы существуют
+    if (document.querySelector('.admin-container')) {
+        // Инициализируем обработчики событий
+        initEventHandlers();
+        
+        // Загружаем начальные данные
+        loadTransactions();
+        
+        // Навигация по умолчанию
+        navigateToSection('transactions');
     }
 }
 
-
+// Запускаем приложение после полной загрузки DOM
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+});
     attachCurrencyConverter();

@@ -2142,50 +2142,49 @@ function initPaymentHandlers() {
     });
 
     // Обработчик формы добавления платежа
-    document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const transactionId = document.getElementById('paymentTransactionId').value;
-        const amount = parseFloat(document.getElementById('paymentAmount').value);
-        const method = document.getElementById('paymentMethod').value;
-        const receiptFile = document.getElementById('receiptFile').files[0];
-        const paymentDate = new Date().toISOString();
-        
-        if (isNaN(amount) || amount <= 0) {
-            showNotification('error', 'Please enter a valid amount');
-            return;
+   document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const transactionId = document.getElementById('paymentTransactionId').value;
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    const method = document.getElementById('paymentMethod').value;
+    const receiptFile = document.getElementById('receiptFile').files[0];
+    const paymentDate = new Date().toISOString().split('T')[0]; // Формат YYYY-MM-DD
+    const notes = document.getElementById('paymentNotes')?.value || '';
+
+    if (isNaN(amount) || amount <= 0) {
+        showNotification('error', 'Please enter a valid amount');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('amount', amount.toString());
+        formData.append('payment_date', paymentDate);
+        formData.append('payment_method', method);
+        formData.append('notes', notes);
+        if (receiptFile) {
+            formData.append('receipt', receiptFile); // 🔥 имя должно быть "receipt"
         }
 
-        try {
-            const formData = new FormData();
-            formData.append('amount', amount.toString());
-            formData.append('method', method); 
-            formData.append('payment_date', paymentDate); // Добавьте это поле
-            if (notes) {
-                formData.append('notes', notes);
-            }
-            if (receiptFile) {
-                formData.append('receipt', receiptFile);
-            }
-
-            const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.success) {
-                closeModal('addPaymentModal');
-                // Обновляем платежи и оставшуюся сумму
-                loadTransactionPayments(transactionId);
-                loadTransactionDetails(transactionId);
-                showNotification('success', 'Payment added successfully');
-            } else {
-                throw new Error(response.message || 'Failed to add payment');
-            }
-        } catch (error) {
-            showNotification('error', 'Error adding payment: ' + error.message);
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+            method: 'POST',
+            body: formData // Не указываем Content-Type!
+        });
+        
+        if (response.success || response.message) {
+            closeModal('addPaymentModal');
+            loadTransactionPayments(transactionId);
+            loadTransactionDetails(transactionId);
+            showNotification('success', 'Payment added successfully');
+        } else {
+            throw new Error(response.message || 'Failed to add payment');
         }
-    });
+    } catch (error) {
+        console.error("Error adding payment:", error);
+        showNotification('error', 'Error: ' + error.message);
+    }
+});
 
     // Обработчики для кнопок отмены
     document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {

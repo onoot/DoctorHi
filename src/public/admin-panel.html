@@ -160,6 +160,21 @@
                             <p><strong>New Owner:</strong> <span id="newOwner"></span></p>
                             <p><strong>Status:</strong> <span id="transactionStatus"></span></p>
                             <!-- Контейнеры для документов -->
+                            <!-- Кнопки действий с транзакцией -->
+<div class="transaction-actions" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
+  <button class="action-btn btn-edit" onclick="openUploadModal('agreement')">
+    <i class="fas fa-file-contract"></i> Upload Agreement
+  </button>
+  <button class="action-btn btn-edit" onclick="openUploadModal('video')">
+    <i class="fas fa-video"></i> Upload Video
+  </button>
+  <button class="action-btn btn-edit" onclick="openMultipleUploadModal()">
+    <i class="fas fa-copy"></i> Upload Proof Documents
+  </button>
+  <button class="action-btn btn-edit" onclick="openAddPaymentModal()">
+    <i class="fas fa-money-bill-wave"></i> Add Payment
+  </button>
+</div>
                             <div class="transaction-documents">
                                 <h3>Agreement File:</h3>
                                 <div id="agreementFile"></div>
@@ -495,6 +510,42 @@
                     <button type="submit" class="action-btn btn-edit">Create Transaction</button>
                 </form>
             </div>
+            <!-- Модальное окно для добавления платежа -->
+<div id="addPaymentModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Add Payment</h3>
+      <span class="close" data-modal="addPaymentModal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="addPaymentForm">
+        <input type="hidden" id="paymentTransactionId">
+        <div class="form-group">
+          <label for="paymentAmount">Amount</label>
+          <input type="number" id="paymentAmount" name="amount" class="form-control" required min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label for="paymentMethod">Payment Method</label>
+          <select id="paymentMethod" name="method" class="form-control" required>
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="credit_card">Credit Card</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="receiptFile">Receipt</label>
+          <input type="file" id="receiptFile" name="receipt" accept="image/*,.pdf" class="form-control">
+          <div id="receiptPreview" style="margin-top: 10px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
+          <button type="submit" class="action-btn btn-edit save-payment-btn">Save Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
             <script defer src="./admin.js"></script>
 </body>
 

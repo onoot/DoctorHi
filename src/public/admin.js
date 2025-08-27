@@ -2568,4 +2568,43 @@ function attachCurrencyConverter() {
 }
 
 
+function updateRemainingAmount() {
+  const totalAmountText = document.getElementById('totalAmountView').textContent.replace(/,/g, '');
+  const paidAmountText = document.getElementById('paidAmount').textContent.replace(/,/g, '');
+  
+  const totalAmount = parseFloat(totalAmountText) || 0;
+  const paidAmount = parseFloat(paidAmountText) || 0;
+  
+  const remainingAmount = totalAmount - paidAmount;
+  
+  // Форматируем оставшуюся сумму с разделителями тысяч
+  const formattedRemaining = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(remainingAmount);
+  
+  document.getElementById('remainingAmount').textContent = formattedRemaining;
+}
+
+// Вызовите эту функцию после загрузки платежей
+// Например, в конце функции loadTransactionPayments
+// Предпросмотр квитанции
+document.getElementById('receiptFile')?.addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  const preview = document.getElementById('receiptPreview');
+  if (file) {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
+      }
+      reader.readAsDataURL(file);
+    } else {
+      preview.innerHTML = `<p>File: ${file.name}</p>`;
+    }
+  } else {
+    preview.innerHTML = '';
+  }
+});
+
     attachCurrencyConverter();

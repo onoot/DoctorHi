@@ -2543,7 +2543,7 @@ function attachCurrencyConverter() {
                     (1 PKR = ${exchangeRate.toFixed(6)} USD)
                 </span>`;
         } catch (error) {
-            console.log(e)
+            console.log(error)
             usdOutput.innerHTML = `
                 <span style="color: #dc3545">Conversion error</span>
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">

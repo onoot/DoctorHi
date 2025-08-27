@@ -2009,6 +2009,7 @@ document.getElementById('newTransactionForm').addEventListener('submit', async f
         // Очищаем форму или перенаправляем пользователя
         this.reset();
     } catch (error) {
+        console.log(error)
         showNotification('error', 'Error creating transaction: ' + error.message);
     }
 });
@@ -2432,7 +2433,6 @@ function parseNumber(value) {
     return parseFloat(`${integer}.${decimalPart}`) || 0;
 }
 
-// 🔥 ИСПРАВЛЕНО: Замена внешнего API на внутренний через apiRequest
 async function getExchangeRatePKRtoUSD() {
     try {
         // Запрашиваем курс через внутренний API
@@ -2459,7 +2459,6 @@ function formatPKR(amount) {
     }).format(amount);
 }
 
-// 🔥 ИСПРАВЛЕНО: Полностью переработанный обработчик ввода
 function attachCurrencyConverter() {
     const usdOutput = document.getElementById('toUSD');
 
@@ -2519,7 +2518,6 @@ function attachCurrencyConverter() {
     });
 
     // Упрощённая обработка focus
-     // 🔥 ИСПРАВЛЕНО: Корректная обработка focus
     totalAmountInput.addEventListener('focus', function () {
         if (this.value === '0.00' || this.value === '') {
             this.value = '';
@@ -2545,7 +2543,7 @@ function attachCurrencyConverter() {
                     (1 PKR = ${exchangeRate.toFixed(6)} USD)
                 </span>`;
         } catch (error) {
-            // 🔥 ИСПРАВЛЕНО: Перевод сообщения об ошибке на английский
+            console.log(e)
             usdOutput.innerHTML = `
                 <span style="color: #dc3545">Conversion error</span>
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">

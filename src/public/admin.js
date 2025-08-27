@@ -2536,7 +2536,7 @@ function attachCurrencyConverter() {
             return;
         }
         try {
-            const exchangeRate = await getCachedExchangeRate();
+            const exchangeRate = await getExchangeRatePKRtoUSD();
             const usdAmount = pkrAmount * exchangeRate;
             usdOutput.innerHTML = `≈ ${formatUSD(usdAmount)} USD
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">

@@ -2210,7 +2210,6 @@ async function handleTransferRequestAction(requestId, action) {
         showNotification('error', 'Error updating request');
     }
 }
-// Оберните добавление обработчиков событий в проверку готовности DOM
 document.addEventListener('DOMContentLoaded', function () {
     // Закрытие модальных окон по кнопке "×"
     document.querySelectorAll('.modal-close, .close').forEach(button => {
@@ -2458,7 +2457,6 @@ function formatPKR(amount) {
         maximumFractionDigits: 2
     }).format(amount);
 }
-
 function attachCurrencyConverter() {
     const usdOutput = document.getElementById('toUSD');
 
@@ -2467,17 +2465,14 @@ function attachCurrencyConverter() {
         return;
     }
 
-    let isFormatting = false;
     let rawValue = 0;
+    let lastInputValue = '';
 
-    // Динамическое форматирование ВО ВРЕМЯ ввода
-    totalAmountInput.addEventListener('input', function (e) {
-        if (isFormatting) return;
-
-        const cursorStart = this.selectionStart;
-        const cursorEnd = this.selectionEnd;
-        const oldValue = this.value;
-
+    // Сохраняем "сырое" значение во время ввода
+    totalAmountInput.addEventListener('input', function(e) {
+        // Сохраняем текущее значение для корректной обработки
+        lastInputValue = this.value;
+        
         // Чистим ввод, сохраняя цифры и разделители
         let cleanValue = this.value
             .replace(/[^0-9.,]/g, '')
@@ -2485,48 +2480,57 @@ function attachCurrencyConverter() {
             .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
 
         // Парсим значение
-        rawValue = parseNumber(cleanValue);
-
-        // Форматируем СРАЗУ при вводе
-        isFormatting = true;
-        this.value = formatPKR(rawValue);
-        isFormatting = false;
-
-        // Корректируем позицию курсора
-        if (this.value !== oldValue) {
-            const diff = this.value.length - oldValue.length;
-            this.setSelectionRange(
-                Math.max(0, cursorStart + diff),
-                Math.max(0, cursorEnd + diff)
-            );
-        }
-
-        updateUSD(rawValue);
-    });
-
-    totalAmountInput.addEventListener('blur', function () {
-        if (!this.value || parseFloat(this.value) === 0) {
-            this.value = '0.00';
-            rawValue = 0;
-            updateUSD(0);
-        } else {
-            // Принудительно форматируем при потере фокуса
-            rawValue = parseNumber(this.value);
-            this.value = formatPKR(rawValue);
+        const newRawValue = parseNumber(cleanValue);
+        
+        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+        if (newRawValue !== rawValue) {
+            rawValue = newRawValue;
+            // Обновляем конвертацию в USD во время ввода (без форматирования)
             updateUSD(rawValue);
         }
     });
 
-    // Упрощённая обработка focus
-    totalAmountInput.addEventListener('focus', function () {
+    // Форматируем ТОЛЬКО при потере фокуса
+    totalAmountInput.addEventListener('blur', function() {
+        // Сохраняем позицию курсора (для корректного восстановления при focus)
+        const cursorPosition = this.selectionStart;
+        
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+        } else {
+            // Форматируем значение при потере фокуса
+            rawValue = parseNumber(this.value);
+            this.value = formatPKR(rawValue);
+        }
+        
+        // Восстанавливаем позицию курсора (если нужно)
+        if (cursorPosition > 0 && cursorPosition <= this.value.length) {
+            this.setSelectionRange(cursorPosition, cursorPosition);
+        }
+        
+        updateUSD(rawValue);
+    });
+
+    // При фокусе показываем "сырое" значение для редактирования
+    totalAmountInput.addEventListener('focus', function() {
         if (this.value === '0.00' || this.value === '') {
             this.value = '';
             rawValue = 0;
         } else {
             // Сохраняем текущее значение как "сырое" для редактирования
-            // Но НЕ перезаписываем rawValue, чтобы не терять данные
             this.value = rawValue.toString();
         }
+        
+        // Восстанавливаем последнее введенное значение (если было)
+        if (lastInputValue && lastInputValue !== '0.00') {
+            this.value = lastInputValue;
+        }
+        
+        // Устанавливаем курсор в конец поля
+        setTimeout(() => {
+            this.setSelectionRange(this.value.length, this.value.length);
+        }, 0);
     });
 
     // Обновление USD
@@ -2551,7 +2555,6 @@ function attachCurrencyConverter() {
                 </span>`;
         }
     }
-
 
     // Инициализация
     if (totalAmountInput.value) {

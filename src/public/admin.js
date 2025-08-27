@@ -39,9 +39,9 @@ function openCreateTransactionModal() {
             const event = new Event('input', { bubbles: true });
             totalAmountInput.dispatchEvent(event);
         }
+        attachCurrencyConverter();
     }, 100);
 }
-// Затем используйте getCachedExchangeRate() вместо getExchangeRatePKRtoUSD() в обработчике
 
 
 
@@ -2505,21 +2505,28 @@ function attachCurrencyConverter() {
         updateUSD(rawValue);
     });
 
-    // Упрощённая обработка blur
     totalAmountInput.addEventListener('blur', function () {
         if (!this.value || parseFloat(this.value) === 0) {
             this.value = '0.00';
             rawValue = 0;
             updateUSD(0);
+        } else {
+            // Принудительно форматируем при потере фокуса
+            rawValue = parseNumber(this.value);
+            this.value = formatPKR(rawValue);
+            updateUSD(rawValue);
         }
     });
 
     // Упрощённая обработка focus
+     // 🔥 ИСПРАВЛЕНО: Корректная обработка focus
     totalAmountInput.addEventListener('focus', function () {
-        if (this.value === '0.00') {
+        if (this.value === '0.00' || this.value === '') {
             this.value = '';
             rawValue = 0;
         } else {
+            // Сохраняем текущее значение как "сырое" для редактирования
+            // Но НЕ перезаписываем rawValue, чтобы не терять данные
             this.value = rawValue.toString();
         }
     });
@@ -2530,26 +2537,23 @@ function attachCurrencyConverter() {
             usdOutput.textContent = '';
             return;
         }
-
         try {
             const exchangeRate = await getCachedExchangeRate();
             const usdAmount = pkrAmount * exchangeRate;
-
-            usdOutput.innerHTML = `
-                ≈ ${formatUSD(usdAmount)} USD
+            usdOutput.innerHTML = `≈ ${formatUSD(usdAmount)} USD
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
                     (1 PKR = ${exchangeRate.toFixed(6)} USD)
-                </span>
-            `;
+                </span>`;
         } catch (error) {
+            // 🔥 ИСПРАВЛЕНО: Перевод сообщения об ошибке на английский
             usdOutput.innerHTML = `
-                <span style="color: #dc3545">Ошибка конвертации</span>
+                <span style="color: #dc3545">Conversion error</span>
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    Проверьте подключение к интернету
-                </span>
-            `;
+                    Check your internet connection
+                </span>`;
         }
     }
+
 
     // Инициализация
     if (totalAmountInput.value) {

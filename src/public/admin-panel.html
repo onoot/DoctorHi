@@ -15,7 +15,7 @@
             position: relative;
             display: inline-block;
         }
-        
+
         .file-upload-input {
             position: absolute;
             left: 0;
@@ -25,7 +25,7 @@
             height: 100%;
             cursor: pointer;
         }
-        
+
         .file-upload-button {
             display: inline-flex;
             align-items: center;
@@ -38,15 +38,15 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        
+
         .file-upload-button:hover {
             background-color: #0052a3;
         }
-        
+
         .file-upload-button i {
             font-size: 16px;
         }
-        
+
         .file-name-display {
             margin-top: 8px;
             padding: 6px 10px;
@@ -59,12 +59,12 @@
             white-space: nowrap;
             display: none;
         }
-        
+
         /* Стили для денежного формата */
         .amount-input-container {
             position: relative;
         }
-        
+
         .currency-prefix {
             position: absolute;
             left: 12px;
@@ -74,23 +74,23 @@
             pointer-events: none;
             z-index: 2;
         }
-        
+
         .formatted-amount {
             padding-left: 30px;
         }
-        
+
         /* Стили для предпросмотра квитанции */
         #receiptPreview {
             margin-top: 10px;
         }
-        
+
         #receiptPreview img {
             max-width: 100%;
             max-height: 150px;
             border-radius: 4px;
             border: 1px solid #ddd;
         }
-        
+
         #receiptPreview i {
             font-size: 48px;
             color: #dc3545;
@@ -248,12 +248,16 @@
                             <p><strong>Status:</strong> <span id="transactionStatus"></span></p>
                             <!-- Контейнеры для документов -->
                             <!-- Кнопки действий с транзакцией -->
-<div class="transaction-actions" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
-<button class="action-btn btn-edit" data-action="upload-modal" data-category="agreement">Upload Agreement</button>
-<button class="action-btn btn-edit" data-action="upload-modal" data-category="video">Upload Video</button>
-<button class="action-btn btn-edit" data-action="upload-multiple">Upload Proof Documents</button>
-<button class="action-btn btn-edit" data-action="add-payment">Add Payment</button>
-</div>
+                            <div class="transaction-actions"
+                                style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
+                                <button class="action-btn btn-edit" data-action="upload-modal"
+                                    data-category="agreement">Upload Agreement</button>
+                                <button class="action-btn btn-edit" data-action="upload-modal"
+                                    data-category="video">Upload Video</button>
+                                <button class="action-btn btn-edit" data-action="upload-multiple">Upload Proof
+                                    Documents</button>
+                                <button class="action-btn btn-edit" data-action="add-payment">Add Payment</button>
+                            </div>
                             <div class="transaction-documents">
                                 <h3>Agreement File:</h3>
                                 <div id="agreementFile"></div>
@@ -422,15 +426,15 @@
                                     <!-- User options will be populated via JavaScript -->
                                 </select>
                             </div>
-                        <div class="form-group">
-    <label for="totalAmount">Total Amount (PKR)</label>
-    <input type="text" id="totalAmount" name="total_amount" class="form-control" required placeholder="0.00"
-        inputmode="decimal">
-    <div style="margin-top: 5px;">
-        <p style="margin-bottom: 2px;">USD:</p>
-        <div id="toUSD" style="color: #0066cc; font-size: 0.95em;"></div>
-    </div>
-</div>
+                            <div class="form-group">
+                                <label for="totalAmount">Total Amount (PKR)</label>
+                                <input type="text" id="totalAmount" name="total_amount" class="form-control" required
+                                    placeholder="0.00" inputmode="decimal">
+                                <div style="margin-top: 5px;">
+                                    <p style="margin-bottom: 2px;">USD:</p>
+                                    <div id="toUSD" style="color: #0066cc; font-size: 0.95em;"></div>
+                                </div>
+                            </div>
                             <!-- Witnesses Information -->
                             <div class="form-section">
                                 <h3>Witnesses Information</h3>
@@ -501,7 +505,8 @@
                                 <label for="file">Select File</label>
                                 <div class="file-upload">
                                     <input type="file" id="file" name="agreement"
-                                        accept="image/jpeg,image/png,application/pdf" required class="file-upload-input">
+                                        accept="image/jpeg,image/png,application/pdf" required
+                                        class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose File
                                     </button>
@@ -534,7 +539,8 @@
                                 <label for="files">Select Files</label>
                                 <div class="file-upload">
                                     <input type="file" id="files" name="proof_documents" multiple
-                                        accept="image/jpeg,image/png,application/pdf" required class="file-upload-input">
+                                        accept="image/jpeg,image/png,application/pdf" required
+                                        class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose Files
                                     </button>
@@ -603,179 +609,251 @@
                 </form>
             </div>
             <!-- Модальное окно для добавления платежа -->
-<div id="addPaymentModal" class="modal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>Add Payment</h3>
-      <span class="close" data-modal="addPaymentModal">&times;</span>
-    </div>
-    <div class="modal-body">
-      <form id="addPaymentForm">
-        <input type="hidden" id="paymentTransactionId">
-        <div class="form-group">
-          <label for="paymentAmount">Amount</label>
-          <div class="amount-input-container">
-            <span class="currency-prefix">PKR</span>
-            <input type="text" id="paymentAmount" name="amount" class="form-control formatted-amount" 
-                   required placeholder="0.00" inputmode="decimal">
-          </div>
-          <input type="hidden" id="rawPaymentAmount" name="raw_amount">
-        </div>
-        <div class="form-group">
-          <label for="paymentMethod">Payment Method</label>
-          <select id="paymentMethod" name="method" class="form-control" required>
-            <option value="cash">Cash</option>
-            <option value="bank_transfer">Bank Transfer</option>
-            <option value="credit_card">Credit Card</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="receiptFile">Receipt</label>
-          <div class="file-upload">
-            <input type="file" id="receiptFile" name="receipt" accept="image/*,.pdf" class="file-upload-input">
-            <button type="button" class="file-upload-button">
-              <i class="fas fa-upload"></i> Choose File
-            </button>
-            <div class="file-name-display" id="receiptFileNameDisplay">No file chosen</div>
-          </div>
-          <div id="receiptPreview" style="margin-top: 10px;"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
-          <button type="submit" class="action-btn btn-edit save-payment-btn">Save Payment</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+            <div id="addPaymentModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Add Payment</h3>
+                        <span class="close" data-modal="addPaymentModal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addPaymentForm">
+                            <input type="hidden" id="paymentTransactionId">
+                            <div class="form-group">
+                                <label for="paymentAmount">Amount</label>
+                                <div class="amount-input-container">
+                                    <span class="currency-prefix">PKR</span>
+                                    <input type="text" id="paymentAmount" name="amount" class="form-control formatted-amount" required
+                                        placeholder="0.00" inputmode="decimal">
+                                    <input type="hidden" id="rawPaymentAmount" name="raw_amount">
+                                </div>
+                                <div id="usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;"></div>
+                                <input type="hidden" id="rawPaymentAmount" name="raw_amount">
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMethod">Payment Method</label>
+                                <select id="paymentMethod" name="method" class="form-control" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="receiptFile">Receipt</label>
+                                <div class="file-upload">
+                                    <input type="file" id="receiptFile" name="receipt" accept="image/*,.pdf"
+                                        class="file-upload-input">
+                                    <button type="button" class="file-upload-button">
+                                        <i class="fas fa-upload"></i> Choose File
+                                    </button>
+                                    <div class="file-name-display" id="receiptFileNameDisplay">No file chosen</div>
+                                </div>
+                                <div id="receiptPreview" style="margin-top: 10px;"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
+                                <button type="submit" class="action-btn btn-edit save-payment-btn">Save Payment</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
             <script defer src="./admin.js"></script>
             <script>
-                // Функция для форматирования числа как денежного значения
-                function formatCurrency(value) {
-                    // Очищаем значение от нечисловых символов, кроме точки
-                    const cleanValue = value.replace(/[^0-9.]/g, '');
-                    
-                    // Разделяем на целую и дробную части
-                    const parts = cleanValue.split('.');
-                    let integerPart = parts[0];
-                    const decimalPart = parts.length > 1 ? parts[1].slice(0, 2) : '';
-                    
-                    // Добавляем разделители тысяч
-                    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                    
-                    // Формируем окончательное значение
-                    if (decimalPart) {
-                        return `${integerPart}.${decimalPart}`;
-                    } else if (cleanValue.includes('.')) {
-                        return `${integerPart}.`;
-                    } else {
-                        return integerPart;
-                    }
-                }
-                
-                // Функция для парсинга форматированного числа
-                function parseCurrency(value) {
-                    return parseFloat(value.replace(/,/g, '')) || 0;
-                }
-                
-                // Инициализация форматирования для поля Amount
-                document.addEventListener('DOMContentLoaded', function() {
-                    const paymentAmount = document.getElementById('paymentAmount');
-                    const rawPaymentAmount = document.getElementById('rawPaymentAmount');
-                    
-                    if (paymentAmount && rawPaymentAmount) {
-                        // Инициализация значения
-                        if (paymentAmount.value) {
-                            const rawValue = parseCurrency(paymentAmount.value);
-                            paymentAmount.value = formatCurrency(rawValue.toFixed(2));
-                            rawPaymentAmount.value = rawValue;
-                        }
-                        
-                        let isFormatting = false;
-                        
-                        // Обработчик ввода
-                        paymentAmount.addEventListener('input', function(e) {
-                            if (isFormatting) return;
-                            
-                            const cursorStart = this.selectionStart;
-                            const cursorEnd = this.selectionEnd;
-                            const oldValue = this.value;
-                            
-                            // Форматируем значение
-                            isFormatting = true;
-                            this.value = formatCurrency(this.value);
-                            isFormatting = false;
-                            
-                            // Корректируем позицию курсора
-                            if (this.value !== oldValue) {
-                                const diff = this.value.length - oldValue.length;
-                                this.setSelectionRange(
-                                    Math.max(0, cursorStart + diff),
-                                    Math.max(0, cursorEnd + diff)
-                                );
-                            }
-                            
-                            // Обновляем скрытое поле
-                            rawPaymentAmount.value = parseCurrency(this.value);
-                        });
-                        
-                        // Обработчик потери фокуса
-                        paymentAmount.addEventListener('blur', function() {
-                            if (!this.value || parseFloat(this.value) === 0) {
-                                this.value = '0.00';
-                                rawPaymentAmount.value = 0;
-                            } else {
-                                // Принудительно форматируем при потере фокуса
-                                const rawValue = parseCurrency(this.value);
-                                this.value = formatCurrency(rawValue.toFixed(2));
-                                rawPaymentAmount.value = rawValue;
-                            }
-                        });
-                        
-                        // Обработчик фокуса
-                        paymentAmount.addEventListener('focus', function() {
-                            if (this.value === '0.00' || this.value === '') {
-                                this.value = '';
-                                rawPaymentAmount.value = 0;
-                            } else {
-                                // Сохраняем текущее значение как "сырое" для редактирования
-                                this.value = rawPaymentAmount.value.toString();
-                            }
-                        });
-                    }
-                    
-                    // Инициализация кнопок выбора файла
-                    function setupFileUploadButton(fileInputId, buttonDisplayId, fileNameDisplayId) {
-                        const fileInput = document.getElementById(fileInputId);
-                        const buttonDisplay = document.querySelector(`#${buttonDisplayId} .file-upload-button`);
-                        const fileNameDisplay = document.getElementById(fileNameDisplayId);
-                        
-                        if (fileInput && buttonDisplay && fileNameDisplay) {
-                            buttonDisplay.addEventListener('click', function(e) {
-                                e.preventDefault();
-                                fileInput.click();
-                            });
-                            
-                            fileInput.addEventListener('change', function() {
-                                if (this.files && this.files.length > 0) {
-                                    const fileName = this.files[0].name;
-                                    fileNameDisplay.textContent = fileName;
-                                    fileNameDisplay.style.display = 'block';
-                                } else {
-                                    fileNameDisplay.textContent = 'No file chosen';
-                                    fileNameDisplay.style.display = 'none';
-                                }
-                            });
-                        }
-                    }
-                    
-                    // Инициализация всех кнопок выбора файла
-                    setupFileUploadButton('file', 'uploadFileModal', 'fileNameDisplay');
-                    setupFileUploadButton('files', 'multipleUploadModal', 'multipleFileNameDisplay');
-                    setupFileUploadButton('receiptFile', 'addPaymentModal', 'receiptFileNameDisplay');
-                });
-            </script>
+
+              
+          // Функция для форматирования числа как денежного значения
+function formatCurrency(value) {
+    // Очищаем значение от нечисловых символов, кроме точки
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+    
+    // Разделяем на целую и дробную части
+    const parts = cleanValue.split('.');
+    let integerPart = parts[0];
+    const decimalPart = parts.length > 1 ? parts[1].slice(0, 2) : '';
+    
+    // Добавляем разделители тысяч
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // Формируем окончательное значение
+    if (decimalPart) {
+        return `${integerPart}.${decimalPart}`;
+    } else if (cleanValue.includes('.')) {
+        return `${integerPart}.`;
+    } else {
+        return integerPart;
+    }
+}
+
+// Функция для парсинга форматированного числа
+function parseCurrency(value) {
+    return parseFloat(value.replace(/,/g, '')) || 0;
+}
+
+// Функция для получения курса обмена PKR к USD
+async function getExchangeRatePKRtoUSD() {
+    try {
+        // Запрашиваем курс через внутренний API
+        const data = await apiRequest('/v1/admin/latest/PKR', {
+            method: 'GET'
+        });
+        
+        // Проверяем структуру ответа
+        if (data.success && typeof data.USD === 'number') {
+            return data.USD;
+        }
+        
+        throw new Error('Invalid API response structure');
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; // Fallback курс
+    }
+}
+
+// Функция для обновления конвертации в USD
+async function updateUSD(pkrAmount) {
+    const usdConversion = document.getElementById('usdConversion');
+    if (!usdConversion) return;
+    
+    if (pkrAmount <= 0) {
+        usdConversion.textContent = '';
+        return;
+    }
+    
+    try {
+        const exchangeRate = await getExchangeRatePKRtoUSD();
+        const usdAmount = pkrAmount * exchangeRate;
+        
+        usdConversion.innerHTML = `
+            ≈ ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(usdAmount)} USD
+            <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                (1 PKR = ${exchangeRate.toFixed(6)} USD)
+            </span>
+        `;
+    } catch (error) {
+        usdConversion.innerHTML = `
+            <span style="color: #dc3545">Conversion error</span>
+            <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                Check your internet connection
+            </span>
+        `;
+    }
+}
+
+// Инициализация обработчика для поля суммы платежа
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentAmount = document.getElementById('paymentAmount');
+    const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+    const usdConversion = document.getElementById('usdConversion');
+    
+    if (!paymentAmount || !rawPaymentAmount || !usdConversion) {
+        console.error('Элементы для обработки суммы платежа не найдены!');
+        return;
+    }
+    
+    let isFormatting = false;
+    let rawValue = 0;
+    
+    // Инициализация значения
+    if (paymentAmount.value) {
+        rawValue = parseCurrency(paymentAmount.value);
+        paymentAmount.value = formatCurrency(rawValue.toFixed(2));
+        rawPaymentAmount.value = rawValue;
+        updateUSD(rawValue);
+    } else {
+        paymentAmount.value = '0.00';
+        rawPaymentAmount.value = 0;
+        updateUSD(0);
+    }
+    
+    // Обработчик ввода
+    paymentAmount.addEventListener('input', function(e) {
+        if (isFormatting) return;
+        
+        const cursorStart = this.selectionStart;
+        const cursorEnd = this.selectionEnd;
+        const oldValue = this.value;
+        
+        // Чистим ввод, сохраняя цифры и разделители
+        let cleanValue = this.value
+            .replace(/[^0-9.]/g, '')
+            .replace(/(,)/g, '.') // Заменяем запятые на точки
+            .replace(/(\..*)\./g, '$1'); // Удаляем лишние точки
+        
+        // Парсим значение
+        const newRawValue = parseCurrency(cleanValue);
+        
+        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+        if (newRawValue !== rawValue) {
+            rawValue = newRawValue;
+            // Обновляем конвертацию в USD
+            updateUSD(rawValue);
+        }
+        
+        // Форматируем значение
+        isFormatting = true;
+        this.value = formatCurrency(cleanValue);
+        isFormatting = false;
+        
+        // Корректируем позицию курсора
+        if (this.value !== oldValue) {
+            const diff = this.value.length - oldValue.length;
+            this.setSelectionRange(
+                Math.max(0, cursorStart + diff),
+                Math.max(0, cursorEnd + diff)
+            );
+        }
+        
+        // Обновляем скрытое поле
+        rawPaymentAmount.value = rawValue;
+    });
+    
+    // Обработчик потери фокуса
+    paymentAmount.addEventListener('blur', function() {
+        // Сохраняем позицию курсора (для корректного восстановления при focus)
+        const cursorPosition = this.selectionStart;
+        
+        if (!this.value || parseFloat(this.value) === 0) {
+            this.value = '0.00';
+            rawValue = 0;
+        } else {
+            // Форматируем значение при потере фокуса
+            rawValue = parseCurrency(this.value);
+            this.value = formatCurrency(rawValue.toFixed(2));
+        }
+        
+        // Восстанавливаем позицию курсора (если нужно)
+        if (cursorPosition > 0 && cursorPosition <= this.value.length) {
+            this.setSelectionRange(cursorPosition, cursorPosition);
+        }
+        
+        // Обновляем скрытое поле
+        rawPaymentAmount.value = rawValue;
+        updateUSD(rawValue);
+    });
+    
+    // Обработчик фокуса
+    paymentAmount.addEventListener('focus', function() {
+        if (this.value === '0.00' || this.value === '') {
+            this.value = '';
+            rawValue = 0;
+        } else {
+            // Сохраняем текущее значение как "сырое" для редактирования
+            this.value = rawValue.toString();
+        }
+        
+        // Устанавливаем курсор в конец поля
+        setTimeout(() => {
+            this.setSelectionRange(this.value.length, this.value.length);
+        }, 0);
+    });
+});
+</script>
 </body>
 
 </html>

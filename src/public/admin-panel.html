@@ -162,18 +162,10 @@
                             <!-- Контейнеры для документов -->
                             <!-- Кнопки действий с транзакцией -->
 <div class="transaction-actions" style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
-  <button class="action-btn btn-edit" onclick="openUploadModal('agreement')">
-    <i class="fas fa-file-contract"></i> Upload Agreement
-  </button>
-  <button class="action-btn btn-edit" onclick="openUploadModal('video')">
-    <i class="fas fa-video"></i> Upload Video
-  </button>
-  <button class="action-btn btn-edit" onclick="openMultipleUploadModal()">
-    <i class="fas fa-copy"></i> Upload Proof Documents
-  </button>
-  <button class="action-btn btn-edit" onclick="openAddPaymentModal()">
-    <i class="fas fa-money-bill-wave"></i> Add Payment
-  </button>
+<button class="action-btn btn-edit" data-action="upload-modal" data-category="agreement">Upload Agreement</button>
+<button class="action-btn btn-edit" data-action="upload-modal" data-category="video">Upload Video</button>
+<button class="action-btn btn-edit" data-action="upload-multiple">Upload Proof Documents</button>
+<button class="action-btn btn-edit" data-action="add-payment">Add Payment</button>
 </div>
                             <div class="transaction-documents">
                                 <h3>Agreement File:</h3>

@@ -320,6 +320,7 @@ const transactionController = {
       });
 
       res.json({
+        success: true,
         transactions: enrichedTransactions,
         total,
         page: parseInt(page),
@@ -327,7 +328,9 @@ const transactionController = {
       });
     } catch (error) {
       console.error('Error getting transactions:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' });
     }
   },
 

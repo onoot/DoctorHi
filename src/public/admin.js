@@ -2159,7 +2159,7 @@ function initPaymentHandlers() {
         try {
             const formData = new FormData();
             formData.append('amount', amount.toString());
-            formData.append('payment_method', method); // Исправлено имя поля
+            formData.append('method', method); 
             formData.append('payment_date', paymentDate); // Добавьте это поле
             if (notes) {
                 formData.append('notes', notes);

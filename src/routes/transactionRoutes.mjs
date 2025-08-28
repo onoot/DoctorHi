@@ -1,4 +1,4 @@
-//transactionRoutes.mjs
+// transactionRoutes.mjs
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
@@ -13,15 +13,53 @@ const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Конфигурация multer для загрузки файлов
+// Используем UPLOAD_PATH из контроллера
+const UPLOAD_PATH = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
+
+// Настройка Multer — единая логика с контроллером
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads/transactions/');
+    let uploadDir;
+    switch (file.fieldname) {
+      case 'agreement':
+        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'agreements');
+        break;
+      case 'receipt':
+        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'receipts');
+        break;
+      case 'proof_documents':
+        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'documents');
+        break;
+      case 'video':
+        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'videos');
+        break;
+      default:
+        uploadDir = path.join(UPLOAD_PATH, 'transactions');
+    }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  filename: async (req, file, cb) => {
+    try {
+      // Используем ту же функцию, что и в контроллере
+      const [users] = await transactionController.pool.query(
+        'SELECT login FROM users WHERE id = ?',
+        [req.user.id]
+      );
+      const userLogin = users[0]?.login || 'unknown';
+      const ext = path.extname(file.originalname);
+      const categoryNames = {
+        agreement: 'Agreement',
+        receipt: 'Receipt',
+        proof_documents: 'Document',
+        video: 'Video'
+      };
+      const baseName = categoryNames[file.fieldname] || 'File';
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `${baseName}_${userLogin}_${date}${ext}`;
+      cb(null, fileName);
+    } catch (error) {
+      cb(error);
+    }
   }
 });
 
@@ -63,7 +101,6 @@ router.post('/', adminAuth, [
   body('total_amount').isNumeric().withMessage('Valid total amount is required')
 ], transactionController.create);
 
-
 router.get('/', adminAuth, transactionController.getAll);
 router.get('/:id', adminAuth, transactionController.getById);
 
@@ -98,4 +135,4 @@ router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('notes').optional().isString().withMessage('Notes must be a string')
 ], transactionController.updatePayment);
 
-export default router; 
+export default router;

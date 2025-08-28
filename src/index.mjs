@@ -38,8 +38,23 @@ const app = express();
 
 // Базовые middleware
 app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Парсим JSON только для application/json
+app.use((req, res, next) => {
+  if (req.headers['content-type']?.includes('application/json')) {
+    express.json()(req, res, next);
+  } else {
+    next();
+  }
+});
+
+// Парсим urlencoded только для application/x-www-form-urlencoded
+app.use((req, res, next) => {
+  if (req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
+    express.urlencoded({ extended: true })(req, res, next);
+  } else {
+    next();
+  }
+});
 
 // Middleware безопасности
 app.use(securityHeaders); // Защита от XSS и других веб-уязвимостей

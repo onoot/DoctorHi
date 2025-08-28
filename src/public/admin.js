@@ -3521,7 +3521,7 @@ function initEventHandlers() {
                     formData.append('receipt', receiptFile);
                 }
                 
-                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
                     method: 'POST',
                     body: formData
                 });

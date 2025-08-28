@@ -1028,7 +1028,7 @@ const transactionController = {
         payment: payment[0]
       });
     } catch (error) {
-      console.error('Error creating payment:', req.body);
+      console.error('Error creating payment:', req);
       res.status(500).json({ message: 'Internal server error' });
     }
   },

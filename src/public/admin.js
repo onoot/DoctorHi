@@ -2769,6 +2769,7 @@ async function loadTransactionFiles(transactionId) {
         showNotification('error', 'Error loading files');
     }
 }
+
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
     try {
@@ -2802,13 +2803,13 @@ async function loadTransactionPayments(transactionId) {
                 
                 row.innerHTML = `
                     <td>${payment.id}</td>
-                    <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
+                    <td>${new Date(payment.payment_date || payment.created_at).toLocaleDateString()}</td>
                     <td>${parseFloat(payment.amount).toFixed(2)}</td>
-                    <td>${payment.payment_method}</td>
+                    <td>${payment.payment_method || payment.method}</td>
                     <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
                     <td>
-                        ${payment.receipt ? 
-                            `<a href="/uploads/${payment.receipt.path}" target="_blank" class="receipt-link">${payment.receipt.name}</a>` : 
+                        ${payment.receipt_url || (payment.receipt && payment.receipt.file_path) ? 
+                            `<a href="${payment.receipt_url || '/uploads/' + payment.receipt.file_path}" target="_blank" class="receipt-link">View</a>` : 
                             'No receipt'}
                     </td>
                     <td class="actions-cell">${actionsHTML}</td>
@@ -2817,29 +2818,7 @@ async function loadTransactionPayments(transactionId) {
             });
             
             // Добавляем обработчики для кнопок действий
-            document.querySelectorAll('.btn-view').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const paymentId = e.target.closest('button').dataset.id;
-                    const transactionId = e.target.closest('button').dataset.transactionId;
-                    viewPaymentDetails(paymentId, transactionId);
-                });
-            });
-            
-            document.querySelectorAll('.btn-edit').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const paymentId = e.target.closest('button').dataset.id;
-                    const transactionId = e.target.closest('button').dataset.transactionId;
-                    openEditPaymentModal(paymentId, transactionId);
-                });
-            });
-            
-            document.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const paymentId = e.target.closest('button').dataset.id;
-                    const transactionId = e.target.closest('button').dataset.transactionId;
-                    confirmDeletePayment(paymentId, transactionId);
-                });
-            });
+            setupPaymentActionHandlers(transactionId);
         }
     } catch (error) {
         console.error('Error loading payments:', error);
@@ -2848,11 +2827,73 @@ async function loadTransactionPayments(transactionId) {
     }
 }
 
+// Функция для настройки обработчиков действий с платежами
+function setupPaymentActionHandlers(transactionId) {
+    // Удаляем существующие обработчики, чтобы избежать дублирования
+    document.querySelectorAll('.btn-view, .btn-edit, .btn-delete').forEach(btn => {
+        const clonedBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(clonedBtn, btn);
+    });
+    
+    // Добавляем новые обработчики
+    document.querySelectorAll('.btn-view').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const paymentId = e.target.closest('button').dataset.id;
+            viewPaymentDetails(paymentId, transactionId);
+        });
+    });
+    
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const paymentId = e.target.closest('button').dataset.id;
+            openEditPaymentModal(paymentId, transactionId);
+        });
+    });
+    
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const paymentId = e.target.closest('button').dataset.id;
+            confirmDeletePayment(paymentId, transactionId);
+        });
+    });
+}
+
 // Функции для обработки действий с платежами
 function viewPaymentDetails(paymentId, transactionId) {
     // Реализация просмотра деталей платежа
     console.log(`Viewing payment ${paymentId} for transaction ${transactionId}`);
-    // Здесь можно открыть модальное окно с деталями платежа
+    
+    // Загрузка данных платежа
+    apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.payment) {
+                // Заполнение модального окна данными
+                document.getElementById('viewPaymentId').textContent = data.payment.id;
+                document.getElementById('viewPaymentAmount').textContent = parseFloat(data.payment.amount).toFixed(2);
+                document.getElementById('viewPaymentMethod').textContent = data.payment.payment_method;
+                document.getElementById('viewPaymentStatus').textContent = data.payment.status;
+                document.getElementById('viewPaymentDate').textContent = new Date(data.payment.payment_date).toLocaleDateString();
+                document.getElementById('viewPaymentNotes').textContent = data.payment.notes || '-';
+                
+                // Отображение ссылки на квитанцию
+                const receiptLink = document.getElementById('viewReceiptLink');
+                if (data.payment.receipt && data.payment.receipt.file_path) {
+                    receiptLink.href = `/uploads/${data.payment.receipt.file_path}`;
+                    receiptLink.style.display = 'inline';
+                    receiptLink.textContent = data.payment.receipt.original_name;
+                } else {
+                    receiptLink.style.display = 'none';
+                }
+                
+                // Открытие модального окна
+                openModal('viewPaymentModal');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading payment details:', error);
+            showNotification('error', 'Failed to load payment details');
+        });
 }
 
 function openEditPaymentModal(paymentId, transactionId) {
@@ -2869,6 +2910,7 @@ function openEditPaymentModal(paymentId, transactionId) {
                 document.getElementById('editPaymentAmount').value = data.payment.amount;
                 document.getElementById('editPaymentMethod').value = data.payment.payment_method;
                 document.getElementById('editPaymentNotes').value = data.payment.notes || '';
+                document.getElementById('editPaymentStatus').value = data.payment.status;
                 
                 // Открытие модального окна
                 openModal('editPaymentModal');
@@ -2882,7 +2924,7 @@ function openEditPaymentModal(paymentId, transactionId) {
 
 function confirmDeletePayment(paymentId, transactionId) {
     // Реализация подтверждения удаления платежа
-    if (confirm('Are you sure you want to delete this payment?')) {
+    if (confirm('Are you sure you want to delete this payment? This action cannot be undone.')) {
         deletePayment(paymentId, transactionId);
     }
 }
@@ -2891,15 +2933,14 @@ function deletePayment(paymentId, transactionId) {
     apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
         method: 'DELETE'
     })
-    .then(response => {
-        if (response.ok) {
+    .then(async response => {
+        const data = await response.json();
+        if (response.ok && (data.success || data.message)) {
             showNotification('success', 'Payment deleted successfully');
             loadTransactionPayments(transactionId);
             loadTransactionDetails(transactionId);
         } else {
-            return response.json().then(data => {
-                throw new Error(data.message || 'Failed to delete payment');
-            });
+            throw new Error(data.message || 'Failed to delete payment');
         }
     })
     .catch(error => {

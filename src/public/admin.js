@@ -1752,6 +1752,77 @@ async function loadTransferRequestsAdmin() {
     }
 }
 
+async function updateTransactionStatus(transactionId, status) {
+    // Добавляем подтверждение перед действием
+    let confirmationMessage;
+    if (status === 'approved') {
+        confirmationMessage = 'Are you sure you want to approve this transaction?';
+    } else if (status === 'rejected') {
+        confirmationMessage = 'Are you sure you want to reject this transaction?';
+    } else {
+        confirmationMessage = 'Are you sure you want to update this transaction status?';
+    }
+    
+    if (!confirm(confirmationMessage)) {
+        return; // Отмена действия, если пользователь нажал "Cancel"
+    }
+    
+    try {
+        let notes = null;
+        if (status === 'rejected') {
+            notes = prompt('Please provide a reason for rejection:');
+            if (notes === null) return; // Пользователь нажал Cancel в prompt
+        }
+        
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status,
+                reason: notes
+            })
+        });
+        
+        if (response && response.success) {
+            showNotification('success', `Transaction ${status} successfully`);
+            loadTransactions(); // Обновляем список транзакций
+        } else {
+            const errorMessage = response?.message || 'Error updating transaction';
+            showNotification('error', errorMessage);
+        }
+    } catch (error) {
+        console.error('Error updating transaction status:', error);
+        showNotification('error', 'Failed to update transaction status');
+    }
+}
+
+// Добавляем обработчики для кнопок действий
+document.querySelectorAll('.btn-approve, .btn-reject').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const transactionId = this.getAttribute('data-id');
+        const action = this.getAttribute('data-action');
+        
+        if (action === 'approve') {
+            updateTransactionStatus(transactionId, 'approved');
+        } else if (action === 'reject') {
+            updateTransactionStatus(transactionId, 'rejected');
+        }
+    });
+});
+
+// Динамические обработчики для действий с транзакциями
+document.addEventListener('click', function(e) {
+    const approveBtn = e.target.closest('.action-btn[data-action="approve"]');
+    const rejectBtn = e.target.closest('.action-btn[data-action="reject"]');
+    
+    if (approveBtn) {
+        const transactionId = approveBtn.getAttribute('data-id');
+        updateTransactionStatus(transactionId, 'approved');
+    } else if (rejectBtn) {
+        const transactionId = rejectBtn.getAttribute('data-id');
+        updateTransactionStatus(transactionId, 'rejected');
+    }
+});
 
 // Функция для привязки обработчиков событий
 function attachActionHandlers1() {

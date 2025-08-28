@@ -3053,8 +3053,14 @@ async function loadTransactions() {
                 tbody.appendChild(row);
             });
             
-            // Добавьте обработчики для кнопок транзакций
-            setupTransactionActionHandlers();
+             // Добавляем пагинацию
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (paginationContainer) {
+                paginationContainer.innerHTML = '';
+                paginationContainer.appendChild(
+                    createPagination(response.total, page, limit)
+                );
+            }
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
@@ -3062,6 +3068,7 @@ async function loadTransactions() {
             '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
     }
 }
+
 
 
 // Функция для загрузки архивных пользователей

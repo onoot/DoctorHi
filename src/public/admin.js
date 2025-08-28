@@ -3011,52 +3011,55 @@ function openViewTransactionModal(transactionId) {
 }
 
 // Функция для загрузки транзакций
-async function loadTransactions(page = 1, limit = 10) {
+async function loadTransactions() {
     try {
-        const loadingIndicator = document.createElement('div');
-        loadingIndicator.className = 'loading-indicator';
-        loadingIndicator.textContent = 'Loading transactions...';
-        document.getElementById('transactionsTableBody').innerHTML = '';
-        document.getElementById('transactionsTableBody').appendChild(loadingIndicator);
-        
-        const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}`);
+        const response = await apiRequest('/v1/admin/transactions');
         
         if (response.success && response.transactions) {
             const tbody = document.getElementById('transactionsTableBody');
             tbody.innerHTML = '';
             
+            if (response.transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
+                return;
+            }
+            
             response.transactions.forEach(transaction => {
                 const row = document.createElement('tr');
+                
+                // КНОПКИ ДЛЯ ТРАНЗАКЦИЙ (Edit/Delete)
+                const actionsHTML = `
+                    <div class="actions-column">
+                        <button class="action-btn btn-view view-transaction-btn" data-transaction-id="${transaction.id}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="action-btn btn-edit edit-transaction-btn" data-transaction-id="${transaction.id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn btn-delete delete-transaction-btn" data-transaction-id="${transaction.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>`;
+                
                 row.innerHTML = `
                     <td>${transaction.id}</td>
                     <td>${transaction.property_id}</td>
-                    <td>${transaction.previous_owner_name || 'N/A'}</td>
-                    <td>${transaction.new_owner_name}</td>
-                    <td>${new Date(transaction.created_at).toLocaleDateString()}</td>
+                    <td>${transaction.previous_owner}</td>
+                    <td>${transaction.new_owner}</td>
+                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
                     <td><span class="status-badge ${transaction.status}">${transaction.status}</span></td>
-                    <td>
-                        <button class="action-btn btn-edit view-transaction-btn" data-transaction-id="${transaction.id}">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </td>
+                    <td class="actions-cell">${actionsHTML}</td>
                 `;
                 tbody.appendChild(row);
             });
             
-            // Добавляем пагинацию
-            const paginationContainer = document.querySelector('.pagination-container');
-            if (paginationContainer) {
-                paginationContainer.innerHTML = '';
-                paginationContainer.appendChild(
-                    createPagination(response.total, page, limit)
-                );
-            }
-        } else {
-            document.getElementById('transactionsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
+            // Добавьте обработчики для кнопок транзакций
+            setupTransactionActionHandlers();
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
-        document.getElementById('transactionsTableBody').innerHTML = '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
+        document.getElementById('transactionsTableBody').innerHTML = 
+            '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
     }
 }
 

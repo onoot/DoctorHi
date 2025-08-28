@@ -38,19 +38,20 @@ const app = express();
 
 // Базовые middleware
 app.use(cookieParser());
-// Парсим JSON только для application/json
+
+// Условный парсинг JSON — только если Content-Type включает application/json
 app.use((req, res, next) => {
   if (req.headers['content-type']?.includes('application/json')) {
-    express.json()(req, res, next);
+    express.json({ limit: '50mb' })(req, res, next);
   } else {
     next();
   }
 });
 
-// Парсим urlencoded только для application/x-www-form-urlencoded
+// Условный парсинг URL-encoded — только если Content-Type: x-www-form-urlencoded
 app.use((req, res, next) => {
   if (req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
-    express.urlencoded({ extended: true })(req, res, next);
+    express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
   } else {
     next();
   }

@@ -946,92 +946,130 @@ const transactionController = {
   },
 
   // Создание платежа
-  async createPayment(req, res) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { amount, payment_date, payment_method, notes } = req.body;
-      const transactionId = parseInt(req.params.id.toString(), 10);
-
-      if (isNaN(transactionId)) {
-        return res.status(400).json({ message: 'Invalid transaction ID' });
-      }
-
-      // Проверяем существование транзакции и получаем информацию о платежах
-      const [transactions] = await pool.query(`
-        SELECT t.*, 
-               COALESCE(SUM(CASE WHEN tp.status IN ('pending', 'paid') THEN tp.amount ELSE 0 END), 0) as total_allocated
-        FROM transactions t
-        LEFT JOIN transaction_payments tp ON t.id = tp.transaction_id
-        WHERE t.id = ?
-        GROUP BY t.id
-      `, [transactionId]);
-
-      if (transactions.length === 0) {
-        return res.status(404).json({ message: 'Transaction not found' });
-      }
-
-      const transaction = transactions[0];
-      const totalAllocated = parseFloat(transaction.total_allocated);
-      const totalAmount = parseFloat(transaction.total_amount);
-      const attemptedAmount = parseFloat(amount);
-      const remainingUnallocated = totalAmount - totalAllocated;
-
-      // Проверяем, не превышает ли сумма нового платежа оставшуюся нераспределенную сумму
-      if (attemptedAmount > remainingUnallocated) {
-        return res.status(400).json({
-          message: 'Payment amount exceeds remaining unallocated amount',
-          total_amount: totalAmount,
-          total_allocated: totalAllocated,
-          remaining_unallocated: remainingUnallocated,
-          attempted: attemptedAmount
-        });
-      }
-
-      let receiptFileId = null;
-      if (req.file) {
-        // Сохраняем квитанцию в таблицу файлов
-        const [fileResult] = await pool.query(
-          'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
-          [transactionId, req.file.filename, req.file.originalname, req.file.mimetype, `uploads/${req.file.filename}`, 'receipt']
-        );
-        receiptFileId = fileResult.insertId;
-      }
-
-      // Создаем платеж
-      const [result] = await pool.query(
-        'INSERT INTO transaction_payments (transaction_id, amount, payment_date, payment_method, notes, receipt_file_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [transactionId, amount, payment_date, payment_method, notes || null, receiptFileId, 'pending']
-      );
-
-      // Обновляем статус транзакции, если это первый платеж
-      if (transaction.payment_status === 'not_started' || !transaction.payment_status) {
-        await pool.query(
-          'UPDATE transactions SET payment_status = "in_progress" WHERE id = ?',
-          [transactionId]
-        );
-      }
-
-      // Получаем созданный платеж с информацией о квитанции
-      const [payment] = await pool.query(`
-        SELECT p.*, f.file_path, f.original_name
-        FROM transaction_payments p
-        LEFT JOIN transaction_files f ON p.receipt_file_id = f.id
-        WHERE p.id = ?
-      `, [result.insertId]);
-
-      res.status(201).json({
-        message: 'Payment created successfully',
-        payment: payment[0]
-      });
-    } catch (error) {
-      console.error('Error creating payment:', req);
-      res.status(500).json({ message: 'Internal server error' });
+async createPayment(req, res) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-  },
+    
+    const { amount, payment_date, payment_method, notes, receipt } = req.body;
+    const transactionId = parseInt(req.params.id.toString(), 10);
+    
+    if (isNaN(transactionId)) {
+      return res.status(400).json({ message: 'Invalid transaction ID' });
+    }
+    
+    // Проверяем существование транзакции и получаем информацию о платежах
+    const [transactions] = await pool.query(`
+      SELECT t.*, 
+             COALESCE(SUM(CASE WHEN tp.status IN ('pending', 'paid') THEN tp.amount ELSE 0 END), 0) as total_allocated
+      FROM transactions t
+      LEFT JOIN transaction_payments tp ON t.id = tp.transaction_id
+      WHERE t.id = ?
+      GROUP BY t.id
+    `, [transactionId]);
+    
+    if (transactions.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+    
+    const transaction = transactions[0];
+    const totalAllocated = parseFloat(transaction.total_allocated);
+    const totalAmount = parseFloat(transaction.total_amount);
+    const attemptedAmount = parseFloat(amount);
+    const remainingUnallocated = totalAmount - totalAllocated;
+    
+    // Проверяем, не превышает ли сумма нового платежа оставшуюся нераспределенную сумму
+    if (attemptedAmount > remainingUnallocated) {
+      return res.status(400).json({
+        message: 'Payment amount exceeds remaining unallocated amount',
+        total_amount: totalAmount,
+        total_allocated: totalAllocated,
+        remaining_unallocated: remainingUnallocated,
+        attempted: attemptedAmount
+      });
+    }
+    
+    let receiptFileId = null;
+    
+    // Обрабатываем квитанцию в base64 формате
+    if (receipt && receipt.data && receipt.mime_type && receipt.file_name) {
+      const { data, mime_type, file_name } = receipt;
+      
+      // Генерируем уникальное имя файла
+      const fileExt = path.extname(file_name);
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
+      
+      // Декодируем base64 и сохраняем файл
+      const buffer = Buffer.from(data, 'base64');
+      
+      // Определяем путь для сохранения (используем тот же путь, что и в multer)
+      const uploadDir = path.join(UPLOAD_PATH, 'transactions', 'receipts');
+      const filePath = path.join(uploadDir, fileName);
+      
+      // Сохраняем файл на диск
+      await fs.writeFile(filePath, buffer);
+      
+      // Сохраняем информацию о файле в базе
+      const [fileResult] = await pool.query(
+        'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          transactionId,
+          fileName,
+          file_name,
+          mime_type,
+          `transactions/receipts/${fileName}`,
+          'receipt'
+        ]
+      );
+      receiptFileId = fileResult.insertId;
+    }
+    
+    // Создаем платеж
+    const [result] = await pool.query(
+      'INSERT INTO transaction_payments (transaction_id, amount, payment_date, payment_method, notes, receipt_file_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [
+        transactionId, 
+        amount, 
+        payment_date, 
+        payment_method, 
+        notes || null, 
+        receiptFileId, 
+        'pending'
+      ]
+    );
+    
+    // Обновляем статус транзакции, если это первый платеж
+    if (transaction.payment_status === 'not_started' || !transaction.payment_status) {
+      await pool.query(
+        'UPDATE transactions SET payment_status = "in_progress" WHERE id = ?',
+        [transactionId]
+      );
+    }
+    
+    // Получаем созданный платеж с информацией о квитанции
+    const [payment] = await pool.query(`
+      SELECT p.*, f.file_path, f.original_name
+      FROM transaction_payments p
+      LEFT JOIN transaction_files f ON p.receipt_file_id = f.id
+      WHERE p.id = ?
+    `, [result.insertId]);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Payment created successfully',
+      payment: payment[0]
+    });
+  } catch (error) {
+    console.error('Error creating payment:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+},
 
   // Получение платежей по транзакции
   async getPayments(req, res) {

@@ -2107,9 +2107,18 @@ function initPaymentHandlers() {
             preview.innerHTML = '';
         }
     });
+// Функция для чтения файла как base64
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]); // Убираем префикс data:...
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+}
 
-    // Обработчик формы добавления платежа
-   document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
+// Обработчик формы добавления платежа
+document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const transactionId = document.getElementById('paymentTransactionId').value;
@@ -2125,20 +2134,37 @@ function initPaymentHandlers() {
     }
 
     try {
-        const formData = new FormData();
-        formData.append('amount', amount.toString());
-        formData.append('payment_date', paymentDate);
-        formData.append('payment_method', method);
-        formData.append('notes', notes);
+        let receiptData = null;
+        let receiptMimeType = null;
+        let receiptFileName = null;
+        
         if (receiptFile) {
-            formData.append('receipt', receiptFile); 
+            receiptData = await readFileAsBase64(receiptFile);
+            receiptMimeType = receiptFile.type;
+            receiptFileName = receiptFile.name;
         }
 
-        const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
+        const payload = {
+            amount,
+            payment_date: paymentDate,
+            payment_method: method,
+            notes,
+            receipt: receiptData ? {
+                data: receiptData,
+                mime_type: receiptMimeType,
+                file_name: receiptFileName
+            } : null
+        };
+
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
             method: 'POST',
-            body: formData 
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
         });
-        const data = response.json()
+        
+        const data = await response.json();
         
         if (data.success || data.message) {
             closeModal('addPaymentModal');
@@ -2146,8 +2172,7 @@ function initPaymentHandlers() {
             loadTransactionDetails(transactionId);
             showNotification('success', 'Payment added successfully');
         } else {
-            console.log(data.message || 'Failed to add payment')
-            showNotification('error',data.message || 'Failed to add payment')
+            showNotification('error', data.message || 'Failed to add payment');
         }
     } catch (error) {
         console.error("Error adding payment:", error);
@@ -2155,6 +2180,10 @@ function initPaymentHandlers() {
     }
 });
 
+// Обработчики для кнопок отмены
+document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+    closeModal('addPaymentModal');
+});
     // Обработчики для кнопок отмены
     document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
         closeModal('addPaymentModal');

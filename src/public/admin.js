@@ -5,6 +5,54 @@ const API_BASE_URL = `https://${window?.location?.host}/api`;
 let currentPage = 1;
 let itemsPerPage = 10;
 
+// Функция для выполнения API запросов
+async function apiRequest(endpoint, options = {}) {
+    console.log('Making API request to:', endpoint);
+    const defaultOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        credentials: 'include'
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...defaultOptions,
+            ...options,
+            headers: {
+                ...defaultOptions.headers,
+                ...(options.headers || {})
+            },
+            credentials: 'include',
+        });
+
+        console.log('API response status:', response.status);
+
+        // Пытаемся распарсить ответ как JSON
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Если не удалось распарсить JSON, используем текстовый ответ
+            const text = await response.text();
+            console.log('API response text:', text);
+            data = { message: text || 'Unknown error' };
+        }
+
+        console.log('API response data:', data);
+
+        if (!response.ok) {
+            console.log('API request failed:', data);
+            throw new Error(data.message || 'API request failed');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
+}
 // Предопределенный массив объектов недвижимости
 const properties = {
     'Parking': [
@@ -214,54 +262,6 @@ async function logout() {
     }
 }
 
-// Функция для выполнения API запросов
-async function apiRequest(endpoint, options = {}) {
-    console.log('Making API request to:', endpoint);
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        credentials: 'include'
-    };
-
-    try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            ...defaultOptions,
-            ...options,
-            headers: {
-                ...defaultOptions.headers,
-                ...(options.headers || {})
-            },
-            credentials: 'include',
-        });
-
-        console.log('API response status:', response.status);
-
-        // Пытаемся распарсить ответ как JSON
-        let data = null;
-        try {
-            data = await response.json();
-        } catch (e) {
-            // Если не удалось распарсить JSON, используем текстовый ответ
-            const text = await response.text();
-            console.log('API response text:', text);
-            data = { message: text || 'Unknown error' };
-        }
-
-        console.log('API response data:', data);
-
-        if (!response.ok) {
-            console.log('API request failed:', data);
-            throw new Error(data.message || 'API request failed');
-        }
-
-        return data;
-    } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-    }
-}
 
 // Функция загрузки текущего раздела
 function loadCurrentSection() {
@@ -493,7 +493,6 @@ async function loadUsers(status = 'active') {
             }
         }
 
-        // --- РЕНДЕРИМ ДАННЫЕ В СООТВЕТСТВУЮЩУЮ ТАБЛИЦУ ---
         const tbody = document.getElementById(tbodyId);
         if (!tbody) {
             console.error(`Failed to find tbody with id: ${tbodyId}`);
@@ -2770,7 +2769,6 @@ async function loadTransactionFiles(transactionId) {
         showNotification('error', 'Error loading files');
     }
 }
-
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
     try {
@@ -2781,32 +2779,133 @@ async function loadTransactionPayments(transactionId) {
             tbody.innerHTML = '';
             
             if (response.payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments yet</td></tr>';
                 return;
             }
             
             response.payments.forEach(payment => {
                 const row = document.createElement('tr');
+                
+                // Создаем HTML для действий с платежом
+                const actionsHTML = `
+                    <div class="actions-column">
+                        <button class="action-btn btn-view" data-id="${payment.id}" data-transaction-id="${transactionId}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="action-btn btn-edit" data-id="${payment.id}" data-transaction-id="${transactionId}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="action-btn btn-delete" data-id="${payment.id}" data-transaction-id="${transactionId}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>`;
+                
                 row.innerHTML = `
                     <td>${payment.id}</td>
-                    <td>${new Date(payment.created_at).toLocaleDateString()}</td>
+                    <td>${new Date(payment.payment_date).toLocaleDateString()}</td>
                     <td>${parseFloat(payment.amount).toFixed(2)}</td>
-                    <td>${payment.method}</td>
+                    <td>${payment.payment_method}</td>
                     <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
                     <td>
-                        ${payment.receipt_url ? 
-                            `<a href="${payment.receipt_url}" target="_blank" class="receipt-link">View</a>` : 
+                        ${payment.receipt ? 
+                            `<a href="/uploads/${payment.receipt.path}" target="_blank" class="receipt-link">${payment.receipt.name}</a>` : 
                             'No receipt'}
                     </td>
+                    <td class="actions-cell">${actionsHTML}</td>
                 `;
                 tbody.appendChild(row);
+            });
+            
+            // Добавляем обработчики для кнопок действий
+            document.querySelectorAll('.btn-view').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const paymentId = e.target.closest('button').dataset.id;
+                    const transactionId = e.target.closest('button').dataset.transactionId;
+                    viewPaymentDetails(paymentId, transactionId);
+                });
+            });
+            
+            document.querySelectorAll('.btn-edit').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const paymentId = e.target.closest('button').dataset.id;
+                    const transactionId = e.target.closest('button').dataset.transactionId;
+                    openEditPaymentModal(paymentId, transactionId);
+                });
+            });
+            
+            document.querySelectorAll('.btn-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const paymentId = e.target.closest('button').dataset.id;
+                    const transactionId = e.target.closest('button').dataset.transactionId;
+                    confirmDeletePayment(paymentId, transactionId);
+                });
             });
         }
     } catch (error) {
         console.error('Error loading payments:', error);
         const tbody = document.getElementById('paymentsTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
     }
+}
+
+// Функции для обработки действий с платежами
+function viewPaymentDetails(paymentId, transactionId) {
+    // Реализация просмотра деталей платежа
+    console.log(`Viewing payment ${paymentId} for transaction ${transactionId}`);
+    // Здесь можно открыть модальное окно с деталями платежа
+}
+
+function openEditPaymentModal(paymentId, transactionId) {
+    // Реализация открытия модального окна для редактирования платежа
+    console.log(`Editing payment ${paymentId} for transaction ${transactionId}`);
+    
+    // Загрузка данных платежа
+    apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.payment) {
+                // Заполнение формы редактирования
+                document.getElementById('editPaymentId').value = data.payment.id;
+                document.getElementById('editPaymentAmount').value = data.payment.amount;
+                document.getElementById('editPaymentMethod').value = data.payment.payment_method;
+                document.getElementById('editPaymentNotes').value = data.payment.notes || '';
+                
+                // Открытие модального окна
+                openModal('editPaymentModal');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading payment details:', error);
+            showNotification('error', 'Failed to load payment details');
+        });
+}
+
+function confirmDeletePayment(paymentId, transactionId) {
+    // Реализация подтверждения удаления платежа
+    if (confirm('Are you sure you want to delete this payment?')) {
+        deletePayment(paymentId, transactionId);
+    }
+}
+
+function deletePayment(paymentId, transactionId) {
+    apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('success', 'Payment deleted successfully');
+            loadTransactionPayments(transactionId);
+            loadTransactionDetails(transactionId);
+        } else {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Failed to delete payment');
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting payment:', error);
+        showNotification('error', error.message);
+    });
 }
 
 // Функция для загрузки деталей транзакции

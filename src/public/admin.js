@@ -2164,7 +2164,7 @@ function initPaymentHandlers() {
         formData.append('payment_method', method);
         formData.append('notes', notes);
         if (receiptFile) {
-            formData.append('receipt', receiptFile); // 🔥 имя должно быть "receipt"
+            formData.append('receipt', receiptFile); 
         }
 
         const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
@@ -2340,52 +2340,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             showNotification('error', 'Error uploading files: ' + error.message);
         }
-    });
-    
-    // Обработчик формы добавления платежа
-    document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const transactionId = document.getElementById('paymentTransactionId').value;
-        const amount = parseFloat(document.getElementById('paymentAmount').value);
-        const method = document.getElementById('paymentMethod').value;
-        const receiptFile = document.getElementById('receiptFile').files[0];
-        
-        if (isNaN(amount) || amount <= 0) {
-            showNotification('error', 'Please enter a valid amount');
-            return;
-        }
-        
-        try {
-            const formData = new FormData();
-            formData.append('amount', amount);
-            formData.append('method', method);
-            if (receiptFile) {
-                formData.append('receipt', receiptFile);
-            }
-            
-            const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.success) {
-                closeModal('addPaymentModal');
-                // Обновляем платежи и оставшуюся сумму
-                loadTransactionPayments(transactionId);
-                loadTransactionDetails(transactionId);
-                showNotification('success', 'Payment added successfully');
-            } else {
-                throw new Error(response.message || 'Failed to add payment');
-            }
-        } catch (error) {
-            showNotification('error', 'Error adding payment: ' + error.message);
-        }
-    });
-    
-    // Обработчики для кнопок отмены
-    document.querySelector('.cancel-upload-btn')?.addEventListener('click', function() {
-        closeModal('uploadFileModal');
     });
     
     document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
@@ -3497,54 +3451,6 @@ function initEventHandlers() {
         });
     }
     
-    // Обработчик формы добавления платежа
-    const addPaymentForm = document.getElementById('addPaymentForm');
-    if (addPaymentForm) {
-        addPaymentForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const transactionId = document.getElementById('paymentTransactionId').value;
-            const amount = parseFloat(document.getElementById('paymentAmount').value);
-            const method = document.getElementById('paymentMethod').value;
-            const receiptFile = document.getElementById('receiptFile').files[0];
-            
-            if (isNaN(amount) || amount <= 0) {
-                showNotification('error', 'Please enter a valid amount');
-                return;
-            }
-            
-            try {
-                const formData = new FormData();
-                formData.append('amount', amount);
-                formData.append('method', method);
-                if (receiptFile) {
-                    formData.append('receipt', receiptFile);
-                }
-                
-                const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.success) {
-                    closeModal('addPaymentModal');
-                    // Обновляем платежи и оставшуюся сумму
-                    loadTransactionPayments(transactionId);
-                    loadTransactionDetails(transactionId);
-                    showNotification('success', 'Payment added successfully');
-                } else {
-                    throw new Error(response.message || 'Failed to add payment');
-                }
-            } catch (error) {
-                showNotification('error', 'Error adding payment: ' + error.message);
-            }
-        });
-    }
-    
-    // Обработчики для кнопок отмены
-    document.querySelector('.cancel-upload-btn')?.addEventListener('click', function() {
-        closeModal('uploadFileModal');
-    });
     
     document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
         closeModal('multipleUploadModal');

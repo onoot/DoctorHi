@@ -2234,7 +2234,7 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
             body: JSON.stringify(payload)
         });
         
-        const data = await response;a
+        const data = await response;
         
         if (data.success || data.message) {
             closeModal('addPaymentModal');

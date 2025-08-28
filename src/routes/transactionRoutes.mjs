@@ -110,12 +110,7 @@ router.put('/:id', adminAuth, [
 ], transactionController.update);
 
 // Загрузка документов и видео
-router.post('/:id/documents', adminAuth, upload.fields([
-  { name: 'agreement', maxCount: 1 },
-  { name: 'receipt', maxCount: 1 },
-  { name: 'proof_documents', maxCount: 5 },
-  { name: 'video', maxCount: 1 }
-]), transactionController.uploadFiles);
+router.post('/:id/documents', adminAuth, transactionController.uploadFiles);
 
 router.get('/:id/documents', adminAuth, transactionController.getFiles);
 router.delete('/:id/documents/:fileId', adminAuth, transactionController.deleteFile);
@@ -123,12 +118,7 @@ router.delete('/:id/documents/:fileId', adminAuth, transactionController.deleteF
 // Маршруты для работы с платежами
 router.get('/:id/payments', adminAuth, transactionController.getPayments);
 
-router.post('/:id/payments', adminAuth, upload.single('receipt'), [
-  body('amount').isNumeric().withMessage('Amount must be a number'),
-  body('payment_date').isDate().withMessage('Please provide a valid date'),
-  body('payment_method').isIn(['cash', 'bank_transfer', 'check']).withMessage('Invalid payment method'),
-  body('notes').optional().isString().withMessage('Notes must be a string')
-], transactionController.createPayment);
+router.post('/:id/payments', adminAuth, transactionController.createPayment);
 
 router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),

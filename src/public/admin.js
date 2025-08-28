@@ -2167,9 +2167,9 @@ function initPaymentHandlers() {
             formData.append('receipt', receiptFile); // 🔥 имя должно быть "receipt"
         }
 
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+        const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
             method: 'POST',
-            body: formData // Не указываем Content-Type!
+            body: formData 
         });
         
         if (response.success || response.message) {

@@ -3029,17 +3029,21 @@ async function loadTransactions() {
                 
                 // КНОПКИ ДЛЯ ТРАНЗАКЦИЙ (Edit/Delete)
                 const actionsHTML = `
-                    <div class="actions-column">
-                        <button class="action-btn btn-view view-transaction-btn" data-transaction-id="${transaction.id}">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="action-btn btn-edit edit-transaction-btn" data-transaction-id="${transaction.id}">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="action-btn btn-delete delete-transaction-btn" data-transaction-id="${transaction.id}">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>`;
+    <div class="actions-column">
+        <button class="action-btn btn-view view-transaction-btn" data-transaction-id="${transaction.id}">
+            <i class="fas fa-eye"></i> View
+        </button>
+        ${transaction.status === 'pending'
+                        ? `
+        <button class="action-btn btn-edit" data-id="${transaction.id}" data-action="approve">
+            <i class="fas fa-check"></i> Approve
+        </button>
+        <button class="action-btn btn-delete" data-id="${transaction.id}" data-action="reject">
+            <i class="fas fa-times"></i> Reject
+        </button>`
+                        : ''}
+    </div>
+`;
                 
                 row.innerHTML = `
                     <td>${transaction.id}</td>

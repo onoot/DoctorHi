@@ -2226,7 +2226,8 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
             } : null
         };
 
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+        // УБИРАЕМ вызов response.json() - apiRequest уже возвращает распарсенные данные
+        const data = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2234,8 +2235,7 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
             body: JSON.stringify(payload)
         });
         
-        const data = await response;
-        
+        // Теперь data - это уже распарсенный объект
         if (data.success || data.message) {
             closeModal('addPaymentModal');
             loadTransactionPayments(transactionId);

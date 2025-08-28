@@ -262,38 +262,6 @@ async function apiRequest(endpoint, options = {}) {
         throw error;
     }
 }
-// Функции для уведомлений
-function showNotification(type, message) {
-    let duration = 3000
-    // Создаем контейнер для уведомлений, если его еще нет
-    let container = document.getElementById('notification-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'notification-container';
-        document.body.appendChild(container);
-    }
-
-    // Создаем элемент уведомления
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-
-    // Добавляем уведомление в контейнер
-    container.appendChild(notification);
-
-    // Показываем уведомление с анимацией
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10); // Небольшая задержка для корректного запуска анимации
-
-    // Автоматически скрываем и удаляем уведомление через указанное время
-    setTimeout(() => {
-        notification.classList.remove('show'); // Запускаем анимацию исчезновения
-        setTimeout(() => {
-            notification.remove(); // Удаляем элемент из DOM
-        }, 300); // Ждем завершения анимации исчезновения
-    }, duration);
-}
 
 // Функция загрузки текущего раздела
 function loadCurrentSection() {
@@ -2036,7 +2004,6 @@ async function loadWitnesses(transactionId) {
     }
 }
 
-
 function formatAmount(amount) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -2171,14 +2138,16 @@ function initPaymentHandlers() {
             method: 'POST',
             body: formData 
         });
+        const data = response.json()
         
-        if (response.success || response.message) {
+        if (data.success || data.message) {
             closeModal('addPaymentModal');
             loadTransactionPayments(transactionId);
             loadTransactionDetails(transactionId);
             showNotification('success', 'Payment added successfully');
         } else {
-            throw new Error(response.message || 'Failed to add payment');
+            console.log(data.message || 'Failed to add payment')
+            showNotification('error',data.message || 'Failed to add payment')
         }
     } catch (error) {
         console.error("Error adding payment:", error);

@@ -1861,16 +1861,16 @@ async function loadTransferRequests() {
         data.requests.forEach(request => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${request.id}</td>
-                <td>${request.property_id}</td>
-                <td>${request.requester_name}</td>
-                <td>${request.requester_cnic}</td>
+                <td>${request.id||'N/A'}</td>
+                <td>${request.property_id||'N/A'}</td>
+                <td>${request.requester_name||'N/A'}</td>
+                <td>${request.requester_cnic||'N/A'}</td>
                 <td>
                     <span class="status-badge ${request.status.toLowerCase()}">
                         ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                     </span>
                 </td>
-                <td>${new Date(request.created_at).toLocaleString()}</td>
+                <td>${new Date(request.created_at).toLocaleString()||'N/A'}</td>
                 <td class="actions-cell">
                     ${request.status === 'pending' ? `
                         <button class="action-btn btn-approve" data-id="${request.id}" data-action="approved">
@@ -2234,7 +2234,7 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
             body: JSON.stringify(payload)
         });
         
-        const data = await response.json();
+        const data = await response;a
         
         if (data.success || data.message) {
             closeModal('addPaymentModal');

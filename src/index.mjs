@@ -42,7 +42,7 @@ app.use(cookieParser());
 // Условный парсинг JSON — только если Content-Type включает application/json
 app.use((req, res, next) => {
   if (req.headers['content-type']?.includes('application/json')) {
-    express.json({ limit: '50mb' })(req, res, next);
+    express.json({ limit: '500mb' })(req, res, next);
   } else {
     next();
   }
@@ -51,7 +51,7 @@ app.use((req, res, next) => {
 // Условный парсинг URL-encoded — только если Content-Type: x-www-form-urlencoded
 app.use((req, res, next) => {
   if (req.headers['content-type']?.includes('application/x-www-form-urlencoded')) {
-    express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+    express.urlencoded({ extended: true, limit: '1000mb' })(req, res, next);
   } else {
     next();
   }

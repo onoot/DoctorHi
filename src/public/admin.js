@@ -2346,7 +2346,7 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('file', file);
             formData.append('category', category);
             
-            const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
+            const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents`, {
                 method: 'POST',
                 body: formData
             });
@@ -2383,7 +2383,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             formData.append('category', 'proof');
             
-            const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents/multiple`, {
+            const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents/multiple`, {
                 method: 'POST',
                 body: formData
             });
@@ -3606,7 +3606,7 @@ function initEventHandlers() {
                 formData.append('file', file);
                 formData.append('category', category);
                 
-                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
+                const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents`, {
                     method: 'POST',
                     body: formData
                 });
@@ -3646,7 +3646,7 @@ function initEventHandlers() {
                 }
                 formData.append('category', 'proof');
                 
-                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents/multiple`, {
+                const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents/multiple`, {
                     method: 'POST',
                     body: formData
                 });

@@ -184,7 +184,7 @@ app.use((req, res, next) => {
   const clientIp = req.ip || req.connection.remoteAddress || 'Unknown IP';
 
   const logMessage = `[${req.requestId}] ${req.method} ${req.url}`;
-  console.log(logMessage); // Лог в консоль
+  // console.log(logMessage); // Лог в консоль
   logToFile('info', logMessage, clientIp); // Лог в файл
   next();
 });

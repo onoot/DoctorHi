@@ -18,27 +18,33 @@ const router = express.Router();
 const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 
 // Настройка Multer — единая логика с контроллером
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // ваш существующий код
-  },
-  filename: (req, file, cb) => {
-    // ИСПОЛЬЗУЕМ login ИЗ req.user (уже загруженного в auth middleware)
-    const userLogin = req.user?.login || 'unknown';
-    
-    const ext = path.extname(file.originalname);
-    const categoryNames = {
-      agreement: 'Agreement',
-      receipt: 'Receipt',
-      proof_documents: 'Document',
-      video: 'Video'
-    };
-    const baseName = categoryNames[file.fieldname] || 'File';
-    const date = new Date().toISOString().split('T')[0];
-    const fileName = `${baseName}_${userLogin}_${date}${ext}`;
-    cb(null, fileName);
+const storage = () => {
+  try {
+    return multer.diskStorage({
+      destination: (req, file, cb) => {
+        // ваш существующий код
+      },
+      filename: (req, file, cb) => {
+        const userLogin = req.user?.login || 'unknown';
+
+        const ext = path.extname(file.originalname);
+        const categoryNames = {
+          agreement: 'Agreement',
+          receipt: 'Receipt',
+          proof_documents: 'Document',
+          video: 'Video'
+        };
+        const baseName = categoryNames[file.fieldname] || 'File';
+        const date = new Date().toISOString().split('T')[0];
+        const fileName = `${baseName}_${userLogin}_${date}${ext}`;
+        cb(null, fileName);
+      }
+    });
+  } catch (e) {
+    console.log(e)
+    return req.status(500).json({ message: "Intermal server error" })
   }
-});
+}
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = {

@@ -9,26 +9,38 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Путь для хранения файлов в Docker volume
-const UPLOAD_PATH = path.join(dirname, process.env.UPLOAD_PATH || '/app/uploads');
+const UPLOAD_PATH = process.env.UPLOAD_PATH 
+  ? path.resolve(process.env.UPLOAD_PATH) 
+  : path.join(__dirname, 'uploads');
 
 // Создаем директории при старте
 const initializeUploadDirectories = async () => {
   try {
+    // ИСПРАВЛЕНИЕ 2: Используем правильный UPLOAD_PATH для создания директорий
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions'), { recursive: true });
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions', 'agreements'), { recursive: true });
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions', 'receipts'), { recursive: true });
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions', 'documents'), { recursive: true });
-    console.log('Upload directories created successfully');
+    console.log('Upload directories created successfully at:', UPLOAD_PATH);
+    return UPLOAD_PATH;
   } catch (error) {
     console.error('Error creating upload directories:', error);
     throw error;
   }
 };
 
-// Инициализируем директории
-initializeUploadDirectories();
+// ИСПРАВЛЕНИЕ 3: Экспортируем UPLOAD_PATH и функцию инициализации
+// Вместо немедленного вызова, экспортируем промис инициализации
+// Это позволяет другим модулям дождаться завершения инициализации
+export { UPLOAD_PATH, initializeUploadDirectories };
 
+// ИСПРАВЛЕНИЕ 4: Обрабатываем ошибку инициализации, но не завершаем приложение
+// Создаем экспортный промис для инициализации
+export const uploadInit = initializeUploadDirectories().catch(err => {
+  console.error('Failed to initialize upload directories. The application may not work correctly with file uploads.', err);
+  // Не выбрасываем ошибку дальше, чтобы не завершать всё приложение
+  return null;
+});
 // Настройка загрузки файлов
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { mkdirSync } from 'fs'; // Импортируем mkdirSync напрямую из fs
 import transactionController from '../controllers/transactionController.mjs';
 import { auth, adminAuth, authLocale } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
@@ -39,8 +40,12 @@ const storage = multer.diskStorage({
     }
 
     // Создаём папку, если не существует
-    require('fs').mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    try {
+      mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    } catch (err) {
+      cb(err);
+    }
   },
   filename: (req, file, cb) => {
     try {
@@ -80,7 +85,7 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Unsupported file type'), false);
+    cb(new Error('Unsupported file type'));
   }
 };
 

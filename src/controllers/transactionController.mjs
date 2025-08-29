@@ -544,167 +544,176 @@ const transactionController = {
     }
   },
 
-  // Загрузка файлов к сделке
   async uploadFiles(req, res) {
     try {
-      const transactionId = req.params.id;
-      const files = req.files;
-      const { type } = req.body; // 'single' или 'multiple'
-
-      // Проверяем существование транзакции
-      const [transaction] = await pool.query(
-        'SELECT * FROM transactions WHERE id = ?',
-        [transactionId]
-      );
-
-      if (transaction.length === 0) {
-        // Удаляем загруженные файлы, если транзакция не найдена
-        Object.values(files).flat().forEach(file => {
-          fs.unlink(file.path).catch(console.error);
-        });
-        return res.status(404).json({ message: 'Транзакция не найдена' });
-      }
-
-      const savedFiles = [];
-
-      if (type === 'single') {
-        // Для одиночной загрузки
-        const file = files.file[0]; // Ожидаем один файл с полем 'file'
-        const category = req.body.category; // Категория файла (agreement, receipt, etc.)
-
-        // Проверяем существование файлов той же категории
-        const [existingFiles] = await pool.query(
-          'SELECT * FROM transaction_files WHERE transaction_id = ? AND category = ?',
-          [transactionId, category]
-        );
-
-        if (existingFiles.length > 0) {
-          // Удаляем старый файл
-          const oldFile = existingFiles[0];
-          try {
-            await fs.unlink(path.join(UPLOAD_PATH, oldFile.file_path));
-            await pool.query('DELETE FROM transaction_files WHERE id = ?', [oldFile.id]);
-          } catch (error) {
-            console.error('Error deleting old file:', error);
-          }
-        }
-
-        // Сохраняем новый файл
-        const relativePath = path.relative(UPLOAD_PATH, file.path);
-        const [result] = await pool.query(
-          'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
-          [
-            transactionId,
-            file.filename,
-            file.originalname,
-            file.mimetype,
-            `uploads/${file.filename}`,
-            category
-          ]
-        );
-
-        savedFiles.push({
-          id: result.insertId,
-          fileName: file.filename,
-          originalName: file.originalname,
-          type: file.mimetype,
-          category: category
-        });
-      } else {
-        // Для множественной загрузки
-        for (const fieldName in files) {
-          for (const file of files[fieldName]) {
-            const relativePath = path.relative(UPLOAD_PATH, file.path);
-
-            const [result] = await pool.query(
-              'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
-              [
-                transactionId,
-                file.filename,
-                file.originalname,
-                file.mimetype,
-                `uploads/${file.filename}`,
-                fieldName
-              ]
-            );
-
-            savedFiles.push({
-              id: result.insertId,
-              fileName: file.filename,
-              originalName: file.originalname,
-              type: file.mimetype,
-              category: fieldName
+        const transactionId = parseInt(req.params.id);
+        const { files, category } = req.body;
+        
+        // Валидация
+        if (!files || !Array.isArray(files) || files.length === 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'No files provided or files is not an array' 
             });
-          }
         }
-      }
-
-      res.json({
-        message: 'Файлы успешно загружены',
-        files: savedFiles
-      });
-    } catch (error) {
-      console.error('Ошибка при загрузке файлов:', error);
-      // В случае ошибки пытаемся удалить загруженные файлы
-      if (req.files) {
-        Object.values(req.files).flat().forEach(file => {
-          fs.unlink(file.path).catch(console.error);
+        
+        if (!['agreement', 'receipt', 'video', 'proof_documents'].includes(category)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid category' 
+            });
+        }
+        
+        // Проверяем существование транзакции
+        const [transaction] = await pool.query('SELECT * FROM transactions WHERE id = ?', [transactionId]);
+        if (transaction.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Transaction not found' 
+            });
+        }
+        
+        const savedFiles = [];
+        
+        for (const file of files) {
+            // Проверяем структуру файла
+            if (!file.data || !file.mime_type || !file.file_name) {
+                continue;
+            }
+            
+            // Генерируем уникальное имя файла
+            const fileExt = path.extname(file.file_name);
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
+            
+            // Декодируем base64 и сохраняем файл
+            const buffer = Buffer.from(file.data.replace(/^.+;base64,/, ''), 'base64');
+            
+            // Определяем путь для сохранения
+            const uploadDir = path.join(UPLOAD_PATH, 'transactions', category);
+            await ensureDirectoryExists(uploadDir);
+            
+            const filePath = path.join(uploadDir, fileName);
+            
+            // Сохраняем файл на диск
+            await fs.writeFile(filePath, buffer);
+            
+            // Сохраняем информацию о файле в базе
+            const [fileResult] = await pool.query(
+                `INSERT INTO transaction_files 
+                 (transaction_id, file_name, original_name, file_type, file_path, category) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    transactionId,
+                    fileName,
+                    file.file_name,
+                    file.mime_type,
+                    `transactions/${category}/${fileName}`,
+                    category
+                ]
+            );
+            
+            savedFiles.push({
+                id: fileResult.insertId,
+                file_name: fileName,
+                original_name: file.file_name,
+                file_type: file.mime_type,
+                file_path: `transactions/${category}/${fileName}`,
+                category: category
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Files uploaded successfully',
+            files: savedFiles
         });
-      }
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+    } catch (error) {
+        console.error('Error uploading files:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error',
+            error: error.message
+        });
     }
-  },
+},
 
   // Получение файлов сделки
   async getFiles(req, res) {
     try {
-      const [files] = await pool.query(
-        'SELECT * FROM transaction_files WHERE transaction_id = ?',
-        [req.params.id]
-      );
-
-      res.json(files);
+        const transactionId = parseInt(req.params.id);
+        
+        // Получаем файлы для транзакции
+        const [files] = await pool.query(
+            'SELECT * FROM transaction_files WHERE transaction_id = ?',
+            [transactionId]
+        );
+        
+        // Добавляем полный URL к каждому файлу
+        const filesWithUrl = files.map(file => ({
+            ...file,
+            url: `/uploads/${file.file_path}`
+        }));
+        
+        res.json({
+            success: true,
+            files: filesWithUrl
+        });
     } catch (error) {
-      console.error('Ошибка при получении файлов:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+        console.error('Error getting files:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
-  },
+},
 
   // Удаление файла
   async deleteFile(req, res) {
     try {
-      const { id: transactionId, fileId } = req.params;
-
-      const [files] = await pool.query(
-        'SELECT * FROM transaction_files WHERE id = ? AND transaction_id = ?',
-        [fileId, transactionId]
-      );
-
-      if (files.length === 0) {
-        return res.status(404).json({ message: 'File not found' });
-      }
-
-      const file = files[0];
-      const fullPath = path.join(UPLOAD_PATH, file.file_path);
-
-      try {
-        await fs.unlink(fullPath);
-      } catch (error) {
-        console.error('Error deleting file from disk:', error);
-        // Продолжаем выполнение даже если файл не найден на диске
-      }
-
-      await pool.query(
-        'DELETE FROM transaction_files WHERE id = ?',
-        [fileId]
-      );
-
-      res.json({ message: 'File deleted successfully' });
+        const { id: transactionId, fileId } = req.params;
+        
+        // Получаем информацию о файле
+        const [files] = await pool.query(
+            'SELECT * FROM transaction_files WHERE id = ? AND transaction_id = ?',
+            [fileId, transactionId]
+        );
+        
+        if (files.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'File not found'
+            });
+        }
+        
+        const file = files[0];
+        
+        // Удаляем файл с диска
+        const fullPath = path.join(UPLOAD_PATH, file.file_path);
+        try {
+            await fs.unlink(fullPath);
+        } catch (error) {
+            console.error('Error deleting file from disk:', error);
+            // Продолжаем удаление из базы данных даже если файл не найден на диске
+        }
+        
+        // Удаляем запись из базы данных
+        await pool.query(
+            'DELETE FROM transaction_files WHERE id = ?',
+            [fileId]
+        );
+        
+        res.json({
+            success: true,
+            message: 'File deleted successfully'
+        });
     } catch (error) {
-      console.error('Error deleting file:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error('Error deleting file:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
     }
-  },
+},
   async create(req, res) {
     try {
       const { property_id, new_owner_id, total_amount, witnesses } = req.body;

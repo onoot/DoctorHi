@@ -2364,43 +2364,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Обработчик формы множественной загрузки файлов
-    // document.getElementById('multipleFileUploadForm')?.addEventListener('submit', async function(e) {
-    //     e.preventDefault();
-        
-    //     const transactionId = document.getElementById('multiUploadTransactionId').value;
-    //     const files = document.getElementById('files').files;
-        
-    //     if (files.length === 0) {
-    //         showNotification('error', 'Please select files');
-    //         return;
-    //     }
-        
-    //     try {
-    //         const formData = new FormData();
-    //         for (let i = 0; i < files.length; i++) {
-    //             formData.append('files', files[i]);
-    //         }
-    //         formData.append('category', 'proof');
-            
-    //         const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents/multiple`, {
-    //             method: 'POST',
-    //             body: formData
-    //         });
-            
-    //         if (response.success) {
-    //             closeModal('multipleUploadModal');
-    //             // Перезагружаем файлы транзакции
-    //             loadTransactionFiles(transactionId);
-    //             showNotification('success', `${response.uploaded} files uploaded successfully`);
-    //         } else {
-    //             throw new Error(response.message || 'Failed to upload files');
-    //         }
-    //     } catch (error) {
-    //         showNotification('error', 'Error uploading files: ' + error.message);
-    //     }
-    // });
-    
     document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
         closeModal('multipleUploadModal');
     });

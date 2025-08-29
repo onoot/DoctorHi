@@ -2186,7 +2186,6 @@ function readFileAsBase64(file) {
         reader.readAsDataURL(file);
     });
 }
-// Обработчик формы добавления платежа
 document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -2194,7 +2193,7 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     const method = document.getElementById('paymentMethod').value;
     const receiptFile = document.getElementById('receiptFile').files[0];
-    const paymentDate = new Date().toISOString().split('T')[0]; // Формат YYYY-MM-DD
+    const paymentDate = new Date().toISOString().split('T')[0];
     const notes = document.getElementById('paymentNotes')?.value || '';
 
     if (isNaN(amount) || amount <= 0) {
@@ -2203,22 +2202,22 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
     }
 
     try {
-        // Создаем FormData для отправки файлов в правильном формате
+        // Создаем FormData для правильной отправки файлов
         const formData = new FormData();
         
-        // Добавляем все данные как поля формы
+        // Добавляем все текстовые данные
         formData.append('amount', amount);
         formData.append('payment_date', paymentDate);
         formData.append('payment_method', method);
         formData.append('notes', notes);
         
-        // Добавляем файл, если он выбран
+        // Добавляем файл, если он выбран (поле должно называться 'receipt')
         if (receiptFile) {
             formData.append('receipt', receiptFile);
         }
 
-        // Отправляем данные как multipart/form-data
-        const response = await fetch(`/v1/admin/transactions/${transactionId}/payments`, {
+        // Отправляем запрос
+        const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`

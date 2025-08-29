@@ -1012,7 +1012,7 @@ async createPayment(req, res) {
           transactionId,
           receiptFile.path,
           receiptFile.originalname,
-          receiptFile.file_type,
+          receiptFile.mime_type,
           'receipt'
         ]
       );

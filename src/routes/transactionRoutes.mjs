@@ -20,31 +20,23 @@ const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 // Настройка Multer — единая логика с контроллером
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // ваш существующий код для destination
+    // ваш существующий код
   },
-  filename: async (req, file, cb) => {
-    try {
-      // ИСПОЛЬЗУЕМ ПРЯМОЙ ИМПОРТ pool ВМЕСТО transactionController.pool
-      const [users] = await pool.query(
-        'SELECT login FROM users WHERE id = ?',
-        [req.user.id]
-      );
-      
-      const userLogin = users[0]?.login || 'unknown';
-      const ext = path.extname(file.originalname);
-      const categoryNames = {
-        agreement: 'Agreement',
-        receipt: 'Receipt',
-        proof_documents: 'Document',
-        video: 'Video'
-      };
-      const baseName = categoryNames[file.fieldname] || 'File';
-      const date = new Date().toISOString().split('T')[0];
-      const fileName = `${baseName}_${userLogin}_${date}${ext}`;
-      cb(null, fileName);
-    } catch (error) {
-      cb(error);
-    }
+  filename: (req, file, cb) => {
+    // ИСПОЛЬЗУЕМ login ИЗ req.user (уже загруженного в auth middleware)
+    const userLogin = req.user?.login || 'unknown';
+    
+    const ext = path.extname(file.originalname);
+    const categoryNames = {
+      agreement: 'Agreement',
+      receipt: 'Receipt',
+      proof_documents: 'Document',
+      video: 'Video'
+    };
+    const baseName = categoryNames[file.fieldname] || 'File';
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `${baseName}_${userLogin}_${date}${ext}`;
+    cb(null, fileName);
   }
 });
 

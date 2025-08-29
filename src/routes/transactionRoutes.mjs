@@ -7,6 +7,7 @@ import { dirname } from 'path';
 import transactionController from '../controllers/transactionController.mjs';
 import { auth, adminAuth, authLocale } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
+import pool from '../config/database.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,32 +20,16 @@ const UPLOAD_PATH = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploa
 // Настройка Multer — единая логика с контроллером
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    let uploadDir;
-    switch (file.fieldname) {
-      case 'agreement':
-        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'agreements');
-        break;
-      case 'receipt':
-        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'receipts');
-        break;
-      case 'proof_documents':
-        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'documents');
-        break;
-      case 'video':
-        uploadDir = path.join(UPLOAD_PATH, 'transactions', 'videos');
-        break;
-      default:
-        uploadDir = path.join(UPLOAD_PATH, 'transactions');
-    }
-    cb(null, uploadDir);
+    // ваш существующий код для destination
   },
   filename: async (req, file, cb) => {
     try {
-      // Используем ту же функцию, что и в контроллере
-      const [users] = await transactionController.pool.query(
+      // ИСПОЛЬЗУЕМ ПРЯМОЙ ИМПОРТ pool ВМЕСТО transactionController.pool
+      const [users] = await pool.query(
         'SELECT login FROM users WHERE id = ?',
         [req.user.id]
       );
+      
       const userLogin = users[0]?.login || 'unknown';
       const ext = path.extname(file.originalname);
       const categoryNames = {

@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 const router = express.Router();
 
 // Используем UPLOAD_PATH из контроллера
-const UPLOAD_PATH = process.env.UPLOAD_PATH || path.join(__dirname, '../../uploads');
+const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 
 // Настройка Multer — единая логика с контроллером
 const storage = multer.diskStorage({
@@ -109,5 +109,32 @@ router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),
   body('notes').optional().isString().withMessage('Notes must be a string')
 ], transactionController.updatePayment);
+// В конце transactionRoutes.mjs, ПЕРЕД export default router
+router.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    // Ошибки, связанные с Multer (размер файла, ограничения и т.д.)
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File size too large. Maximum 100 MB allowed.'
+      });
+    }
+    return res.status(400).json({
+      message: `Multer error: ${error.message}`
+    });
+  }
 
+  // Ошибки, выброшенные в fileFilter или filename (например, "Unsupported file type")
+  if (error.message === 'Unsupported file type') {
+    return res.status(400).json({
+      message: 'Unsupported file type'
+    });
+  }
+
+  // Ошибки из filename (например, ошибка БД)
+  console.error('Upload error:', error);
+  return res.status(500).json({
+    message: 'File processing failed',
+    error: error.message
+  });
+});
 export default router;

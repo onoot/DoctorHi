@@ -539,12 +539,13 @@ const transactionController = {
     }
   },
 
-  // Загрузка файлов к сделке
+// Загрузка файлов к сделке
 async uploadFiles(req, res) {
   try {
     const transactionId = req.params.id;
     const files = req.files;
     const { type } = req.body; // 'single' или 'multiple'
+    
     // Проверяем существование транзакции
     const [transaction] = await pool.query(
       'SELECT * FROM transactions WHERE id = ?',
@@ -557,11 +558,14 @@ async uploadFiles(req, res) {
       });
       return res.status(404).json({ message: 'Транзакция не найдена' });
     }
+    
     const savedFiles = [];
+    
     if (type === 'single') {
       // Для одиночной загрузки
       const file = files.file[0]; // Ожидаем один файл с полем 'file'
       const category = req.body.category; // Категория файла (agreement, receipt, etc.)
+      
       // Проверяем существование файлов той же категории
       const [existingFiles] = await pool.query(
         'SELECT * FROM transaction_files WHERE transaction_id = ? AND category = ?',
@@ -577,6 +581,7 @@ async uploadFiles(req, res) {
           console.error('Error deleting old file:', error);
         }
       }
+      
       // Сохраняем новый файл
       const relativePath = path.relative(UPLOAD_PATH, file.path);
       const [result] = await pool.query(
@@ -623,6 +628,7 @@ async uploadFiles(req, res) {
         }
       }
     }
+    
     res.json({
       message: 'Файлы успешно загружены',
       files: savedFiles
@@ -947,15 +953,17 @@ async createPayment(req, res) {
     if (isNaN(transactionId)) {
       return res.status(400).json({ message: 'Invalid transaction ID' });
     }
-    // ДАННЫЕ ТЕПЕРЬ ПРИХОДЯТ ЧЕРЕЗ req.body, А ФАЙЛ ЧЕРЕЗ req.file
+    
     const { amount, payment_date, payment_method, notes } = req.body;
     const receiptFile = req.file;
+    
     // Проверка обязательных полей
     if (!amount || !payment_date || !payment_method) {
       return res.status(400).json({ 
         message: 'Missing required fields: amount, payment_date, payment_method' 
       });
     }
+    
     // Проверяем существование транзакции
     const [transactions] = await pool.query(`
       SELECT t.*,
@@ -965,14 +973,17 @@ async createPayment(req, res) {
       LEFT JOIN transaction_payments tp ON t.id = tp.transaction_id
       WHERE t.id = ?
       GROUP BY t.id`, [transactionId]);
+      
     if (transactions.length === 0) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
+    
     const transaction = transactions[0];
     const totalAmount = parseFloat(transaction.total_amount);
     const totalAllocated = parseFloat(transaction.total_allocated);
     const remainingUnallocated = totalAmount - totalAllocated;
     const attemptedAmount = parseFloat(amount);
+    
     // Проверка, не превышает ли сумма платежа оставшуюся сумму
     if (attemptedAmount > remainingUnallocated) {
       return res.status(400).json({
@@ -983,23 +994,27 @@ async createPayment(req, res) {
         attempted: attemptedAmount
       });
     }
+    
     // Обрабатываем квитанцию, если файл был загружен
     let receiptFileId = null;
     if (receiptFile) {
-      // ИСПРАВЛЕНО: используем mimetype вместо mime_type
+      // ДОБАВЛЕНО: file_name в запрос
       const [result] = await pool.query(
-        `INSERT INTO transaction_files (transaction_id, file_path, original_name, file_type, category) 
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO transaction_files 
+         (transaction_id, file_name, original_name, file_type, file_path, category) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           transactionId,
-          receiptFile.path,
+          receiptFile.filename,           // ДОБАВЛЕНО
           receiptFile.originalname,
-          receiptFile.mimetype, // ПРАВИЛЬНОЕ СВОЙСТВО
+          receiptFile.mimetype,           // ИСПРАВЛЕНО: mimetype вместо file_type
+          receiptFile.path,
           'receipt'
         ]
       );
       receiptFileId = result.insertId;
     }
+    
     // Создаем платеж
     const [result] = await pool.query(
       `INSERT INTO transaction_payments (
@@ -1014,6 +1029,7 @@ async createPayment(req, res) {
         receiptFileId
       ]
     );
+    
     // Обновляем статус транзакции, если это первый платеж
     if (!transaction.payment_status || transaction.payment_status === 'not_started') {
       await pool.query(
@@ -1021,12 +1037,14 @@ async createPayment(req, res) {
         [transactionId]
       );
     }
+    
     // Получаем созданный платеж с информацией о квитанции
     const [payment] = await pool.query(`
       SELECT p.*, f.file_path, f.original_name
       FROM transaction_payments p
       LEFT JOIN transaction_files f ON p.receipt_file_id = f.id
       WHERE p.id = ?`, [result.insertId]);
+      
     res.status(201).json({
       success: true,
       message: 'Payment created successfully',

@@ -7,68 +7,93 @@ import { dirname } from 'path';
 import transactionController from '../controllers/transactionController.mjs';
 import { auth, adminAuth, authLocale } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
-import pool from '../config/database.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const router = express.Router();
 
-// Используем UPLOAD_PATH из контроллера
+// Путь для загрузки файлов
 const UPLOAD_PATH = path.join(__dirname, '../../uploads');
 
-// Настройка Multer — единая логика с контроллером
-const storage = () => {
-  try {
-    return multer.diskStorage({
-      destination: (req, file, cb) => {
-        // ваш существующий код
-      },
-      filename: (req, file, cb) => {
-        const userLogin = req.user?.login || 'unknown';
+// Настройка Multer
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // Определяем папку в зависимости от типа файла
+    let dir = '';
+    switch (file.fieldname) {
+      case 'agreement':
+        dir = path.join(UPLOAD_PATH, 'agreements');
+        break;
+      case 'receipt':
+        dir = path.join(UPLOAD_PATH, 'receipts');
+        break;
+      case 'proof_documents':
+        dir = path.join(UPLOAD_PATH, 'proofs');
+        break;
+      case 'video':
+        dir = path.join(UPLOAD_PATH, 'videos');
+        break;
+      default:
+        dir = path.join(UPLOAD_PATH, 'others');
+    }
 
-        const ext = path.extname(file.originalname);
-        const categoryNames = {
-          agreement: 'Agreement',
-          receipt: 'Receipt',
-          proof_documents: 'Document',
-          video: 'Video'
-        };
-        const baseName = categoryNames[file.fieldname] || 'File';
-        const date = new Date().toISOString().split('T')[0];
-        const fileName = `${baseName}_${userLogin}_${date}${ext}`;
-        cb(null, fileName);
-      }
-    });
-  } catch (e) {
-    console.log(e)
-    return req.status(500).json({ message: "Intermal server error" })
+    // Создаём папку, если не существует
+    require('fs').mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    try {
+      // Используем login из req.user (должен быть загружен в auth middleware)
+      const userLogin = req.user?.login || 'unknown';
+      const ext = path.extname(file.originalname);
+      
+      const categoryNames = {
+        agreement: 'Agreement',
+        receipt: 'Receipt',
+        proof_documents: 'Document',
+        video: 'Video'
+      };
+      
+      const baseName = categoryNames[file.fieldname] || 'File';
+      const date = new Date().toISOString().split('T')[0];
+      const fileName = `${baseName}_${userLogin}_${date}${ext}`;
+      
+      cb(null, fileName);
+    } catch (error) {
+      // Ошибки в имени файла
+      cb(error);
+    }
   }
-}
+});
 
+// Фильтрация файлов по MIME-типу
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = {
-    'image/jpeg': true,
-    'image/png': true,
-    'application/pdf': true,
-    'video/mp4': true,
-    'video/quicktime': true
-  };
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'application/pdf',
+    'video/mp4',
+    'video/quicktime'
+  ];
 
-  if (allowedTypes[file.mimetype]) {
+  if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(new Error('Unsupported file type'), false);
   }
 };
 
+// Экземпляр Multer
 const upload = multer({
-  storage,
-  fileFilter,
+  storage: storage,
+  fileFilter: fileFilter,
   limits: {
     fileSize: 100 * 1024 * 1024 // 100 MB
   }
 });
+
+// === Маршруты ===
 
 // Маршруты для пользователей
 router.get('/my', auth, transactionController.getUserTransactions);
@@ -94,45 +119,49 @@ router.put('/:id', adminAuth, [
 
 // Загрузка документов и видео
 router.post('/:id/documents', adminAuth, transactionController.uploadFiles);
-
 router.get('/:id/documents', adminAuth, transactionController.getFiles);
 router.delete('/:id/documents/:fileId', adminAuth, transactionController.deleteFile);
 
 // Маршруты для работы с платежами
 router.get('/:id/payments', adminAuth, transactionController.getPayments);
 
+// Создание платежа с загрузкой чека
 router.post('/:id/payments', adminAuth, upload.single('receipt'), transactionController.createPayment);
 
+// Обновление платежа с возможной новой загрузкой чека
 router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),
   body('notes').optional().isString().withMessage('Notes must be a string')
 ], transactionController.updatePayment);
-// В конце transactionRoutes.mjs, ПЕРЕД export default router
+
+// === Обработчик ошибок Multer (должен быть ПОСЛЕ всех маршрутов) ===
 router.use((error, req, res, next) => {
+  console.error('Multer error caught:', error);
+
   if (error instanceof multer.MulterError) {
-    // Ошибки, связанные с Multer (размер файла, ограничения и т.д.)
+    // Ошибки Multer (размер, кодировка и т.д.)
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         message: 'File size too large. Maximum 100 MB allowed.'
       });
     }
     return res.status(400).json({
-      message: `Multer error: ${error.message}`
+      message: `File upload error: ${error.message}`
     });
   }
 
-  // Ошибки, выброшенные в fileFilter или filename (например, "Unsupported file type")
+  // Ошибки от fileFilter или filename
   if (error.message === 'Unsupported file type') {
     return res.status(400).json({
-      message: 'Unsupported file type'
+      message: 'Unsupported file type. Only JPEG, PNG, PDF, MP4, MOV are allowed.'
     });
   }
 
-  // Ошибки из filename (например, ошибка БД)
-  console.error('Upload error:', error);
+  // Любые другие ошибки (например, в filename)
   return res.status(500).json({
     message: 'File processing failed',
     error: error.message
   });
 });
+
 export default router;

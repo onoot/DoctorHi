@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -13,10 +14,8 @@ const UPLOAD_PATH = process.env.UPLOAD_PATH
   ? path.resolve(process.env.UPLOAD_PATH) 
   : path.join(__dirname, 'uploads');
 
-// Создаем директории при старте
 const initializeUploadDirectories = async () => {
   try {
-    // ИСПРАВЛЕНИЕ 2: Используем правильный UPLOAD_PATH для создания директорий
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions'), { recursive: true });
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions', 'agreements'), { recursive: true });
     await fs.mkdir(path.join(UPLOAD_PATH, 'transactions', 'receipts'), { recursive: true });
@@ -29,18 +28,13 @@ const initializeUploadDirectories = async () => {
   }
 };
 
-// ИСПРАВЛЕНИЕ 3: Экспортируем UPLOAD_PATH и функцию инициализации
-// Вместо немедленного вызова, экспортируем промис инициализации
-// Это позволяет другим модулям дождаться завершения инициализации
 export { UPLOAD_PATH, initializeUploadDirectories };
-
-// ИСПРАВЛЕНИЕ 4: Обрабатываем ошибку инициализации, но не завершаем приложение
 // Создаем экспортный промис для инициализации
 export const uploadInit = initializeUploadDirectories().catch(err => {
   console.error('Failed to initialize upload directories. The application may not work correctly with file uploads.', err);
-  // Не выбрасываем ошибку дальше, чтобы не завершать всё приложение
   return null;
 });
+
 // Настройка загрузки файлов
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -960,39 +954,43 @@ const transactionController = {
   // Создание платежа
 async createPayment(req, res) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    
-    const { amount, payment_date, payment_method, notes, receipt } = req.body;
     const transactionId = parseInt(req.params.id.toString(), 10);
-    
     if (isNaN(transactionId)) {
       return res.status(400).json({ message: 'Invalid transaction ID' });
     }
-    
-    // Проверяем существование транзакции и получаем информацию о платежах
+
+    // ДАННЫЕ ТЕПЕРЬ ПРИХОДЯТ ЧЕРЕЗ req.body, А ФАЙЛ ЧЕРЕЗ req.file
+    const { amount, payment_date, payment_method, notes } = req.body;
+    const receiptFile = req.file;
+
+    // Проверка обязательных полей
+    if (!amount || !payment_date || !payment_method) {
+      return res.status(400).json({ 
+        message: 'Missing required fields: amount, payment_date, payment_method' 
+      });
+    }
+
+    // Проверяем существование транзакции
     const [transactions] = await pool.query(`
-      SELECT t.*, 
-             COALESCE(SUM(CASE WHEN tp.status IN ('pending', 'paid') THEN tp.amount ELSE 0 END), 0) as total_allocated
+      SELECT t.*,
+        COALESCE(SUM(CASE WHEN tp.status IN ('pending', 'paid') THEN tp.amount ELSE 0 END), 0) as total_allocated,
+        t.total_amount
       FROM transactions t
       LEFT JOIN transaction_payments tp ON t.id = tp.transaction_id
       WHERE t.id = ?
-      GROUP BY t.id
-    `, [transactionId]);
-    
+      GROUP BY t.id`, [transactionId]);
+      
     if (transactions.length === 0) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
     
     const transaction = transactions[0];
-    const totalAllocated = parseFloat(transaction.total_allocated);
     const totalAmount = parseFloat(transaction.total_amount);
-    const attemptedAmount = parseFloat(amount);
+    const totalAllocated = parseFloat(transaction.total_allocated);
     const remainingUnallocated = totalAmount - totalAllocated;
+    const attemptedAmount = parseFloat(amount);
     
-    // Проверяем, не превышает ли сумма нового платежа оставшуюся нераспределенную сумму
+    // Проверка, не превышает ли сумма платежа оставшуюся сумму
     if (attemptedAmount > remainingUnallocated) {
       return res.status(400).json({
         message: 'Payment amount exceeds remaining unallocated amount',
@@ -1003,57 +1001,41 @@ async createPayment(req, res) {
       });
     }
     
+    // Обрабатываем квитанцию, если файл был загружен
     let receiptFileId = null;
-    
-    // Обрабатываем квитанцию в base64 формате
-    if (receipt && receipt.data && receipt.mime_type && receipt.file_name) {
-      const { data, mime_type, file_name } = receipt;
-      
-      // Генерируем уникальное имя файла
-      const fileExt = path.extname(file_name);
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}${fileExt}`;
-      
-      // Декодируем base64 и сохраняем файл
-      const buffer = Buffer.from(data, 'base64');
-      
-      // Определяем путь для сохранения (используем тот же путь, что и в multer)
-      const uploadDir = path.join(UPLOAD_PATH, 'transactions', 'receipts');
-      const filePath = path.join(uploadDir, fileName);
-      
-      // Сохраняем файл на диск
-      await fs.writeFile(filePath, buffer);
-      
-      // Сохраняем информацию о файле в базе
-      const [fileResult] = await pool.query(
-        'INSERT INTO transaction_files (transaction_id, file_name, original_name, file_type, file_path, category) VALUES (?, ?, ?, ?, ?, ?)',
+    if (receiptFile) {
+      // Сохраняем информацию о файле в базе данных
+      const [result] = await pool.query(
+        `INSERT INTO transaction_files (transaction_id, file_path, original_name, mime_type, category) 
+         VALUES (?, ?, ?, ?, ?)`,
         [
           transactionId,
-          fileName,
-          file_name,
-          mime_type,
-          `transactions/receipts/${fileName}`,
+          receiptFile.path,
+          receiptFile.originalname,
+          receiptFile.mimetype,
           'receipt'
         ]
       );
-      receiptFileId = fileResult.insertId;
+      receiptFileId = result.insertId;
     }
     
     // Создаем платеж
     const [result] = await pool.query(
-      'INSERT INTO transaction_payments (transaction_id, amount, payment_date, payment_method, notes, receipt_file_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      `INSERT INTO transaction_payments (
+        transaction_id, amount, payment_date, payment_method, notes, receipt_file_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
       [
-        transactionId, 
-        amount, 
-        payment_date, 
-        payment_method, 
-        notes || null, 
-        receiptFileId, 
-        'pending'
+        transactionId,
+        amount,
+        payment_date,
+        payment_method,
+        notes || null,
+        receiptFileId
       ]
     );
     
     // Обновляем статус транзакции, если это первый платеж
-    if (transaction.payment_status === 'not_started' || !transaction.payment_status) {
+    if (!transaction.payment_status || transaction.payment_status === 'not_started') {
       await pool.query(
         'UPDATE transactions SET payment_status = "in_progress" WHERE id = ?',
         [transactionId]
@@ -1065,8 +1047,7 @@ async createPayment(req, res) {
       SELECT p.*, f.file_path, f.original_name
       FROM transaction_payments p
       LEFT JOIN transaction_files f ON p.receipt_file_id = f.id
-      WHERE p.id = ?
-    `, [result.insertId]);
+      WHERE p.id = ?`, [result.insertId]);
     
     res.status(201).json({
       success: true,
@@ -1076,7 +1057,6 @@ async createPayment(req, res) {
   } catch (error) {
     console.error('Error creating payment:', error);
     res.status(500).json({ 
-      success: false,
       message: 'Internal server error',
       error: error.message 
     });

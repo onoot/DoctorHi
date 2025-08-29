@@ -118,7 +118,7 @@ router.delete('/:id/documents/:fileId', adminAuth, transactionController.deleteF
 // Маршруты для работы с платежами
 router.get('/:id/payments', adminAuth, transactionController.getPayments);
 
-router.post('/:id/payments', adminAuth, transactionController.createPayment);
+router.post('/:id/payments', adminAuth, upload.single('receipt'), transactionController.createPayment);
 
 router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),

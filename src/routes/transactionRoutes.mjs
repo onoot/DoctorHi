@@ -123,9 +123,9 @@ router.put('/:id', adminAuth, [
 ], transactionController.update);
 
 // Загрузка документов и видео
-router.post('/:id/documents', adminAuth, transactionController.uploadFiles);
-router.get('/:id/documents', adminAuth, transactionController.getFiles);
-router.delete('/:id/documents/:fileId', adminAuth, transactionController.deleteFile);
+router.post('/:id/documents', adminAuth, upload.any(), transactionController.uploadFiles);
+router.get('/:id/documents', adminAuth, upload.any(), transactionController.getFiles);
+router.delete('/:id/documents/:fileId', adminAuth, upload.any(), transactionController.deleteFile);
 
 // Маршруты для работы с платежами
 router.get('/:id/payments', adminAuth, transactionController.getPayments);

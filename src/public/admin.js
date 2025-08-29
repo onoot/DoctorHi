@@ -2186,7 +2186,6 @@ function readFileAsBase64(file) {
         reader.readAsDataURL(file);
     });
 }
-
 // Обработчик формы добавления платежа
 document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -2204,39 +2203,32 @@ document.getElementById('addPaymentForm')?.addEventListener('submit', async func
     }
 
     try {
-        let receiptData = null;
-        let receiptMimeType = null;
-        let receiptFileName = null;
+        // Создаем FormData для отправки файлов в правильном формате
+        const formData = new FormData();
         
+        // Добавляем все данные как поля формы
+        formData.append('amount', amount);
+        formData.append('payment_date', paymentDate);
+        formData.append('payment_method', method);
+        formData.append('notes', notes);
+        
+        // Добавляем файл, если он выбран
         if (receiptFile) {
-            receiptData = await readFileAsBase64(receiptFile);
-            receiptMimeType = receiptFile.type;
-            receiptFileName = receiptFile.name;
+            formData.append('receipt', receiptFile);
         }
 
-        const payload = {
-            amount,
-            payment_date: paymentDate,
-            payment_method: method,
-            notes,
-            receipt: receiptData ? {
-                data: receiptData,
-                mime_type: receiptMimeType,
-                file_name: receiptFileName
-            } : null
-        };
-
-        // УБИРАЕМ вызов response.json() - apiRequest уже возвращает распарсенные данные
-        const data = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+        // Отправляем данные как multipart/form-data
+        const response = await fetch(`/v1/admin/transactions/${transactionId}/payments`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
-            body: JSON.stringify(payload)
+            body: formData
         });
+
+        const data = await response.json();
         
-        // Теперь data - это уже распарсенный объект
-        if (data.success || data.message) {
+        if (response.ok) {
             closeModal('addPaymentModal');
             loadTransactionPayments(transactionId);
             loadTransactionDetails(transactionId);

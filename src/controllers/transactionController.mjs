@@ -592,7 +592,7 @@ const transactionController = {
             transactionId,
             file.filename,
             file.originalname,
-            file.mimetype,
+            file.file_type,
             `uploads/${file.filename}`,
             category
           ]
@@ -617,7 +617,7 @@ const transactionController = {
                 transactionId,
                 file.filename,
                 file.originalname,
-                file.mimetype,
+                file.file_type,
                 `uploads/${file.filename}`,
                 fieldName
               ]
@@ -1006,13 +1006,13 @@ async createPayment(req, res) {
     if (receiptFile) {
       // Сохраняем информацию о файле в базе данных
       const [result] = await pool.query(
-        `INSERT INTO transaction_files (transaction_id, file_path, original_name, mime_type, category) 
+        `INSERT INTO transaction_files (transaction_id, file_path, original_name, file_type, category) 
          VALUES (?, ?, ?, ?, ?)`,
         [
           transactionId,
           receiptFile.path,
           receiptFile.originalname,
-          receiptFile.mimetype,
+          receiptFile.file_type,
           'receipt'
         ]
       );

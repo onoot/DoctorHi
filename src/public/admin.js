@@ -3133,15 +3133,48 @@ async function loadTransactionPayments(transactionId) {
         // Создаем ячейку для превью чека
         let receiptPreview = '';
         
-        // ИСПРАВЛЕНО: используем информацию из payment.receipt
-        if (payment.receipt && payment.receipt.path) {
-          // Формируем правильный URL для получения файла через API
-          // Используем encodeURI для безопасного кодирования пути
-          const encodedPath = encodeURIComponent(payment.receipt.path);
-          const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${encodedPath}`;
+        // ИСПРАВЛЕНО: используем receipt_file_id из платежа
+        // В данных платежа может быть receipt_file_id или полный объект receipt
+        let receiptFileId = null;
+        let receiptPath = null;
+        let receiptName = null;
+        let receiptType = null;
+        
+        // Проверяем наличие receipt_file_id
+        if (payment.receipt_file_id) {
+          receiptFileId = payment.receipt_file_id;
+        } 
+        // Если нет receipt_file_id, проверяем структуру с вложенным receipt
+        else if (payment.receipt && payment.receipt.path) {
+          // В этом случае нам нужно найти ID файла по пути
+          const files = transaction.files?.receipt || [];
+          const matchingFile = files.find(f => f.path === payment.receipt.path);
+          if (matchingFile) {
+            receiptFileId = matchingFile.id;
+          }
+          receiptPath = payment.receipt.path;
+          receiptName = payment.receipt.name;
+          receiptType = payment.receipt.type;
+        }
+        // Если есть file_path в самом платеже (как в ответе /payments)
+        else if (payment.file_path) {
+          // Ищем ID файла в списке файлов транзакции
+          const files = transaction.files?.receipt || [];
+          const matchingFile = files.find(f => f.path === payment.file_path);
+          if (matchingFile) {
+            receiptFileId = matchingFile.id;
+          }
+          receiptPath = payment.file_path;
+          receiptName = payment.original_name;
+          receiptType = payment.file_type;
+        }
+        
+        // Формируем правильный URL для получения файла через API
+        if (receiptFileId) {
+          const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${receiptFileId}`;
           
           // Определяем тип файла для правильного превью
-          if (payment.receipt.type && payment.receipt.type.includes('pdf')) {
+          if (receiptType && receiptType.includes('pdf')) {
             receiptPreview = `
               <div class="receipt-preview">
                 <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
@@ -3151,10 +3184,10 @@ async function loadTransactionPayments(transactionId) {
                 </div>
               </div>
             `;
-          } else if (payment.receipt.type && payment.receipt.type.includes('image')) {
+          } else if (receiptType && receiptType.includes('image')) {
             receiptPreview = `
               <div class="receipt-preview">
-                <img src="${fileUrl}" alt="${payment.receipt.name || 'Receipt'}" class="receipt-thumbnail" 
+                <img src="${fileUrl}" alt="${receiptName || 'Receipt'}" class="receipt-thumbnail" 
                      onclick="openImagePreview('${fileUrl}')">
                 <div class="receipt-actions">
                   <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
@@ -3244,6 +3277,13 @@ async function loadTransactionPayments(transactionId) {
         button.addEventListener('click', (e) => {
           const paymentId = e.target.closest('.cancel-payment-btn').dataset.paymentId;
           cancelPayment(paymentId, transactionId);
+        });
+      });
+      
+      document.querySelectorAll('.edit-payment-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const paymentId = e.target.closest('.edit-payment-btn').dataset.paymentId;
+          editPayment(paymentId, transactionId);
         });
       });
     } else {

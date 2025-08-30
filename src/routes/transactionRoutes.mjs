@@ -171,7 +171,7 @@ router.use((error, req, res, next) => {
   });
 });
 
-// Маршрут для получения конкретного файла по относительному пути
+
 router.get('/files/*', adminAuth, async (req, res) => {
   try {
     // Получаем относительный путь из URL (все, что после /files/)
@@ -184,18 +184,15 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Декодируем URL-кодированный путь
-    const decodedPath = decodeURIComponent(relativePath);
-    
     // Нормализуем путь и удаляем недопустимые символы
-    const normalizedPath = path.normalize(decodedPath)
+    const normalizedPath = path.normalize(relativePath)
       .replace(/^(\.\.[\/\\])+/, '') // Удаляем начальные ../ или ..\ 
       .replace(/\\/g, '/') // Заменяем обратные слеши на прямые
       .replace(/^\//, ''); // Удаляем начальный слеш если есть
     
     // Проверяем на попытки выхода за пределы разрешенной директории
     if (normalizedPath.includes('../') || normalizedPath.includes('..\\')) {
-      console.warn(`Path traversal attempt detected: ${decodedPath}`);
+      console.warn(`Path traversal attempt detected: ${relativePath}`);
       return res.status(403).json({
         success: false,
         message: "Access denied"
@@ -217,7 +214,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Проверяем существование файла
+    // Проверяем существование файла - ИСПОЛЬЗУЕМ existsSync из fs
     if (!existsSync(realPath)) {
       return res.status(404).json({ 
         success: false, 
@@ -225,7 +222,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Проверяем, является ли это файлом (а не директорией)
+    // Проверяем, является ли это файлом (а не директорией) - ИСПОЛЬЗУЕМ statSync из fs
     const stats = statSync(realPath);
     if (!stats.isFile()) {
       return res.status(403).json({
@@ -236,68 +233,25 @@ router.get('/files/*', adminAuth, async (req, res) => {
     
     // Получаем информацию о файле из базы данных для проверки прав доступа
     const [files] = await pool.query(
-      'SELECT * FROM transaction_files WHERE file_path = ?',
-      [normalizedPath]
+      'SELECT * FROM transaction_files WHERE file_path = ? OR file_name = ?',
+      [normalizedPath, path.basename(normalizedPath)]
     );
     
     if (files.length === 0) {
-      // Попробуем найти файл по декодированному пути
-      const [filesByDecodedPath] = await pool.query(
-        'SELECT * FROM transaction_files WHERE file_path = ?',
-        [decodedPath]
-      );
-      
-      if (filesByDecodedPath.length === 0) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'File not found in database' 
-        });
-      }
-      
-      const file = filesByDecodedPath[0];
-      
-      // Устанавливаем правильные заголовки
-      const contentType = file.file_type || 'application/octet-stream';
-      res.setHeader('Content-Type', contentType);
-      
-      // Определяем, нужно ли скачивать файл или отображать в браузере
-      const isDownload = req.query.download === 'true';
-      
-      if (isDownload) {
-        // Для скачивания устанавливаем заголовок Content-Disposition как attachment
-        const originalName = file.original_name || file.file_name;
-        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
-      } else {
-        // Для отображения в браузере
-        res.setHeader('Content-Disposition', 'inline');
-      }
-      
-      // Создаем поток для отправки файла
-      const fileStream = createReadStream(realPath);
-      fileStream.pipe(res);
-      
-      // Обработка ошибок потока
-      fileStream.on('error', (err) => {
-        console.error(`Error sending file ${normalizedPath}:`, err);
-        if (!res.headersSent) {
-          res.status(500).json({ 
-            success: false, 
-            message: 'Error sending file' 
-          });
-        }
+      return res.status(404).json({ 
+        success: false, 
+        message: 'File not found in database' 
       });
-      
-      return;
     }
     
     const file = files[0];
     
+    // Определяем, нужно ли скачивать файл или отображать в браузере
+    const isDownload = req.query.download === 'true';
+    
     // Устанавливаем правильные заголовки
     const contentType = file.file_type || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
-    
-    // Определяем, нужно ли скачивать файл или отображать в браузере
-    const isDownload = req.query.download === 'true';
     
     if (isDownload) {
       // Для скачивания устанавливаем заголовок Content-Disposition как attachment
@@ -308,7 +262,12 @@ router.get('/files/*', adminAuth, async (req, res) => {
       res.setHeader('Content-Disposition', 'inline');
     }
     
-    // Создаем поток для отправки файла
+    // Устанавливаем заголовки CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Создаем поток для отправки файла - ИСПОЛЬЗУЕМ createReadStream
     const fileStream = createReadStream(realPath);
     fileStream.pipe(res);
     
@@ -321,6 +280,11 @@ router.get('/files/*', adminAuth, async (req, res) => {
           message: 'Error sending file' 
         });
       }
+    });
+    
+    // Логируем успешную отправку файла
+    fileStream.on('end', () => {
+      console.log(`File served successfully: ${normalizedPath}`);
     });
     
   } catch (error) {

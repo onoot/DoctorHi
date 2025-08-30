@@ -1395,21 +1395,21 @@ async function handleCreateTransaction(event) {
     }
 }
 function updateRemainingAmount() {
-  const totalAmountText = document.getElementById('totalAmountView').textContent.replace(/,/g, '');
-  const paidAmountText = document.getElementById('paidAmount').textContent.replace(/,/g, '');
-  
-  const totalAmount = parseFloat(totalAmountText) || 0;
-  const paidAmount = parseFloat(paidAmountText) || 0;
-  
-  const remainingAmount = totalAmount - paidAmount;
-  
-  // Форматируем оставшуюся сумму с разделителями тысяч
-  const formattedRemaining = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(remainingAmount);
-  
-  document.getElementById('remainingAmount').textContent = formattedRemaining;
+    const totalAmountText = document.getElementById('totalAmountView').textContent.replace(/,/g, '');
+    const paidAmountText = document.getElementById('paidAmount').textContent.replace(/,/g, '');
+
+    const totalAmount = parseFloat(totalAmountText) || 0;
+    const paidAmount = parseFloat(paidAmountText) || 0;
+
+    const remainingAmount = totalAmount - paidAmount;
+
+    // Форматируем оставшуюся сумму с разделителями тысяч
+    const formattedRemaining = new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }).format(remainingAmount);
+
+    document.getElementById('remainingAmount').textContent = formattedRemaining;
 }
 
 
@@ -1446,13 +1446,27 @@ async function updatePaymentStatus(paymentId, status) {
         showNotification('error', 'Failed to update payment status');
     }
 }
-
 async function uploadSingleFile(event) {
     event.preventDefault();
     const form = event.target;
     const formData = new FormData(form);
-    const transactionId = document.getElementById('currentTransactionId').value;
-    const category = document.getElementById('uploadCategory').value;
+    const transactionId = document.getElementById('currentTransactionId')?.value;
+    const category = document.getElementById('uploadCategory')?.value;
+
+    // Добавляем обязательные поля в formData
+    formData.append('type', 'single');
+    formData.append('category', category || 'proof_documents');
+
+    // Проверка обязательных элементов
+    if (!transactionId) {
+        showNotification('error', 'Transaction ID not found');
+        return;
+    }
+
+    if (!category) {
+        showNotification('error', 'Category not selected');
+        return;
+    }
 
     try {
         const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
@@ -1462,32 +1476,78 @@ async function uploadSingleFile(event) {
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({ message: 'Error uploading file' }));
             throw new Error(error.message || 'Error uploading file');
         }
 
         const result = await response.json();
 
-        // Добавляем новый файл в соответствующую категорию
-        const filesContainer = document.getElementById('filesContainer');
-        const categoryDiv = filesContainer.querySelector(`[data-category="${category}"]`) ||
-            createCategoryDiv(category);
+        // Проверяем, что в ответе есть файлы
+        if (!result.files || result.files.length === 0) {
+            throw new Error('No files returned from server');
+        }
 
-        const filesList = categoryDiv.querySelector('.files-list');
+        // Проверяем наличие контейнера для файлов
+        const filesContainer = document.getElementById('filesContainer');
+        if (!filesContainer) {
+            console.warn('Files container not found. Refreshing file list...');
+            // Попробуем обновить список файлов полностью
+            await loadTransactionFiles(transactionId);
+            showNotification('success', 'File uploaded successfully');
+            closeModal('uploadFileModal');
+            return;
+        }
+
+        // Ищем или создаем категорию
+        let categoryDiv = filesContainer.querySelector(`[data-category="${category}"]`);
+        if (!categoryDiv) {
+            categoryDiv = createCategoryDiv(category);
+            filesContainer.appendChild(categoryDiv);
+        }
+
+        const filesList = categoryDiv.querySelector('.files-list') ||
+            (function () {
+                const list = document.createElement('div');
+                list.className = 'files-list';
+                categoryDiv.appendChild(list);
+                return list;
+            })();
+
+        // Добавляем новый файл
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
+
+        // Используем правильный путь к файлу
+        const filePath = result.files[0].file_path ||
+            result.files[0].file_name;
+
         fileItem.innerHTML = `
-                    <a href="uploads/${result.files[0].fileName}" target="_blank">
-                        ${result.files[0].originalName}
-                    </a>
-                    <span class="file-date">${new Date().toLocaleString()}</span>
-                `;
+        <a href="${filePath}" target="_blank">
+            ${result.files[0].originalName}
+        </a>
+        <span class="file-date">${new Date().toLocaleString()}</span>
+        <button class="delete-file" data-file-id="${result.files[0].id}">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+
         filesList.appendChild(fileItem);
+
+        // Добавляем обработчик удаления
+        fileItem.querySelector('.delete-file').addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteFile(result.files[0].id, transactionId, category);
+        });
+
+        // Если это чек платежа, обновляем таблицу платежей
+        if (category === 'receipt') {
+            await loadTransactionPayments(transactionId);
+        }
 
         showNotification('success', 'File uploaded successfully');
         closeModal('uploadFileModal');
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error uploading file:', error);
         showNotification('error', error.message || 'Error uploading file');
     }
 }
@@ -1762,18 +1822,18 @@ async function updateTransactionStatus(transactionId, status) {
     } else {
         confirmationMessage = 'Are you sure you want to update this transaction status?';
     }
-    
+
     if (!confirm(confirmationMessage)) {
         return; // Отмена действия, если пользователь нажал "Cancel"
     }
-    
+
     try {
         let notes = null;
         if (status === 'rejected') {
             notes = prompt('Please provide a reason for rejection:');
             if (notes === null) return; // Пользователь нажал Cancel в prompt
         }
-        
+
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`, {
             method: 'PUT',
             body: JSON.stringify({
@@ -1781,7 +1841,7 @@ async function updateTransactionStatus(transactionId, status) {
                 reason: notes
             })
         });
-        
+
         if (response && response.success) {
             showNotification('success', `Transaction ${status} successfully`);
             loadTransactions(); // Обновляем список транзакций
@@ -1797,11 +1857,11 @@ async function updateTransactionStatus(transactionId, status) {
 
 // Добавляем обработчики для кнопок действий
 document.querySelectorAll('.btn-approve, .btn-reject').forEach(btn => {
-    btn.addEventListener('click', function(e) {
+    btn.addEventListener('click', function (e) {
         e.stopPropagation();
         const transactionId = this.getAttribute('data-id');
         const action = this.getAttribute('data-action');
-        
+
         if (action === 'approve') {
             updateTransactionStatus(transactionId, 'approved');
         } else if (action === 'reject') {
@@ -1811,10 +1871,10 @@ document.querySelectorAll('.btn-approve, .btn-reject').forEach(btn => {
 });
 
 // Динамические обработчики для действий с транзакциями
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const approveBtn = e.target.closest('.action-btn[data-action="approve"]');
     const rejectBtn = e.target.closest('.action-btn[data-action="reject"]');
-    
+
     if (approveBtn) {
         const transactionId = approveBtn.getAttribute('data-id');
         updateTransactionStatus(transactionId, 'approved');
@@ -1861,16 +1921,16 @@ async function loadTransferRequests() {
         data.requests.forEach(request => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${request.id||'N/A'}</td>
-                <td>${request.property_id||'N/A'}</td>
-                <td>${request.requester_name||'N/A'}</td>
-                <td>${request.requester_cnic||'N/A'}</td>
+                <td>${request.id || 'N/A'}</td>
+                <td>${request.property_id || 'N/A'}</td>
+                <td>${request.requester_name || 'N/A'}</td>
+                <td>${request.requester_cnic || 'N/A'}</td>
                 <td>
                     <span class="status-badge ${request.status.toLowerCase()}">
                         ${request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                     </span>
                 </td>
-                <td>${new Date(request.created_at).toLocaleString()||'N/A'}</td>
+                <td>${new Date(request.created_at).toLocaleString() || 'N/A'}</td>
                 <td class="actions-cell">
                     ${request.status === 'pending' ? `
                         <button class="action-btn btn-approve" data-id="${request.id}" data-action="approved">
@@ -2143,30 +2203,30 @@ function formatPKR(amount) {
 // Инициализация обработчиков для платежей
 function initPaymentHandlers() {
     // Обработчик для кнопки "Add Payment"
-    document.querySelector('[data-action="add-payment"]')?.addEventListener('click', function() {
+    document.querySelector('[data-action="add-payment"]')?.addEventListener('click', function () {
         const transactionId = document.getElementById('currentTransactionId').value;
         if (!transactionId) {
             showNotification('error', 'Transaction ID not found');
             return;
         }
-        
+
         document.getElementById('paymentTransactionId').value = transactionId;
         document.getElementById('paymentAmount').value = '';
         document.getElementById('paymentMethod').value = 'cash';
         document.getElementById('receiptFile').value = '';
         document.getElementById('receiptPreview').innerHTML = '';
-        
+
         openModal('addPaymentModal');
     });
 
     // Обработчик для предпросмотра квитанции
-    document.getElementById('receiptFile')?.addEventListener('change', function(e) {
+    document.getElementById('receiptFile')?.addEventListener('change', function (e) {
         const file = e.target.files[0];
         const preview = document.getElementById('receiptPreview');
         if (file) {
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
                 };
                 reader.readAsDataURL(file);
@@ -2177,132 +2237,132 @@ function initPaymentHandlers() {
             preview.innerHTML = '';
         }
     });
-// Функция для чтения файла как base64
-function readFileAsBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]); // Убираем префикс data:...
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-    });
-}
-document.getElementById('addPaymentForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const transactionId = document.getElementById('paymentTransactionId').value;
-    const amount = parseFloat(document.getElementById('paymentAmount').value);
-    const method = document.getElementById('paymentMethod').value;
-    const receiptFile = document.getElementById('receiptFile').files[0];
-    const paymentDate = new Date().toISOString().split('T')[0];
-    const notes = document.getElementById('paymentNotes')?.value || '';
-
-    if (isNaN(amount) || amount <= 0) {
-        showNotification('error', 'Please enter a valid amount');
-        return;
-    }
-
-    try {
-        // Создаем FormData для правильной отправки файлов
-        const formData = new FormData();
-        
-        // Добавляем все текстовые данные
-        formData.append('amount', amount);
-        formData.append('payment_date', paymentDate);
-        formData.append('payment_method', method);
-        formData.append('notes', notes);
-        
-        // Добавляем файл, если он выбран (поле должно называться 'receipt')
-        if (receiptFile) {
-            formData.append('receipt', receiptFile);
-        }
-
-        // Отправляем запрос
-        const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/payments`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: formData
+    // Функция для чтения файла как base64
+    function readFileAsBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]); // Убираем префикс data:...
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
         });
-
-        const data = await response.json();
-        
-        if (response.ok) {
-            closeModal('addPaymentModal');
-            loadTransactionPayments(transactionId);
-            loadTransactionDetails(transactionId);
-            showNotification('success', 'Payment added successfully');
-        } else {
-            showNotification('error', data.message || 'Failed to add payment');
-        }
-    } catch (error) {
-        console.error("Error adding payment:", error);
-        showNotification('error', 'Error: ' + error.message);
     }
-});
+    document.getElementById('addPaymentForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
 
-// Обработчики для кнопок отмены
-document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
-    closeModal('addPaymentModal');
-});
+        const transactionId = document.getElementById('paymentTransactionId').value;
+        const amount = parseFloat(document.getElementById('paymentAmount').value);
+        const method = document.getElementById('paymentMethod').value;
+        const receiptFile = document.getElementById('receiptFile').files[0];
+        const paymentDate = new Date().toISOString().split('T')[0];
+        const notes = document.getElementById('paymentNotes')?.value || '';
+
+        if (isNaN(amount) || amount <= 0) {
+            showNotification('error', 'Please enter a valid amount');
+            return;
+        }
+
+        try {
+            // Создаем FormData для правильной отправки файлов
+            const formData = new FormData();
+
+            // Добавляем все текстовые данные
+            formData.append('amount', amount);
+            formData.append('payment_date', paymentDate);
+            formData.append('payment_method', method);
+            formData.append('notes', notes);
+
+            // Добавляем файл, если он выбран (поле должно называться 'receipt')
+            if (receiptFile) {
+                formData.append('receipt', receiptFile);
+            }
+
+            // Отправляем запрос
+            const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/payments`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                closeModal('addPaymentModal');
+                loadTransactionPayments(transactionId);
+                loadTransactionDetails(transactionId);
+                showNotification('success', 'Payment added successfully');
+            } else {
+                showNotification('error', data.message || 'Failed to add payment');
+            }
+        } catch (error) {
+            console.error("Error adding payment:", error);
+            showNotification('error', 'Error: ' + error.message);
+        }
+    });
+
     // Обработчики для кнопок отмены
-    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function () {
+        closeModal('addPaymentModal');
+    });
+    // Обработчики для кнопок отмены
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function () {
         closeModal('addPaymentModal');
     });
 }
 
 // Вызовите эту функцию после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initPaymentHandlers();
 });
 // Предпросмотр квитанции
 document.getElementById('receiptFile')?.addEventListener('change', function (e) {
-  const file = e.target.files[0];
-  const preview = document.getElementById('receiptPreview');
-  if (file) {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
-      }
-      reader.readAsDataURL(file);
+    const file = e.target.files[0];
+    const preview = document.getElementById('receiptPreview');
+    if (file) {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
+            }
+            reader.readAsDataURL(file);
+        } else {
+            preview.innerHTML = `<p>File: ${file.name}</p>`;
+        }
     } else {
-      preview.innerHTML = `<p>File: ${file.name}</p>`;
+        preview.innerHTML = '';
     }
-  } else {
-    preview.innerHTML = '';
-  }
 });
 
 // Инициализация обработчиков событий
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Закрытие модальных окон по кнопке "×"
     document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const modalId = this.getAttribute('data-modal');
             closeModal(modalId);
         });
     });
-    
+
     // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (event.target.classList.contains('modal')) {
             closeModal(event.target.id);
         }
     });
-    
+
     // Инициализация предпросмотра файлов
     setupFilePreview();
-    
+
     // Добавляем обработчик для кнопок действий с транзакцией
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const button = e.target.closest('[data-action]');
         if (!button) return;
-        
+
         const action = button.getAttribute('data-action');
         const category = button.getAttribute('data-category');
-        
-        switch(action) {
+
+        switch (action) {
             case 'upload-modal':
                 openUploadModal(category);
                 break;
@@ -2327,30 +2387,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
         }
     });
-    
+
     // Обработчик формы загрузки одного файла
-    document.getElementById('singleFileUploadForm')?.addEventListener('submit', async function(e) {
+    document.getElementById('singleFileUploadForm')?.addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         const transactionId = document.getElementById('uploadTransactionId').value;
         const category = document.getElementById('uploadCategory').value;
         const file = document.getElementById('file').files[0];
-        
+
         if (!file) {
             showNotification('error', 'Please select a file');
             return;
         }
-        
+
         try {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('category', category);
-            
-            const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents`, {
+
+            const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/documents`, {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (response.success) {
                 closeModal('uploadFileModal');
                 // Перезагружаем файлы транзакции
@@ -2363,23 +2423,23 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('error', 'Error uploading file: ' + error.message);
         }
     });
-    
-    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
+
+    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function () {
         closeModal('multipleUploadModal');
     });
-    
-    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function () {
         closeModal('addPaymentModal');
     });
-    
+
     // Обработчик для кнопки сохранения суммы
     document.querySelector('.save-amount-btn')?.addEventListener('click', saveTransactionAmount);
-    
+
     // Обработчик для кнопки отмены редактирования суммы
-    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function() {
+    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function () {
         document.getElementById('amountEditSection').style.display = 'none';
     });
-    
+
     // Обработчик для кнопки сохранения свидетелей
     document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
 });
@@ -2401,20 +2461,20 @@ function showNotification(type, message, duration = 3000) {
         container.id = 'notification-container';
         document.body.appendChild(container);
     }
-    
+
     // Создаем элемент уведомления
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
     notification.textContent = message;
-    
+
     // Добавляем уведомление в контейнер
     container.appendChild(notification);
-    
+
     // Показываем уведомление с анимацией
     setTimeout(() => {
         notification.classList.add('show');
     }, 10); // Небольшая задержка для корректного запуска анимации
-    
+
     // Автоматически скрываем и удаляем уведомление через указанное время
     setTimeout(() => {
         notification.classList.remove('show'); // Запускаем анимацию исчезновения
@@ -2429,7 +2489,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const pagination = document.createElement('div');
     pagination.className = 'pagination';
-    
+
     // Кнопка "Предыдущая"
     const prevButton = document.createElement('button');
     prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
@@ -2440,7 +2500,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         }
     });
     pagination.appendChild(prevButton);
-    
+
     // Номера страниц
     for (let i = 1; i <= totalPages; i++) {
         const pageButton = document.createElement('button');
@@ -2451,7 +2511,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         });
         pagination.appendChild(pageButton);
     }
-    
+
     // Кнопка "Следующая"
     const nextButton = document.createElement('button');
     nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
@@ -2462,7 +2522,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         }
     });
     pagination.appendChild(nextButton);
-    
+
     return pagination;
 }
 
@@ -2492,7 +2552,7 @@ function parseNumber(value) {
     const cleanValue = value.replace(/[^\d.]/g, '');
     const [integer, ...decimals] = cleanValue.split('.');
     const decimalPart = decimals.join('');
-    
+
     return parseFloat(`${integer}.${decimalPart}`) || 0;
 }
 
@@ -2503,12 +2563,12 @@ async function getExchangeRatePKRtoUSD() {
         const data = await apiRequest('/v1/admin/latest/PKR', {
             method: 'GET'
         });
-        
+
         // Проверяем структуру ответа
         if (data.success && typeof data.USD === 'number') {
             return data.USD;
         }
-        
+
         throw new Error('Invalid API response structure');
     } catch (error) {
         console.error('Ошибка получения курса:', error);
@@ -2560,21 +2620,21 @@ function openUploadModal(category) {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     currentTransactionId = transactionIdElement.value;
-    
+
     // Устанавливаем значения в скрытые поля формы
     const uploadTransactionId = document.getElementById('uploadTransactionId');
     const uploadCategory = document.getElementById('uploadCategory');
-    
+
     if (uploadTransactionId) uploadTransactionId.value = currentTransactionId;
     if (uploadCategory) uploadCategory.value = category;
-    
+
     // Обновляем заголовок модального окна в зависимости от категории
     const modalHeader = document.querySelector('#uploadFileModal .modal-header h2');
     if (modalHeader) {
         let title = 'Upload File';
-        switch(category) {
+        switch (category) {
             case 'agreement':
                 title = 'Upload Agreement File';
                 break;
@@ -2584,19 +2644,19 @@ function openUploadModal(category) {
         }
         modalHeader.textContent = title;
     }
-    
+
     // Сбрасываем форму и предпросмотр
     const fileInput = document.getElementById('file');
     if (fileInput) {
         fileInput.value = '';
     }
-    
+
     const imagePreview = document.getElementById('previewImage');
     if (imagePreview) {
         imagePreview.style.display = 'none';
         imagePreview.src = '';
     }
-    
+
     // Открываем модальное окно
     openModal('uploadFileModal');
 }
@@ -2609,21 +2669,21 @@ function openMultipleUploadModal() {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     currentTransactionId = transactionIdElement.value;
-    
+
     // Устанавливаем значение в скрытое поле формы
     const multiUploadTransactionId = document.getElementById('multiUploadTransactionId');
     if (multiUploadTransactionId) {
         multiUploadTransactionId.value = currentTransactionId;
     }
-    
+
     // Сбрасываем форму
     const filesInput = document.getElementById('files');
     if (filesInput) {
         filesInput.value = '';
     }
-    
+
     // Открываем модальное окно
     openModal('multipleUploadModal');
 }
@@ -2636,26 +2696,26 @@ function openAddPaymentModal() {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     const transactionId = transactionIdElement.value;
-    
+
     // Устанавливаем значения в форму
     const paymentTransactionId = document.getElementById('paymentTransactionId');
     if (paymentTransactionId) paymentTransactionId.value = transactionId;
-    
+
     const paymentAmount = document.getElementById('paymentAmount');
     if (paymentAmount) paymentAmount.value = '';
-    
+
     const paymentMethod = document.getElementById('paymentMethod');
     if (paymentMethod) paymentMethod.value = 'cash';
-    
+
     // Сбрасываем предпросмотр квитанции
     const receiptFile = document.getElementById('receiptFile');
     const receiptPreview = document.getElementById('receiptPreview');
-    
+
     if (receiptFile) receiptFile.value = '';
     if (receiptPreview) receiptPreview.innerHTML = '';
-    
+
     // Открываем модальное окно
     openModal('addPaymentModal');
 }
@@ -2665,19 +2725,19 @@ function setupFilePreview() {
     // Для одиночной загрузки
     const fileInput = document.getElementById('file');
     if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             const preview = document.getElementById('previewImage');
-            
+
             if (preview) {
                 if (file && file.type.startsWith('image/')) {
                     const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
+
+                    reader.onload = function (e) {
                         preview.src = e.target.result;
                         preview.style.display = 'block';
                     };
-                    
+
                     reader.readAsDataURL(file);
                 } else {
                     preview.style.display = 'none';
@@ -2686,25 +2746,25 @@ function setupFilePreview() {
             }
         });
     }
-    
+
     // Для предпросмотра квитанции платежа
     const receiptFileInput = document.getElementById('receiptFile');
     if (receiptFileInput) {
-        receiptFileInput.addEventListener('change', function(e) {
+        receiptFileInput.addEventListener('change', function (e) {
             const file = e.target.files[0];
             const preview = document.getElementById('receiptPreview');
-            
+
             if (preview) {
                 preview.innerHTML = '';
-                
+
                 if (file) {
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
-                        
-                        reader.onload = function(e) {
+
+                        reader.onload = function (e) {
                             preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
                         };
-                        
+
                         reader.readAsDataURL(file);
                     } else if (file.type === 'application/pdf') {
                         preview.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>`;
@@ -2721,34 +2781,34 @@ function setupFilePreview() {
 function displayFiles(files, containerId, fileCategory) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (!files || files.length === 0) {
         container.innerHTML = '<p>No files uploaded yet</p>';
         return;
     }
-    
+
     files.forEach(file => {
         const fileElement = document.createElement('div');
         fileElement.className = 'file-item';
-        
+
         // Создаем действия с файлом
         const actions = document.createElement('div');
         actions.className = 'file-actions';
-        
+
         // Кнопка просмотра
         const viewBtn = document.createElement('button');
         viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
         viewBtn.onclick = () => window.open(`${API_BASE_URL}/uploads/${file.file_name}`, '_blank');
         actions.appendChild(viewBtn);
-        
+
         // Кнопка скачивания
         const downloadBtn = document.createElement('button');
         downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
         downloadBtn.onclick = () => downloadFile(file);
         actions.appendChild(downloadBtn);
-        
+
         // Определяем тип файла для отображения иконки
         let fileIcon = 'fa-file';
         if (file.file_name.toLowerCase().endsWith('.pdf')) {
@@ -2758,14 +2818,14 @@ function displayFiles(files, containerId, fileCategory) {
         } else if (file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
             fileIcon = 'fa-file-video';
         }
-        
+
         // Формируем отображение файла
         fileElement.innerHTML = `
             <i class="fas ${fileIcon}"></i>
             <span class="file-name">${file.file_name}</span>
             <span class="file-date">${new Date(file.uploaded_at).toLocaleDateString()}</span>
         `;
-        
+
         fileElement.appendChild(actions);
         container.appendChild(fileElement);
     });
@@ -2777,13 +2837,13 @@ async function loadTransactionFiles(transactionId) {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
             method: 'GET'
         });
-        
+
         if (response.success && response.documents) {
             // Распределяем файлы по категориям
             const agreementFiles = response.documents.filter(file => file.category === 'agreement');
             const videoFiles = response.documents.filter(file => file.category === 'video');
             const proofFiles = response.documents.filter(file => file.category === 'proof');
-            
+
             // Отображаем файлы в соответствующих контейнерах
             displayFiles(agreementFiles, 'agreementFile', 'agreement');
             displayFiles(videoFiles, 'videoFile', 'video');
@@ -2799,57 +2859,163 @@ async function loadTransactionFiles(transactionId) {
 async function loadTransactionPayments(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        
-        if (response.success && response.payments) {
+
+        // Проверяем, есть ли платежи в ответе
+        if (response && response.payments && Array.isArray(response.payments)) {
             const tbody = document.getElementById('paymentsTableBody');
             tbody.innerHTML = '';
-            
+
             if (response.payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments found</td></tr>';
                 return;
             }
-            
+
             response.payments.forEach(payment => {
                 const row = document.createElement('tr');
-                
-                // Создаем HTML для действий с платежом
-                const actionsHTML = `
-                    <div class="actions-column">
-                        <button class="action-btn btn-view" data-id="${payment.id}" data-transaction-id="${transactionId}">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="action-btn btn-edit" data-id="${payment.id}" data-transaction-id="${transactionId}">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="action-btn btn-delete" data-id="${payment.id}" data-transaction-id="${transactionId}">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>`;
-                
+
+                // Создаем ячейку для превью чека
+                let receiptPreview = '';
+                if (payment.file_path) {
+                    const filePath = payment.file_path;
+                    const fileName = payment.original_name || 'Receipt';
+
+                    // Определяем тип файла для правильного превью
+                    if (filePath.toLowerCase().endsWith('.pdf')) {
+                        receiptPreview = `
+              <div class="receipt-preview">
+                <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
+                <div class="receipt-actions">
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
+                </div>
+              </div>
+            `;
+                    } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+                        receiptPreview = `
+              <div class="receipt-preview">
+                <img src="${filePath}" alt="${fileName}" class="receipt-thumbnail" 
+                     onclick="openImagePreview('${filePath}')">
+                <div class="receipt-actions">
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
+                </div>
+              </div>
+            `;
+                    } else {
+                        receiptPreview = `
+              <div class="receipt-preview">
+                <i class="fas fa-file-alt receipt-icon"></i>
+                <div class="receipt-actions">
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
+                </div>
+              </div>
+            `;
+                    }
+                } else {
+                    receiptPreview = '<span class="no-receipt">No receipt</span>';
+                }
+
+                // Форматируем дату платежа
+                let paymentDate = 'Invalid date';
+                try {
+                    const date = new Date(payment.payment_date);
+                    if (!isNaN(date)) {
+                        paymentDate = date.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error parsing date:', e);
+                }
+
+                // Форматируем сумму
+                const amount = parseFloat(payment.amount) || 0;
+
                 row.innerHTML = `
-                    <td>${payment.id}</td>
-                    <td>${new Date(payment.payment_date || payment.created_at).toLocaleDateString()}</td>
-                    <td>${parseFloat(payment.amount).toFixed(2)}</td>
-                    <td>${payment.payment_method || payment.method}</td>
-                    <td><span class="status-badge ${payment.status}">${payment.status}</span></td>
-                    <td>
-                        ${payment.receipt_url || (payment.receipt && payment.receipt.file_path) ? 
-                            `<a href="${payment.receipt_url || '/uploads/' + payment.receipt.file_path}" target="_blank" class="receipt-link">View</a>` : 
-                            'No receipt'}
-                    </td>
-                    <td class="actions-cell">${actionsHTML}</td>
-                `;
+          <td>${payment.id}</td>
+          <td>${paymentDate}</td>
+          <td>PKR ${amount.toFixed(2)}</td>
+          <td>${formatPaymentMethod(payment.payment_method)}</td>
+          <td><span class="status-badge ${getStatusClass(payment.status)}">${formatStatus(payment.status)}</span></td>
+          <td class="receipt-cell">${receiptPreview}</td>
+        `;
+
                 tbody.appendChild(row);
             });
-            
-            // Добавляем обработчики для кнопок действий
-            setupPaymentActionHandlers(transactionId);
+        } else {
+            document.getElementById('paymentsTableBody').innerHTML =
+                '<tr><td colspan="6" class="text-center">No payments found or error loading data</td></tr>';
         }
     } catch (error) {
         console.error('Error loading payments:', error);
-        const tbody = document.getElementById('paymentsTableBody');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
+        document.getElementById('paymentsTableBody').innerHTML =
+            '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
     }
+}
+
+// Вспомогательные функции для форматирования
+function formatPaymentMethod(method) {
+    const methods = {
+        'cash': 'Cash',
+        'bank_transfer': 'Bank Transfer',
+        'credit_card': 'Credit Card',
+        'other': 'Other'
+    };
+    return methods[method] || method.charAt(0).toUpperCase() + method.slice(1);
+}
+
+function formatStatus(status) {
+    const statuses = {
+        'pending': 'Pending',
+        'paid': 'Paid',
+        'cancelled': 'Cancelled'
+    };
+    return statuses[status] || status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getStatusClass(status) {
+    const classes = {
+        'pending': 'status-pending',
+        'paid': 'status-paid',
+        'cancelled': 'status-cancelled'
+    };
+    return classes[status] || '';
+}
+
+// Функция для открытия полноразмерного предпросмотра изображения
+function openImagePreview(imageSrc) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    cursor: pointer;
+  `;
+
+    const img = document.createElement('img');
+    img.src = imageSrc;
+    img.style.cssText = `
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+  `;
+
+    modal.appendChild(img);
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', function () {
+        document.body.removeChild(modal);
+    });
 }
 
 // Функция для настройки обработчиков действий с платежами
@@ -2859,7 +3025,7 @@ function setupPaymentActionHandlers(transactionId) {
         const clonedBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(clonedBtn, btn);
     });
-    
+
     // Добавляем новые обработчики
     document.querySelectorAll('.btn-view').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2867,14 +3033,14 @@ function setupPaymentActionHandlers(transactionId) {
             viewPaymentDetails(paymentId, transactionId);
         });
     });
-    
+
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const paymentId = e.target.closest('button').dataset.id;
             openEditPaymentModal(paymentId, transactionId);
         });
     });
-    
+
     document.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const paymentId = e.target.closest('button').dataset.id;
@@ -2887,7 +3053,7 @@ function setupPaymentActionHandlers(transactionId) {
 function viewPaymentDetails(paymentId, transactionId) {
     // Реализация просмотра деталей платежа
     console.log(`Viewing payment ${paymentId} for transaction ${transactionId}`);
-    
+
     // Загрузка данных платежа
     apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
         .then(response => response.json())
@@ -2900,7 +3066,7 @@ function viewPaymentDetails(paymentId, transactionId) {
                 document.getElementById('viewPaymentStatus').textContent = data.payment.status;
                 document.getElementById('viewPaymentDate').textContent = new Date(data.payment.payment_date).toLocaleDateString();
                 document.getElementById('viewPaymentNotes').textContent = data.payment.notes || '-';
-                
+
                 // Отображение ссылки на квитанцию
                 const receiptLink = document.getElementById('viewReceiptLink');
                 if (data.payment.receipt && data.payment.receipt.file_path) {
@@ -2910,7 +3076,7 @@ function viewPaymentDetails(paymentId, transactionId) {
                 } else {
                     receiptLink.style.display = 'none';
                 }
-                
+
                 // Открытие модального окна
                 openModal('viewPaymentModal');
             }
@@ -2924,7 +3090,7 @@ function viewPaymentDetails(paymentId, transactionId) {
 function openEditPaymentModal(paymentId, transactionId) {
     // Реализация открытия модального окна для редактирования платежа
     console.log(`Editing payment ${paymentId} for transaction ${transactionId}`);
-    
+
     // Загрузка данных платежа
     apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
         .then(response => response.json())
@@ -2936,7 +3102,7 @@ function openEditPaymentModal(paymentId, transactionId) {
                 document.getElementById('editPaymentMethod').value = data.payment.payment_method;
                 document.getElementById('editPaymentNotes').value = data.payment.notes || '';
                 document.getElementById('editPaymentStatus').value = data.payment.status;
-                
+
                 // Открытие модального окна
                 openModal('editPaymentModal');
             }
@@ -2958,50 +3124,50 @@ function deletePayment(paymentId, transactionId) {
     apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
         method: 'DELETE'
     })
-    .then(async response => {
-        const data = await response.json();
-        if (response.ok && (data.success || data.message)) {
-            showNotification('success', 'Payment deleted successfully');
-            loadTransactionPayments(transactionId);
-            loadTransactionDetails(transactionId);
-        } else {
-            throw new Error(data.message || 'Failed to delete payment');
-        }
-    })
-    .catch(error => {
-        console.error('Error deleting payment:', error);
-        showNotification('error', error.message);
-    });
+        .then(async response => {
+            const data = await response.json();
+            if (response.ok && (data.success || data.message)) {
+                showNotification('success', 'Payment deleted successfully');
+                loadTransactionPayments(transactionId);
+                loadTransactionDetails(transactionId);
+            } else {
+                throw new Error(data.message || 'Failed to delete payment');
+            }
+        })
+        .catch(error => {
+            console.error('Error deleting payment:', error);
+            showNotification('error', error.message);
+        });
 }
 
 // Функция для загрузки деталей транзакции
 async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-        
+
         if (response.success && response.transaction) {
             const transaction = response.transaction;
-            
+
             // Форматируем суммы
             const formatAmount = (amount) => new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(amount);
-            
+
             // Обновляем суммы
             const totalAmountView = document.getElementById('totalAmountView');
             const paidAmount = document.getElementById('paidAmount');
-            
+
             if (totalAmountView) totalAmountView.textContent = formatAmount(transaction.total_amount);
             if (paidAmount) paidAmount.textContent = formatAmount(transaction.paid_amount);
-            
+
             // Обновляем оставшуюся сумму
             const remaining = transaction.total_amount - transaction.paid_amount;
             const remainingAmount = document.getElementById('remainingAmount');
             if (remainingAmount) {
                 remainingAmount.textContent = formatAmount(remaining);
             }
-            
+
             // Обновляем дату создания
             const createdAt = document.getElementById('createdAt');
             if (createdAt) {
@@ -3019,16 +3185,16 @@ function openViewTransactionModal(transactionId) {
         showNotification('error', 'Transaction ID is required');
         return;
     }
-    
+
     // Устанавливаем ID транзакции в скрытое поле
     const currentTransactionIdElement = document.getElementById('currentTransactionId');
     if (currentTransactionIdElement) {
         currentTransactionIdElement.value = transactionId;
     }
-    
+
     // Открываем модальное окно
     openModal('viewTransactionModal');
-    
+
     // Загружаем данные транзакции и файлы
     loadTransactionDetails(transactionId);
     loadTransactionFiles(transactionId);
@@ -3039,19 +3205,19 @@ function openViewTransactionModal(transactionId) {
 async function loadTransactions() {
     try {
         const response = await apiRequest('/v1/admin/transactions');
-        
+
         if (response.success && response.transactions) {
             const tbody = document.getElementById('transactionsTableBody');
             tbody.innerHTML = '';
-            
+
             if (response.transactions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
                 return;
             }
-            
+
             response.transactions.forEach(transaction => {
                 const row = document.createElement('tr');
-                
+
                 // КНОПКИ ДЛЯ ТРАНЗАКЦИЙ (Edit/Delete)
                 const actionsHTML = `
     <div class="actions-column">
@@ -3069,7 +3235,7 @@ async function loadTransactions() {
                         : ''}
     </div>
 `;
-                
+
                 row.innerHTML = `
                     <td>${transaction.id}</td>
                     <td>${transaction.property_id}</td>
@@ -3081,8 +3247,8 @@ async function loadTransactions() {
                 `;
                 tbody.appendChild(row);
             });
-            
-             // Добавляем пагинацию
+
+            // Добавляем пагинацию
             const paginationContainer = document.querySelector('.pagination-container');
             if (paginationContainer) {
                 paginationContainer.innerHTML = '';
@@ -3093,7 +3259,7 @@ async function loadTransactions() {
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
-        document.getElementById('transactionsTableBody').innerHTML = 
+        document.getElementById('transactionsTableBody').innerHTML =
             '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
     }
 }
@@ -3108,13 +3274,13 @@ async function loadArchivedUsers(page = 1, limit = 10) {
         loadingIndicator.textContent = 'Loading archived users...';
         document.getElementById('archivedUsersTableBody').innerHTML = '';
         document.getElementById('archivedUsersTableBody').appendChild(loadingIndicator);
-        
+
         const response = await apiRequest(`/v1/admin/users/archive?page=${page}&limit=${limit}`);
-        
+
         if (response.success && response.users) {
             const tbody = document.getElementById('archivedUsersTableBody');
             tbody.innerHTML = '';
-            
+
             response.users.forEach(user => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -3132,7 +3298,7 @@ async function loadArchivedUsers(page = 1, limit = 10) {
                 `;
                 tbody.appendChild(row);
             });
-            
+
             // Добавляем пагинацию
             const paginationContainer = document.querySelector('.pagination-container');
             if (paginationContainer) {
@@ -3161,11 +3327,11 @@ function openCreateTransactionModal() {
 async function openViewUserModal(userId) {
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
-        
+
         if (response.success && response.user) {
             const user = response.user;
             const modalBody = document.getElementById('userModalBody');
-            
+
             modalBody.innerHTML = `
                 <div class="user-details">
                     <p><strong>ID:</strong> ${user.id}</p>
@@ -3187,16 +3353,16 @@ async function openViewUserModal(userId) {
                     </button>
                 </div>
             `;
-            
+
             openModal('userModal');
-            
+
             // Добавляем обработчики для кнопок действий
-            document.querySelector('.activate-user-btn')?.addEventListener('click', function() {
+            document.querySelector('.activate-user-btn')?.addEventListener('click', function () {
                 const userId = this.getAttribute('data-user-id');
                 updateUserStatus(userId, 'active');
             });
-            
-            document.querySelector('.block-user-btn')?.addEventListener('click', function() {
+
+            document.querySelector('.block-user-btn')?.addEventListener('click', function () {
                 const userId = this.getAttribute('data-user-id');
                 updateUserStatus(userId, 'blocked');
             });
@@ -3214,7 +3380,7 @@ async function updateUserStatus(userId, status) {
             method: 'PUT',
             body: JSON.stringify({ status })
         });
-        
+
         if (response.success) {
             showNotification('success', `User ${status} successfully`);
             closeModal('userModal');
@@ -3231,37 +3397,37 @@ async function updateUserStatus(userId, status) {
 async function saveTransactionAmount() {
     const transactionId = document.getElementById('currentTransactionId').value;
     const newAmount = parseFloat(document.getElementById('newTotalAmount').value);
-    
+
     if (isNaN(newAmount) || newAmount <= 0) {
         showNotification('error', 'Please enter a valid amount');
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/update-amount`, {
             method: 'PUT',
             body: JSON.stringify({ total_amount: newAmount })
         });
-        
+
         if (response.success) {
             // Форматируем сумму с разделителями
             const formattedAmount = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             }).format(newAmount);
-            
+
             const totalAmountView = document.getElementById('totalAmountView');
             if (totalAmountView) {
                 totalAmountView.textContent = formattedAmount;
             }
-            
+
             const amountEditSection = document.getElementById('amountEditSection');
             if (amountEditSection) {
                 amountEditSection.style.display = 'none';
             }
-            
+
             showNotification('success', 'Amount updated successfully');
-            
+
             // Обновляем оставшуюся сумму
             loadTransactionDetails(transactionId);
         } else {
@@ -3275,31 +3441,31 @@ async function saveTransactionAmount() {
 // Функция для обновления свидетелей
 async function updateWitnesses() {
     const transactionId = document.getElementById('currentTransactionId').value;
-    
+
     const witness1 = {
         name: document.getElementById('witness1Name').value,
         cnic: document.getElementById('witness1CNIC').value,
         phone: document.getElementById('witness1Phone').value
     };
-    
+
     const witness2 = {
         name: document.getElementById('witness2Name').value,
         cnic: document.getElementById('witness2CNIC').value,
         phone: document.getElementById('witness2Phone').value
     };
-    
+
     // Валидация CNIC
     const cnicRegex = /^\d{5}-\d{7}-\d{1}$/;
     if (!cnicRegex.test(witness1.cnic)) {
         showNotification('error', 'Witness 1 CNIC must be in XXXXX-XXXXXXX-X format');
         return;
     }
-    
+
     if (!cnicRegex.test(witness2.cnic)) {
         showNotification('error', 'Witness 2 CNIC must be in XXXXX-XXXXXXX-X format');
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {
             method: 'PUT',
@@ -3308,7 +3474,7 @@ async function updateWitnesses() {
                 witness2
             })
         });
-        
+
         if (response.success) {
             showNotification('success', 'Witnesses updated successfully');
         } else {
@@ -3325,18 +3491,18 @@ function navigateToSection(sectionId) {
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Убираем активный класс со всех ссылок
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
     });
-    
+
     // Показываем выбранную секцию
     document.getElementById(sectionId).classList.add('active');
-    
+
     // Добавляем активный класс к выбранной ссылке
     document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
-    
+
     // Загружаем данные для секции
     if (sectionId === 'transactions') {
         loadTransactions();
@@ -3356,15 +3522,15 @@ function attachCurrencyConverter() {
         console.error('Элементы #totalAmount или #toUSD не найдены!');
         return;
     }
-    
+
     let rawValue = 0;
     let lastInputValue = '';
 
     // Сохраняем "сырое" значение во время ввода
-    totalAmountInput.addEventListener('input', function(e) {
+    totalAmountInput.addEventListener('input', function (e) {
         // Сохраняем текущее значение для корректной обработки
         lastInputValue = this.value;
-        
+
         // Чистим ввод, сохраняя цифры и разделители
         let cleanValue = this.value
             .replace(/[^0-9.,]/g, '')
@@ -3373,7 +3539,7 @@ function attachCurrencyConverter() {
 
         // Парсим значение
         const newRawValue = parseNumber(cleanValue);
-        
+
         // Сохраняем сырое значение ТОЛЬКО если оно изменилось
         if (newRawValue !== rawValue) {
             rawValue = newRawValue;
@@ -3383,10 +3549,10 @@ function attachCurrencyConverter() {
     });
 
     // Форматируем ТОЛЬКО при потере фокуса
-    totalAmountInput.addEventListener('blur', function() {
+    totalAmountInput.addEventListener('blur', function () {
         // Сохраняем позицию курсора (для корректного восстановления при focus)
         const cursorPosition = this.selectionStart;
-        
+
         if (!this.value || parseFloat(this.value) === 0) {
             this.value = '0.00';
             rawValue = 0;
@@ -3395,17 +3561,17 @@ function attachCurrencyConverter() {
             rawValue = parseNumber(this.value);
             this.value = formatPKR(rawValue);
         }
-        
+
         // Восстанавливаем позицию курсора (если нужно)
         if (cursorPosition > 0 && cursorPosition <= this.value.length) {
             this.setSelectionRange(cursorPosition, cursorPosition);
         }
-        
+
         updateUSD(rawValue);
     });
 
     // При фокусе показываем "сырое" значение для редактирования
-    totalAmountInput.addEventListener('focus', function() {
+    totalAmountInput.addEventListener('focus', function () {
         if (this.value === '0.00' || this.value === '') {
             this.value = '';
             rawValue = 0;
@@ -3413,12 +3579,12 @@ function attachCurrencyConverter() {
             // Сохраняем текущее значение как "сырое" для редактирования
             this.value = rawValue.toString();
         }
-        
+
         // Восстанавливаем последнее введенное значение (если было)
         if (lastInputValue && lastInputValue !== '0.00') {
             this.value = lastInputValue;
         }
-        
+
         // Устанавливаем курсор в конец поля
         setTimeout(() => {
             this.setSelectionRange(this.value.length, this.value.length);
@@ -3463,60 +3629,60 @@ function attachCurrencyConverter() {
 function initEventHandlers() {
     // Обработчик навигации
     document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
             const sectionId = this.getAttribute('data-section');
             navigateToSection(sectionId);
         });
     });
-    
+
     // Обработчик кнопки создания транзакции
     document.getElementById('create')?.addEventListener('click', openCreateTransactionModal);
-    
+
     // Обработчик кнопки добавления пользователя
     document.getElementById('openAddUserModal')?.addEventListener('click', openAddUserModal);
-    
+
     // Обработчик формы создания транзакции
     document.getElementById('createTransactionForm')?.addEventListener('submit', createTransaction);
-    
+
     // Обработчик формы добавления пользователя
     document.getElementById('addUserForm')?.addEventListener('submit', createUser);
-    
+
     // Обработчик кнопки генерации логина
     document.querySelector('.regenerate-login-btn')?.addEventListener('click', regenerateLogin);
-    
+
     // Обработчик кнопки генерации пароля
     document.querySelector('.regenerate-password-btn')?.addEventListener('click', regeneratePassword);
-    
+
     // Закрытие модальных окон по кнопке "×"
     document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const modalId = this.getAttribute('data-modal');
             closeModal(modalId);
         });
     });
-    
+
     // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (event.target.classList.contains('modal')) {
             closeModal(event.target.id);
         }
     });
-    
+
     // Инициализация предпросмотра файлов
     setupFilePreview();
-    
+
     // Добавляем обработчик для кнопок действий с транзакцией
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const button = e.target.closest('[data-action]');
         if (!button) return;
-        
+
         e.preventDefault(); // Предотвращаем всплытие события
-        
+
         const action = button.getAttribute('data-action');
         const category = button.getAttribute('data-category');
-        
-        switch(action) {
+
+        switch (action) {
             case 'upload-modal':
                 openUploadModal(category);
                 break;
@@ -3548,32 +3714,32 @@ function initEventHandlers() {
                 break;
         }
     });
-    
+
     // Обработчик формы загрузки одного файла
     const singleFileUploadForm = document.getElementById('singleFileUploadForm');
     if (singleFileUploadForm) {
-        singleFileUploadForm.addEventListener('submit', async function(e) {
+        singleFileUploadForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const transactionId = document.getElementById('uploadTransactionId').value;
             const category = document.getElementById('uploadCategory').value;
             const file = document.getElementById('file').files[0];
-            
+
             if (!file) {
                 showNotification('error', 'Please select a file');
                 return;
             }
-            
+
             try {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('category', category);
-                
-                const response = await fetch(API_BASE_URL+`/v1/admin/transactions/${transactionId}/documents`, {
+
+                const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/documents`, {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 if (response.success) {
                     closeModal('uploadFileModal');
                     // Перезагружаем файлы транзакции
@@ -3587,45 +3753,45 @@ function initEventHandlers() {
             }
         });
     }
-    
-    
-    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
+
+
+    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function () {
         closeModal('multipleUploadModal');
     });
-    
-    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
+
+    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function () {
         closeModal('addPaymentModal');
     });
-    
+
     // Обработчик для кнопки сохранения суммы
     document.querySelector('.save-amount-btn')?.addEventListener('click', saveTransactionAmount);
-    
+
     // Обработчик для кнопки отмены редактирования суммы
-    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function() {
+    document.querySelector('.cancel-amount-btn')?.addEventListener('click', function () {
         const amountEditSection = document.getElementById('amountEditSection');
         if (amountEditSection) {
             amountEditSection.style.display = 'none';
         }
     });
-    
+
     // Обработчик для кнопки сохранения свидетелей
     document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
-    
+
     // Динамические обработчики для просмотра транзакций и пользователей
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const viewTransactionBtn = e.target.closest('.view-transaction-btn');
         if (viewTransactionBtn) {
             const transactionId = viewTransactionBtn.getAttribute('data-transaction-id');
             openViewTransactionModal(transactionId);
         }
-        
+
         const viewUserBtn = e.target.closest('.view-user-btn');
         if (viewUserBtn) {
             const userId = viewUserBtn.getAttribute('data-user-id');
             openViewUserModal(userId);
         }
     });
-    
+
     // Инициализация конвертера валют
     attachCurrencyConverter();
 }
@@ -3636,10 +3802,10 @@ function initApp() {
     if (document.querySelector('.admin-container')) {
         // Инициализируем обработчики событий
         initEventHandlers();
-        
+
         // Загружаем начальные данные
         loadTransactions();
-        
+
         // Навигация по умолчанию
         navigateToSection('transactions');
     }
@@ -3649,4 +3815,4 @@ function initApp() {
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
 });
-    attachCurrencyConverter();
+attachCurrencyConverter();

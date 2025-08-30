@@ -3133,7 +3133,7 @@ async function loadTransactionPayments(transactionId) {
         // Создаем ячейку для превью чека
         let receiptPreview = '';
         if (payment.receipt) {
-          const filePath = payment.receipt.path;
+          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${payment.receipt_file_id}`;
           const fileName = payment.receipt.name || 'Receipt';
           
           // Определяем тип файла для правильного превью

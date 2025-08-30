@@ -2770,7 +2770,7 @@ function setupFilePreview() {
   }
 }
 
-// Функция для отображения файлов в интерфейсе
+// Функция для отображения файлов транзакции
 function displayFiles(files, containerId, fileCategory) {
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -2792,11 +2792,9 @@ function displayFiles(files, containerId, fileCategory) {
     const viewBtn = document.createElement('button');
     viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
     
-    // Формируем правильный URL
-    const fileUrl = file.file_path 
-      ? `${API_BASE_URL}/uploads/${encodeURIComponent(file.file_path)}`
-      : `${API_BASE_URL}/uploads/${encodeURIComponent(file.file_name)}`;
-      
+    // ИСПРАВЛЕНО: формируем правильный URL через безопасный маршрут
+    const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${file.id}`;
+    
     viewBtn.onclick = () => window.open(fileUrl, '_blank');
     actions.appendChild(viewBtn);
     
@@ -2805,6 +2803,7 @@ function displayFiles(files, containerId, fileCategory) {
     downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
     downloadBtn.onclick = () => {
       const a = document.createElement('a');
+      // ИСПРАВЛЕНО: добавляем параметр download=true
       a.href = `${fileUrl}?download=true`;
       a.download = file.original_name || file.file_name;
       document.body.appendChild(a);
@@ -2815,11 +2814,11 @@ function displayFiles(files, containerId, fileCategory) {
     
     // Определяем тип файла для отображения иконки
     let fileIcon = 'fa-file';
-    if (file.file_name.toLowerCase().endsWith('.pdf')) {
+    if (file.file_name && file.file_name.toLowerCase().endsWith('.pdf')) {
       fileIcon = 'fa-file-pdf';
-    } else if (file.file_name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+    } else if (file.file_name && file.file_name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
       fileIcon = 'fa-file-image';
-    } else if (file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
+    } else if (file.file_name && file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
       fileIcon = 'fa-file-video';
     }
     
@@ -2832,7 +2831,6 @@ function displayFiles(files, containerId, fileCategory) {
     container.appendChild(fileElement);
   });
 }
-
 // Функция для загрузки файлов транзакции
 async function loadTransactionFiles(transactionId) {
     try {
@@ -3113,12 +3111,12 @@ function openImagePreview(imageSrc) {
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
   try {
-    // Запрашиваем информацию о транзакции
     const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
     
-    // Проверяем, что ответ содержит платежи
-    if (response && Array.isArray(response.payments)) {
-      const payments = response.payments;
+    if (response && response.transaction) {
+      const transaction = response.transaction;
+      const payments = transaction.payments || [];
+      
       const tbody = document.getElementById('paymentsTableBody');
       tbody.innerHTML = '';
       
@@ -3132,29 +3130,34 @@ async function loadTransactionPayments(transactionId) {
         
         // Создаем ячейку для превью чека
         let receiptPreview = '';
+        
+        // Проверяем, есть ли информация о квитанции
         if (payment.receipt) {
-          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${payment.filePath}`;
-          const fileName = payment.receipt.name || 'Receipt';
+          // ИСПРАВЛЕНО: используем ID файла из структуры receipt
+          const receiptFileId = payment.receipt.id;
+          
+          // Формируем правильный URL через безопасный маршрут
+          const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${receiptFileId}`;
           
           // Определяем тип файла для правильного превью
-          if (filePath.toLowerCase().endsWith('.pdf')) {
+          if (payment.receipt.type && payment.receipt.type.includes('pdf')) {
             receiptPreview = `
               <div class="receipt-preview">
                 <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
                 <div class="receipt-actions">
-                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
-                  <a href="${filePath}" download class="download-receipt">Download</a>
+                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
+                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
                 </div>
               </div>
             `;
-          } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+          } else if (payment.receipt.type && payment.receipt.type.includes('image')) {
             receiptPreview = `
               <div class="receipt-preview">
-                <img src="${filePath}" alt="${fileName}" class="receipt-thumbnail" 
-                     onclick="openImagePreview('${filePath}')">
+                <img src="${fileUrl}" alt="${payment.receipt.name || 'Receipt'}" class="receipt-thumbnail" 
+                     onclick="openImagePreview('${fileUrl}')">
                 <div class="receipt-actions">
-                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
-                  <a href="${filePath}" download class="download-receipt">Download</a>
+                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
+                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
                 </div>
               </div>
             `;
@@ -3163,8 +3166,8 @@ async function loadTransactionPayments(transactionId) {
               <div class="receipt-preview">
                 <i class="fas fa-file-alt receipt-icon"></i>
                 <div class="receipt-actions">
-                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
-                  <a href="${filePath}" download class="download-receipt">Download</a>
+                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
+                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
                 </div>
               </div>
             `;
@@ -3204,30 +3207,23 @@ async function loadTransactionPayments(transactionId) {
                       data-payment-id="${payment.id}">
                 <i class="fas fa-times"></i> Cancel
               </button>
-              <button class="action-btn btn-edit edit-payment-btn"
-                      data-payment-id="${payment.id}">
-                <i class="fas fa-edit"></i> Edit
-              </button>
             </div>
           `;
         } else {
           actionButtons = `
-            <div class="payment-actions">
-              <button class="action-btn btn-edit edit-payment-btn"
-                      data-payment-id="${payment.id}">
-                <i class="fas fa-edit"></i> Edit
-              </button>
+            <div class="payment-status">
+              <span class="status-badge ${getStatusClass(payment.status)}">
+                ${formatStatus(payment.status)}
+              </span>
             </div>
           `;
         }
         
-        // Генерируем HTML строки с правильным порядком колонок
         row.innerHTML = `
           <td>${payment.id}</td>
           <td>${paymentDate}</td>
           <td>PKR ${amount.toFixed(2)}</td>
           <td>${formatPaymentMethod(payment.payment_method)}</td>
-          <td><span class="status-badge ${getStatusClass(payment.status)}">${formatStatus(payment.status)}</span></td>
           <td>${actionButtons}</td>
           <td class="receipt-cell">${receiptPreview}</td>
         `;

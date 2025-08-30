@@ -3108,40 +3108,31 @@ function openImagePreview(imageSrc) {
     document.body.removeChild(modal);
   });
 }
-
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
   try {
-    // Запрашиваем ВСЮ информацию о транзакции, а не только платежи
+    // Запрашиваем информацию о транзакции
     const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
     
-    if (response && response.success && response.transaction) {
-      const transaction = response.transaction;
-      const payments = transaction.payments || [];
-      
-      // Получаем все файлы квитанций из структуры files.receipt
-      const receipts = transaction.files?.receipt || [];
-      
+    // Проверяем, что ответ содержит платежи
+    if (response && Array.isArray(response.payments)) {
+      const payments = response.payments;
       const tbody = document.getElementById('paymentsTableBody');
       tbody.innerHTML = '';
       
       if (payments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments found</td></tr>';
         return;
       }
       
       payments.forEach(payment => {
-        // Ищем квитанцию для этого платежа по ID платежа
-        // В структуре данных файлы квитанций имеют тот же ID, что и соответствующий платеж
-        const receipt = receipts.find(r => r.id === payment.id) || null;
-        
         const row = document.createElement('tr');
         
         // Создаем ячейку для превью чека
         let receiptPreview = '';
-        if (receipt) {
-          const filePath = receipt.path;
-          const fileName = receipt.name || 'Receipt';
+        if (payment.receipt) {
+          const filePath = payment.receipt.path;
+          const fileName = payment.receipt.name || 'Receipt';
           
           // Определяем тип файла для правильного превью
           if (filePath.toLowerCase().endsWith('.pdf')) {
@@ -3250,20 +3241,23 @@ async function loadTransactionPayments(transactionId) {
         });
       });
       
-      document.querySelectorAll('.edit-payment-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const paymentId = e.target.closest('.edit-payment-btn').dataset.paymentId;
-          editPayment(paymentId, transactionId);
-        });
-      });
+      // В вашем HTML нет кнопок редактирования платежей, поэтому удаляем этот код
+      // document.querySelectorAll('.edit-payment-btn').forEach(button => {
+      //   button.addEventListener('click', (e) => {
+      //     const paymentId = e.target.closest('.edit-payment-btn').dataset.paymentId;
+      //     editPayment(paymentId, transactionId);
+      //   });
+      // });
     } else {
+      // Более информативное сообщение об ошибке
+      console.error('Unexpected response format:', response);
       document.getElementById('paymentsTableBody').innerHTML = 
-        '<tr><td colspan="7" class="text-center">No payments found or error loading data</td></tr>';
+        '<tr><td colspan="6" class="text-center">No payments found or error loading data</td></tr>';
     }
   } catch (error) {
     console.error('Error loading payments:', error);
     document.getElementById('paymentsTableBody').innerHTML = 
-      '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
+      '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
   }
 }
 

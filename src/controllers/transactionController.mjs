@@ -1196,12 +1196,15 @@ async createPayment(req, res) {
       `, [paymentId]);
 
       res.json({
+        success: true,
         message: 'Payment updated successfully',
         payment: updatedPayment[0]
       });
     } catch (error) {
       console.error('Error updating payment:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ 
+        success: false,
+        message: 'Internal server error' });
     }
   },
 

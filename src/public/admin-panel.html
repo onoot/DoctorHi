@@ -144,6 +144,57 @@
                 </div>
             </div>
 
+            <!-- Модальное окно для редактирования платежа -->
+            <div id="editPaymentModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Edit Payment</h3>
+                        <span class="close" data-modal="editPaymentModal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editPaymentForm">
+                            <input type="hidden" id="paymentTransactionId">
+                            <input type="hidden" id="paymentId">
+                            <div class="form-group">
+                                <label for="paymentAmount">Amount (PKR)</label>
+                                <div class="amount-input-container">
+                                    <input type="text" id="paymentAmount" name="amount"
+                                        class="form-control formatted-amount" required placeholder="0.00"
+                                        inputmode="decimal">
+                                    <input type="hidden" id="rawPaymentAmount" name="raw_amount">
+                                </div>
+                                <div id="usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMethod">Payment Method</label>
+                                <select id="paymentMethod" name="method" class="form-control" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentStatus">Status</label>
+                                <select id="paymentStatus" name="status" class="form-control" required>
+                                    <option value="pending">Pending</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentNotes">Notes</label>
+                                <textarea id="paymentNotes" name="notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
+                                <button type="submit" class="action-btn btn-edit save-payment-btn">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
             <!-- Модальное окно для просмотра сделки -->
             <div id="viewTransactionModal" class="modal">
                 <div class="modal-content">
@@ -573,185 +624,241 @@
             </div>
             <script src="./admin.js"></script>
             <script>
-        // Функция инициализации полей платежа
-function initPaymentFormFields() {
-  const paymentAmount = document.getElementById('paymentAmount');
-  const rawPaymentAmount = document.getElementById('rawPaymentAmount');
-  const usdConversion = document.getElementById('usdConversion');
-  
-  if (!paymentAmount || !rawPaymentAmount || !usdConversion) {
-    console.warn('Элементы формы платежа не найдены. Возможно, модальное окно еще не создано.');
-    return;
-  }
-  
-  let rawValue = 0;
-  
-  // Функция форматирования PKR
-  const formatPKR = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-  
-  // Функция парсинга числа
-  const parseNumber = (value) => {
-    const cleanValue = value.replace(/[^\d.]/g, '');
-    if (!cleanValue) return 0;
-    
-    // Обрабатываем случай, когда пользователь ввел только точку
-    if (cleanValue === '.') return 0;
-    
-    // Разделяем на целую и дробную части
-    const parts = cleanValue.split('.');
-    const integerPart = parts[0];
-    let decimalPart = parts.length > 1 ? parts.slice(1).join('') : '00';
-    
-    // Ограничиваем до 2 знаков после запятой
-    decimalPart = decimalPart.slice(0, 2);
-    
-    // Если дробная часть короче 2 знаков, дополняем нулями
-    if (decimalPart.length === 1) decimalPart += '0';
-    if (decimalPart.length === 0) decimalPart = '00';
-    
-    return parseFloat(`${integerPart}.${decimalPart}`) || 0;
-  };
-  
-  // Функция обновления конвертации в USD
-  const updateUSD = async (amountInPKR) => {
-    try {
-      const response = await fetch('/v1/admin/latest/PKR');
-      const data = await response.json();
-      
-      let exchangeRate;
-      if (data.success && data.USD) {
-        exchangeRate = data.USD;
-      } else {
-        // Fallback-курс, если API не отвечает
-        exchangeRate = 0.0036;
-      }
-      
-      const usdAmount = amountInPKR * exchangeRate;
-      
-      usdConversion.innerHTML = `
+                // Функция инициализации полей платежа
+                function initPaymentFormFields() {
+                    const paymentAmount = document.getElementById('paymentAmount');
+                    const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+                    const usdConversion = document.getElementById('usdConversion');
+
+                    if (!paymentAmount || !rawPaymentAmount || !usdConversion) {
+                        console.warn('Элементы формы платежа не найдены. Возможно, модальное окно еще не создано.');
+                        return;
+                    }
+
+                    let rawValue = 0;
+
+                    // Функция форматирования PKR
+                    const formatPKR = (amount) => {
+                        return new Intl.NumberFormat('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        }).format(amount);
+                    };
+
+                    // Функция парсинга числа
+                    const parseNumber = (value) => {
+                        const cleanValue = value.replace(/[^\d.]/g, '');
+                        if (!cleanValue) return 0;
+
+                        // Обрабатываем случай, когда пользователь ввел только точку
+                        if (cleanValue === '.') return 0;
+
+                        // Разделяем на целую и дробную части
+                        const parts = cleanValue.split('.');
+                        const integerPart = parts[0];
+                        let decimalPart = parts.length > 1 ? parts.slice(1).join('') : '00';
+
+                        // Ограничиваем до 2 знаков после запятой
+                        decimalPart = decimalPart.slice(0, 2);
+
+                        // Если дробная часть короче 2 знаков, дополняем нулями
+                        if (decimalPart.length === 1) decimalPart += '0';
+                        if (decimalPart.length === 0) decimalPart = '00';
+
+                        return parseFloat(`${integerPart}.${decimalPart}`) || 0;
+                    };
+
+                    // Функция обновления конвертации в USD
+                    const updateUSD = async (amountInPKR) => {
+                        try {
+                            const response = await fetch('/v1/admin/latest/PKR');
+                            const data = await response.json();
+
+                            let exchangeRate;
+                            if (data.success && data.USD) {
+                                exchangeRate = data.USD;
+                            } else {
+                                // Fallback-курс, если API не отвечает
+                                exchangeRate = 0.0036;
+                            }
+
+                            const usdAmount = amountInPKR * exchangeRate;
+
+                            usdConversion.innerHTML = `
         ≈ ${new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(usdAmount)}
+                                style: 'currency',
+                                currency: 'USD',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(usdAmount)}
         <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
           (1 PKR = ${exchangeRate.toFixed(6)} USD)
         </span>
       `;
-    } catch (error) {
-      console.error('Error fetching exchange rate:', error);
-      const exchangeRate = 0.0036;
-      const usdAmount = amountInPKR * exchangeRate;
-      
-      usdConversion.innerHTML = `
+                        } catch (error) {
+                            console.error('Error fetching exchange rate:', error);
+                            const exchangeRate = 0.0036;
+                            const usdAmount = amountInPKR * exchangeRate;
+
+                            usdConversion.innerHTML = `
         ≈ ${new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-        }).format(usdAmount)}
+                                style: 'currency',
+                                currency: 'USD',
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }).format(usdAmount)}
         <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px; color: #dc3545">
           Using fallback rate (API error)
         </span>
       `;
-    }
-  };
-  
-  // Инициализация значения
-  if (paymentAmount.value) {
-    rawValue = parseNumber(paymentAmount.value);
-    paymentAmount.value = formatPKR(rawValue);
-    rawPaymentAmount.value = rawValue;
-    updateUSD(rawValue);
-  } else {
-    paymentAmount.value = '0.00';
-    rawPaymentAmount.value = 0;
-    updateUSD(0);
-  }
-  
-  // Удаляем существующие обработчики, чтобы избежать дублирования
-  const newPaymentAmount = paymentAmount.cloneNode(true);
-  paymentAmount.parentNode.replaceChild(newPaymentAmount, paymentAmount);
-  
-  // Обработчик ввода
-  newPaymentAmount.addEventListener('input', function(e) {
-    // Сохраняем позицию курсора
-    const cursorStart = this.selectionStart;
-    const cursorEnd = this.selectionEnd;
-    const oldValue = this.value;
-    
-    // Чистим ввод, сохраняя цифры и точку
-    let cleanValue = this.value.replace(/[^0-9.]/g, '');
-    
-    // Проверяем, что не введено больше одной точки
-    const dotCount = (cleanValue.match(/\./g) || []).length;
-    if (dotCount > 1) {
-      cleanValue = cleanValue.replace(/\.+$/, ''); // Удаляем лишние точки в конце
-    }
-    
-    // Сохраняем текущее значение для отслеживания изменений
-    this.value = cleanValue;
-    
-    // Парсим значение
-    const newRawValue = parseNumber(cleanValue);
-    
-    // Сохраняем сырое значение ТОЛЬКО если оно изменилось
-    if (newRawValue !== rawValue) {
-      rawValue = newRawValue;
-      // Обновляем конвертацию в USD
-      updateUSD(rawValue);
-      // Обновляем скрытое поле
-      rawPaymentAmount.value = rawValue;
-    }
-    
-    // Корректируем позицию курсора
-    const diff = this.value.length - oldValue.length;
-    this.setSelectionRange(
-      Math.max(0, cursorStart + diff),
-      Math.max(0, cursorEnd + diff)
-    );
-  });
-  
-  // Обработчик потери фокуса - форматируем окончательное значение
-  newPaymentAmount.addEventListener('blur', function() {
-    if (!this.value || this.value === '.') {
-      this.value = '0.00';
-      rawValue = 0;
-    } else {
-      rawValue = parseNumber(this.value);
-      this.value = formatPKR(rawValue);
-    }
-    
-    // Обновляем скрытое поле
-    rawPaymentAmount.value = rawValue;
-    updateUSD(rawValue);
-  });
-  
-  // Обработчик фокуса - показываем "сырое" значение для редактирования
-  newPaymentAmount.addEventListener('focus', function() {
-    // Сохраняем позицию курсора
-    const cursorPosition = this.selectionStart;
-    
-    // Показываем значение без форматирования для удобства редактирования
-    if (this.value === '0.00') {
-      this.value = '';
-    } else {
-      this.value = rawValue.toString();
-    }
-    
-    // Устанавливаем курсор в конец
-    setTimeout(() => {
-      this.setSelectionRange(this.value.length, this.value.length);
-    }, 0);
-  });
-}
+                        }
+                    };
+
+                    // Инициализация значения
+                    if (paymentAmount.value) {
+                        rawValue = parseNumber(paymentAmount.value);
+                        paymentAmount.value = formatPKR(rawValue);
+                        rawPaymentAmount.value = rawValue;
+                        updateUSD(rawValue);
+                    } else {
+                        paymentAmount.value = '0.00';
+                        rawPaymentAmount.value = 0;
+                        updateUSD(0);
+                    }
+
+                    // Удаляем существующие обработчики, чтобы избежать дублирования
+                    const newPaymentAmount = paymentAmount.cloneNode(true);
+                    paymentAmount.parentNode.replaceChild(newPaymentAmount, paymentAmount);
+
+                    // Обработчик ввода
+                    newPaymentAmount.addEventListener('input', function (e) {
+                        // Сохраняем позицию курсора
+                        const cursorStart = this.selectionStart;
+                        const cursorEnd = this.selectionEnd;
+                        const oldValue = this.value;
+
+                        // Чистим ввод, сохраняя цифры и точку
+                        let cleanValue = this.value.replace(/[^0-9.]/g, '');
+
+                        // Проверяем, что не введено больше одной точки
+                        const dotCount = (cleanValue.match(/\./g) || []).length;
+                        if (dotCount > 1) {
+                            cleanValue = cleanValue.replace(/\.+$/, ''); // Удаляем лишние точки в конце
+                        }
+
+                        // Сохраняем текущее значение для отслеживания изменений
+                        this.value = cleanValue;
+
+                        // Парсим значение
+                        const newRawValue = parseNumber(cleanValue);
+
+                        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+                        if (newRawValue !== rawValue) {
+                            rawValue = newRawValue;
+                            // Обновляем конвертацию в USD
+                            updateUSD(rawValue);
+                            // Обновляем скрытое поле
+                            rawPaymentAmount.value = rawValue;
+                        }
+
+                        // Корректируем позицию курсора
+                        const diff = this.value.length - oldValue.length;
+                        this.setSelectionRange(
+                            Math.max(0, cursorStart + diff),
+                            Math.max(0, cursorEnd + diff)
+                        );
+                    });
+
+                    // Обработчик потери фокуса - форматируем окончательное значение
+                    newPaymentAmount.addEventListener('blur', function () {
+                        if (!this.value || this.value === '.') {
+                            this.value = '0.00';
+                            rawValue = 0;
+                        } else {
+                            rawValue = parseNumber(this.value);
+                            this.value = formatPKR(rawValue);
+                        }
+
+                        // Обновляем скрытое поле
+                        rawPaymentAmount.value = rawValue;
+                        updateUSD(rawValue);
+                    });
+
+                    // Обработчик фокуса - показываем "сырое" значение для редактирования
+                    newPaymentAmount.addEventListener('focus', function () {
+                        // Сохраняем позицию курсора
+                        const cursorPosition = this.selectionStart;
+
+                        // Показываем значение без форматирования для удобства редактирования
+                        if (this.value === '0.00') {
+                            this.value = '';
+                        } else {
+                            this.value = rawValue.toString();
+                        }
+
+                        // Устанавливаем курсор в конец
+                        setTimeout(() => {
+                            this.setSelectionRange(this.value.length, this.value.length);
+                        }, 0);
+                    });
+                }
             </script>
+            <script>
+  // Инициализация полей для редактирования платежа
+  document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация формы редактирования платежа
+    const editPaymentForm = document.getElementById('editPaymentForm');
+    if (editPaymentForm) {
+      editPaymentForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const transactionId = document.getElementById('paymentTransactionId').value;
+        const paymentId = document.getElementById('paymentId').value;
+        const amount = document.getElementById('rawPaymentAmount').value;
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const status = document.getElementById('paymentStatus').value;
+        const notes = document.getElementById('paymentNotes').value;
+        
+        try {
+          const response = await apiRequest(
+            `/v1/admin/transactions/${transactionId}/payments/${paymentId}`, 
+            {
+              method: 'PUT',
+              body: JSON.stringify({
+                amount,
+                payment_method: paymentMethod,
+                status,
+                notes
+              })
+            }
+          );
+          
+          if (response.success) {
+            showNotification('success', 'Payment updated successfully');
+            closeModal('editPaymentModal');
+            await loadTransactionPayments(transactionId);
+            await loadTransactionSummary(transactionId);
+          } else {
+            throw new Error(response.message || 'Failed to update payment');
+          }
+        } catch (error) {
+          console.error('Error updating payment:', error);
+          showNotification('error', error.message || 'Error updating payment');
+        }
+      });
+      
+      // Обработчики для кнопок отмены
+      document.querySelectorAll('.cancel-payment-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          closeModal('editPaymentModal');
+        });
+      });
+    }
+    
+    // Инициализация полей денежного формата
+    initPaymentFormFields();
+  });
+</script>
 </body>
 
 </html>

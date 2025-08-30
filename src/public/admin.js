@@ -2853,35 +2853,289 @@ async function loadTransactionFiles(transactionId) {
         console.error('Error loading transaction files:', error);
         showNotification('error', 'Error loading files');
     }
+}// Функция для форматирования метода оплаты
+function formatPaymentMethod(method) {
+  const methods = {
+    'cash': 'Cash',
+    'bank_transfer': 'Bank Transfer',
+    'credit_card': 'Credit Card',
+    'other': 'Other'
+  };
+  return methods[method] || method.charAt(0).toUpperCase() + method.slice(1);
+}
+
+// Функция для форматирования статуса платежа
+function formatStatus(status) {
+  const statuses = {
+    'pending': 'Pending',
+    'paid': 'Paid',
+    'cancelled': 'Cancelled'
+  };
+  return statuses[status] || status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+// Функция для получения CSS класса статуса
+function getStatusClass(status) {
+  const classes = {
+    'pending': 'status-pending',
+    'paid': 'status-paid',
+    'cancelled': 'status-cancelled'
+  };
+  return classes[status] || '';
+}
+// Функция для подтверждения платежа
+async function confirmPayment(paymentId, transactionId) {
+  if (!confirm('Are you sure you want to confirm this payment?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(
+      `/v1/admin/transactions/${transactionId}/payments/${paymentId}`, 
+      {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          status: 'paid',
+          notes: 'Payment confirmed by admin'
+        })
+      }
+    );
+    
+    if (response.success) {
+      showNotification('success', 'Payment confirmed successfully');
+      await loadTransactionPayments(transactionId);
+      await loadTransactionSummary(transactionId);
+    } else {
+      throw new Error(response.message || 'Failed to confirm payment');
+    }
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    showNotification('error', error.message || 'Error confirming payment');
+  }
+}
+
+// Функция для отмены платежа
+async function cancelPayment(paymentId, transactionId) {
+  if (!confirm('Are you sure you want to cancel this payment?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(
+      `/v1/admin/transactions/${transactionId}/payments/${paymentId}`, 
+      {
+        method: 'PUT',
+        body: JSON.stringify({ 
+          status: 'cancelled',
+          notes: 'Payment cancelled by admin'
+        })
+      }
+    );
+    
+    if (response.success) {
+      showNotification('success', 'Payment cancelled successfully');
+      await loadTransactionPayments(transactionId);
+      await loadTransactionSummary(transactionId);
+    } else {
+      throw new Error(response.message || 'Failed to cancel payment');
+    }
+  } catch (error) {
+    console.error('Error cancelling payment:', error);
+    showNotification('error', error.message || 'Error cancelling payment');
+  }
+}
+
+// Функция для редактирования платежа
+async function editPayment(paymentId, transactionId) {
+  try {
+    // Получаем данные платежа
+    const response = await apiRequest(
+      `/v1/admin/transactions/${transactionId}/payments/${paymentId}`
+    );
+    
+    if (!response.payment) {
+      throw new Error('Payment not found');
+    }
+    
+    const payment = response.payment;
+    
+    // Заполняем форму редактирования
+    document.getElementById('paymentTransactionId').value = transactionId;
+    document.getElementById('paymentId').value = payment.id;
+    document.getElementById('paymentAmount').value = parseFloat(payment.amount).toFixed(2);
+    document.getElementById('paymentMethod').value = payment.payment_method;
+    document.getElementById('paymentStatus').value = payment.status;
+    document.getElementById('paymentNotes').value = payment.notes || '';
+    
+    // Показываем форму
+    openModal('editPaymentModal');
+  } catch (error) {
+    console.error('Error loading payment:', error);
+    showNotification('error', error.message || 'Error loading payment details');
+  }
+}
+// Функция для отображения свидетелей в модальном окне
+function displayWitnesses(transaction) {
+  try {
+    // Проверяем, есть ли данные свидетелей
+    if (transaction.witnesses && transaction.witnesses.witness1) {
+      document.getElementById('witness1Name').value = transaction.witnesses.witness1.name || '';
+      document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
+      document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
+    }
+    
+    if (transaction.witnesses && transaction.witnesses.witness2) {
+      document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
+      document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
+      document.getElementById('witness2Phone').value = transaction.witnesses.witness2.phone || '';
+    }
+    
+    // Добавляем обработчик для сохранения свидетелей
+    document.querySelector('.update-witnesses-btn')?.addEventListener('click', async () => {
+      await saveWitnesses(transaction.id);
+    });
+    
+    console.log('Witnesses displayed successfully');
+  } catch (error) {
+    console.error('Error displaying witnesses:', error);
+    showNotification('error', 'Error displaying witness information');
+  }
+}
+
+// Функция для сохранения информации о свидетелях
+async function saveWitnesses(transactionId) {
+  try {
+    const witness1Name = document.getElementById('witness1Name').value;
+    const witness1CNIC = document.getElementById('witness1CNIC').value;
+    const witness1Phone = document.getElementById('witness1Phone').value;
+    const witness2Name = document.getElementById('witness2Name').value;
+    const witness2CNIC = document.getElementById('witness2CNIC').value;
+    const witness2Phone = document.getElementById('witness2Phone').value;
+    
+    // Валидация данных
+    if (!witness1Name || !witness1CNIC) {
+      showNotification('error', 'Witness 1 name and CNIC are required');
+      return;
+    }
+    
+    if (!witness2Name || !witness2CNIC) {
+      showNotification('error', 'Witness 2 name and CNIC are required');
+      return;
+    }
+    
+    const response = await apiRequest(
+      `/v1/admin/transactions/${transactionId}/witnesses`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          witness1: {
+            name: witness1Name,
+            cnic: witness1CNIC,
+            phone: witness1Phone
+          },
+          witness2: {
+            name: witness2Name,
+            cnic: witness2CNIC,
+            phone: witness2Phone
+          }
+        })
+      }
+    );
+    
+    if (response.success) {
+      showNotification('success', 'Witness information updated successfully');
+    } else {
+      throw new Error(response.message || 'Failed to update witness information');
+    }
+  } catch (error) {
+    console.error('Error saving witnesses:', error);
+    showNotification('error', error.message || 'Error saving witness information');
+  }
+}
+// Функция для обновления общей информации о платежах
+async function loadTransactionSummary(transactionId) {
+  try {
+    const response = await apiRequest(
+      `/v1/admin/transactions/${transactionId}/payments/summary`
+    );
+    
+    if (response.total_amount) {
+      document.getElementById('totalAmountView').textContent = 
+        `PKR ${parseFloat(response.total_amount).toFixed(2)}`;
+    }
+    
+    if (response.paid_amount) {
+      document.getElementById('paidAmount').textContent = 
+        `PKR ${parseFloat(response.paid_amount).toFixed(2)}`;
+      
+      const remaining = parseFloat(response.total_amount) - parseFloat(response.paid_amount);
+      document.getElementById('remainingAmount').textContent = 
+        `PKR ${remaining.toFixed(2)}`;
+    }
+  } catch (error) {
+    console.error('Error loading transaction summary:', error);
+  }
+}
+// Функция для открытия полноразмерного изображения
+function openImagePreview(imageSrc) {
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    cursor: pointer;
+  `;
+  
+  const img = document.createElement('img');
+  img.src = imageSrc;
+  img.style.cssText = `
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+  `;
+  
+  modal.appendChild(img);
+  document.body.appendChild(modal);
+  
+  modal.addEventListener('click', function() {
+    document.body.removeChild(modal);
+  });
 }
 
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-
-        // Проверяем, есть ли платежи в ответе
-        if (response && response.payments && Array.isArray(response.payments)) {
-            const tbody = document.getElementById('paymentsTableBody');
-            tbody.innerHTML = '';
-
-            if (response.payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No payments found</td></tr>';
-                return;
-            }
-
-            response.payments.forEach(payment => {
-                const row = document.createElement('tr');
-
-                // Создаем ячейку для превью чека
-                let receiptPreview = '';
-                if (payment.file_path) {
-                    const filePath = payment.file_path;
-                    const fileName = payment.original_name || 'Receipt';
-
-                    // Определяем тип файла для правильного превью
-                    if (filePath.toLowerCase().endsWith('.pdf')) {
-                        receiptPreview = `
+  try {
+    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+    
+    // Проверяем, есть ли платежи в ответе
+    if (response && response.payments && Array.isArray(response.payments)) {
+      const tbody = document.getElementById('paymentsTableBody');
+      tbody.innerHTML = '';
+      
+      if (response.payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+        return;
+      }
+      
+      response.payments.forEach(payment => {
+        const row = document.createElement('tr');
+        
+        // Создаем ячейку для превью чека
+        let receiptPreview = '';
+        if (payment.receipt) {
+          const filePath = payment.receipt.path;
+          const fileName = payment.receipt.name || 'Receipt';
+          
+          // Определяем тип файла для правильного превью
+          if (filePath.toLowerCase().endsWith('.pdf')) {
+            receiptPreview = `
               <div class="receipt-preview">
                 <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
                 <div class="receipt-actions">
@@ -2890,8 +3144,8 @@ async function loadTransactionPayments(transactionId) {
                 </div>
               </div>
             `;
-                    } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
-                        receiptPreview = `
+          } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+            receiptPreview = `
               <div class="receipt-preview">
                 <img src="${filePath}" alt="${fileName}" class="receipt-thumbnail" 
                      onclick="openImagePreview('${filePath}')">
@@ -2901,8 +3155,8 @@ async function loadTransactionPayments(transactionId) {
                 </div>
               </div>
             `;
-                    } else {
-                        receiptPreview = `
+          } else {
+            receiptPreview = `
               <div class="receipt-preview">
                 <i class="fas fa-file-alt receipt-icon"></i>
                 <div class="receipt-actions">
@@ -2911,49 +3165,172 @@ async function loadTransactionPayments(transactionId) {
                 </div>
               </div>
             `;
-                    }
-                } else {
-                    receiptPreview = '<span class="no-receipt">No receipt</span>';
-                }
-
-                // Форматируем дату платежа
-                let paymentDate = 'Invalid date';
-                try {
-                    const date = new Date(payment.payment_date);
-                    if (!isNaN(date)) {
-                        paymentDate = date.toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error parsing date:', e);
-                }
-
-                // Форматируем сумму
-                const amount = parseFloat(payment.amount) || 0;
-
-                row.innerHTML = `
+          }
+        } else {
+          receiptPreview = '<span class="no-receipt">No receipt</span>';
+        }
+        
+        // Форматируем дату платежа
+        let paymentDate = 'Invalid date';
+        try {
+          const date = new Date(payment.payment_date);
+          if (!isNaN(date)) {
+            paymentDate = date.toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            });
+          }
+        } catch (e) {
+          console.error('Error parsing date:', e);
+        }
+        
+        // Форматируем сумму
+        const amount = parseFloat(payment.amount) || 0;
+        
+        // Добавляем кнопки действий для платежей в статусе pending
+        let actionButtons = '';
+        if (payment.status === 'pending') {
+          actionButtons = `
+            <div class="payment-actions">
+              <button class="action-btn btn-approve confirm-payment-btn" 
+                      data-payment-id="${payment.id}">
+                <i class="fas fa-check"></i> Confirm
+              </button>
+              <button class="action-btn btn-reject cancel-payment-btn" 
+                      data-payment-id="${payment.id}">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </div>
+          `;
+        } else {
+          actionButtons = `
+            <div class="payment-status">
+              <span class="status-badge ${getStatusClass(payment.status)}">
+                ${formatStatus(payment.status)}
+              </span>
+            </div>
+          `;
+        }
+        
+        row.innerHTML = `
           <td>${payment.id}</td>
           <td>${paymentDate}</td>
           <td>PKR ${amount.toFixed(2)}</td>
           <td>${formatPaymentMethod(payment.payment_method)}</td>
-          <td><span class="status-badge ${getStatusClass(payment.status)}">${formatStatus(payment.status)}</span></td>
+          <td>${actionButtons}</td>
           <td class="receipt-cell">${receiptPreview}</td>
         `;
-
-                tbody.appendChild(row);
-            });
-        } else {
-            document.getElementById('paymentsTableBody').innerHTML =
-                '<tr><td colspan="6" class="text-center">No payments found or error loading data</td></tr>';
-        }
-    } catch (error) {
-        console.error('Error loading payments:', error);
-        document.getElementById('paymentsTableBody').innerHTML =
-            '<tr><td colspan="6" class="text-center">Error loading payments</td></tr>';
+        
+        tbody.appendChild(row);
+      });
+      
+      // Добавляем обработчики событий для кнопок
+      document.querySelectorAll('.confirm-payment-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const paymentId = e.target.closest('.confirm-payment-btn').dataset.paymentId;
+          confirmPayment(paymentId, transactionId);
+        });
+      });
+      
+      document.querySelectorAll('.cancel-payment-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const paymentId = e.target.closest('.cancel-payment-btn').dataset.paymentId;
+          cancelPayment(paymentId, transactionId);
+        });
+      });
+      
+      document.querySelectorAll('.edit-payment-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const paymentId = e.target.closest('.edit-payment-btn').dataset.paymentId;
+          editPayment(paymentId, transactionId);
+        });
+      });
+    } else {
+      document.getElementById('paymentsTableBody').innerHTML = 
+        '<tr><td colspan="7" class="text-center">No payments found or error loading data</td></tr>';
     }
+  } catch (error) {
+    console.error('Error loading payments:', error);
+    document.getElementById('paymentsTableBody').innerHTML = 
+      '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
+  }
+}
+
+// Функция для подтверждения платежа
+async function confirmPayment(paymentId, transactionId) {
+  if (!confirm('Are you sure you want to confirm this payment?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'paid' })
+    });
+    
+    if (response.success) {
+      showNotification('success', 'Payment confirmed successfully');
+      await loadTransactionPayments(transactionId);
+      await loadTransactionSummary(transactionId);
+    } else {
+      throw new Error(response.message || 'Failed to confirm payment');
+    }
+  } catch (error) {
+    console.error('Error confirming payment:', error);
+    showNotification('error', error.message || 'Error confirming payment');
+  }
+}
+
+// Функция для отмены платежа
+async function cancelPayment(paymentId, transactionId) {
+  if (!confirm('Are you sure you want to cancel this payment?')) {
+    return;
+  }
+  
+  try {
+    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'cancelled' })
+    });
+    
+    if (response.success) {
+      showNotification('success', 'Payment cancelled successfully');
+      await loadTransactionPayments(transactionId);
+      await loadTransactionSummary(transactionId);
+    } else {
+      throw new Error(response.message || 'Failed to cancel payment');
+    }
+  } catch (error) {
+    console.error('Error cancelling payment:', error);
+    showNotification('error', error.message || 'Error cancelling payment');
+  }
+}
+
+// Функция для редактирования платежа
+async function editPayment(paymentId, transactionId) {
+  try {
+    // Получаем данные платежа
+    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
+    
+    if (!response.payment) {
+      throw new Error('Payment not found');
+    }
+    
+    const payment = response.payment;
+    
+    // Заполняем форму редактирования
+    document.getElementById('paymentTransactionId').value = transactionId;
+    document.getElementById('paymentId').value = payment.id;
+    document.getElementById('paymentAmount').value = parseFloat(payment.amount).toFixed(2);
+    document.getElementById('paymentMethod').value = payment.payment_method;
+    
+    // Показываем форму
+    openModal('editPaymentModal');
+  } catch (error) {
+    console.error('Error loading payment:', error);
+    showNotification('error', error.message || 'Error loading payment details');
+  }
 }
 
 // Вспомогательные функции для форматирования
@@ -3178,7 +3555,28 @@ async function loadTransactionDetails(transactionId) {
         console.error('Error loading transaction details:', error);
     }
 }
-
+// Функция для отображения свидетелей в модальном окне
+function displayWitnesses(transaction) {
+  try {
+    // Проверяем, есть ли данные свидетелей в формате, который мы ожидаем
+    if (transaction.witnesses && transaction.witnesses.witness1) {
+      document.getElementById('witness1Name').value = transaction.witnesses.witness1.name || '';
+      document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
+      document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
+    }
+    
+    if (transaction.witnesses && transaction.witnesses.witness2) {
+      document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
+      document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
+      document.getElementById('witness2Phone').value = transaction.witnesses.witness2.phone || '';
+    }
+    
+    console.log('Witnesses displayed successfully');
+  } catch (error) {
+    console.error('Error displaying witnesses:', error);
+    showNotification('error', 'Error displaying witness information');
+  }
+}
 // Функция для открытия модального окна просмотра транзакции
 function openViewTransactionModal(transactionId) {
     if (!transactionId) {
@@ -3809,6 +4207,283 @@ function initApp() {
         // Навигация по умолчанию
         navigateToSection('transactions');
     }
+}
+// Инициализация обработчиков для платежей
+function initPaymentHandlers() {
+  // Обработчик для кнопки "Add Payment"
+  document.querySelector('.transaction-actions [data-action="add-payment"]')?.addEventListener('click', () => {
+    const transactionId = document.getElementById('currentTransactionId').value;
+    if (!transactionId) {
+      showNotification('error', 'Transaction ID not found');
+      return;
+    }
+    
+    document.getElementById('paymentTransactionId').value = transactionId;
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentMethod').value = 'cash';
+    document.getElementById('rawPaymentAmount').value = '';
+    document.getElementById('receiptFileNameDisplay').textContent = 'No file chosen';
+    document.getElementById('receiptPreview').innerHTML = '';
+    
+    openModal('addPaymentModal');
+  });
+  
+  // Обработчик для загрузки файла квитанции
+  document.getElementById('receiptFile')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('receiptPreview');
+    const fileNameDisplay = document.getElementById('receiptFileNameDisplay');
+    
+    if (file) {
+      fileNameDisplay.textContent = file.name;
+      
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.innerHTML = `<img src="${e.target.result}" style="max-width: 100%; max-height: 150px;">`;
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        preview.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>`;
+      } else {
+        preview.innerHTML = `<i class="fas fa-file-alt" style="font-size: 48px;"></i>`;
+      }
+    } else {
+      fileNameDisplay.textContent = 'No file chosen';
+      preview.innerHTML = '';
+    }
+  });
+  
+  // Обработчик для формы добавления платежа
+  document.getElementById('addPaymentForm')?.addEventListener('submit', createPayment);
+  
+  // Обработчик для формы редактирования платежа
+  document.getElementById('editPaymentForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const transactionId = document.getElementById('paymentTransactionId').value;
+    const paymentId = document.getElementById('paymentId').value;
+    const amount = document.getElementById('rawPaymentAmount').value;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const status = document.getElementById('paymentStatus').value;
+    const notes = document.getElementById('paymentNotes').value;
+    
+    try {
+      const response = await apiRequest(
+        `/v1/admin/transactions/${transactionId}/payments/${paymentId}`, 
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            amount,
+            payment_method: paymentMethod,
+            status,
+            notes
+          })
+        }
+      );
+      
+      if (response.success) {
+        showNotification('success', 'Payment updated successfully');
+        closeModal('editPaymentModal');
+        await loadTransactionPayments(transactionId);
+        await loadTransactionSummary(transactionId);
+      } else {
+        throw new Error(response.message || 'Failed to update payment');
+      }
+    } catch (error) {
+      console.error('Error updating payment:', error);
+      showNotification('error', error.message || 'Error updating payment');
+    }
+  });
+  
+  // Обработчики для кнопок отмены
+  document.querySelectorAll('.cancel-payment-btn, .cancel-transaction-btn, .cancel-user-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      closeModal('addPaymentModal');
+      closeModal('editPaymentModal');
+      closeModal('createTransactionModal');
+      closeModal('addUserModal');
+    });
+  });
+}
+
+// Функция для инициализации денежного форматирования
+function initPaymentFormFields() {
+  const paymentAmount = document.getElementById('paymentAmount');
+  const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+  const usdConversion = document.getElementById('usdConversion');
+  
+  if (!paymentAmount || !rawPaymentAmount || !usdConversion) {
+    console.warn('Payment form elements not found. Modal might not be created yet.');
+    return;
+  }
+  
+  let rawValue = 0;
+  
+  // Функция форматирования PKR
+  const formatPKR = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+  
+  // Функция парсинга числа
+  const parseNumber = (value) => {
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    if (!cleanValue) return 0;
+    
+    // Обрабатываем случай, когда пользователь ввел только точку
+    if (cleanValue === '.') return 0;
+    
+    // Разделяем на целую и дробную части
+    const parts = cleanValue.split('.');
+    const integerPart = parts[0];
+    let decimalPart = parts.length > 1 ? parts.slice(1).join('') : '00';
+    
+    // Ограничиваем до 2 знаков после запятой
+    decimalPart = decimalPart.slice(0, 2);
+    
+    // Если дробная часть короче 2 знаков, дополняем нулями
+    if (decimalPart.length === 1) decimalPart += '0';
+    if (decimalPart.length === 0) decimalPart = '00';
+    
+    return parseFloat(`${integerPart}.${decimalPart}`) || 0;
+  };
+  
+  // Функция обновления конвертации в USD
+  const updateUSD = async (amountInPKR) => {
+    try {
+      const response = await fetch('/v1/admin/latest/PKR');
+      const data = await response.json();
+      
+      let exchangeRate;
+      if (data.success && data.USD) {
+        exchangeRate = data.USD;
+      } else {
+        // Fallback-курс, если API не отвечает
+        exchangeRate = 0.0036;
+      }
+      
+      const usdAmount = amountInPKR * exchangeRate;
+      
+      usdConversion.innerHTML = `
+        ≈ ${new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(usdAmount)}
+        <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+          (1 PKR = ${exchangeRate.toFixed(6)} USD)
+        </span>
+      `;
+    } catch (error) {
+      console.error('Error fetching exchange rate:', error);
+      const exchangeRate = 0.0036;
+      const usdAmount = amountInPKR * exchangeRate;
+      
+      usdConversion.innerHTML = `
+        ≈ ${new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(usdAmount)}
+        <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px; color: #dc3545">
+          Using fallback rate (API error)
+        </span>
+      `;
+    }
+  };
+  
+  // Инициализация значения
+  if (paymentAmount.value) {
+    rawValue = parseNumber(paymentAmount.value);
+    paymentAmount.value = formatPKR(rawValue);
+    rawPaymentAmount.value = rawValue;
+    updateUSD(rawValue);
+  } else {
+    paymentAmount.value = '0.00';
+    rawPaymentAmount.value = 0;
+    updateUSD(0);
+  }
+  
+  // Удаляем существующие обработчики, чтобы избежать дублирования
+  const newPaymentAmount = paymentAmount.cloneNode(true);
+  paymentAmount.parentNode.replaceChild(newPaymentAmount, paymentAmount);
+  
+  // Обработчик ввода
+  newPaymentAmount.addEventListener('input', function(e) {
+    // Сохраняем позицию курсора
+    const cursorStart = this.selectionStart;
+    const cursorEnd = this.selectionEnd;
+    const oldValue = this.value;
+    
+    // Чистим ввод, сохраняя цифры и точку
+    let cleanValue = this.value.replace(/[^0-9.]/g, '');
+    
+    // Проверяем, что не введено больше одной точки
+    const dotCount = (cleanValue.match(/\./g) || []).length;
+    if (dotCount > 1) {
+      cleanValue = cleanValue.replace(/\.+$/, ''); // Удаляем лишние точки в конце
+    }
+    
+    // Сохраняем текущее значение для отслеживания изменений
+    this.value = cleanValue;
+    
+    // Парсим значение
+    const newRawValue = parseNumber(cleanValue);
+    
+    // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+    if (newRawValue !== rawValue) {
+      rawValue = newRawValue;
+      // Обновляем конвертацию в USD
+      updateUSD(rawValue);
+      // Обновляем скрытое поле
+      rawPaymentAmount.value = rawValue;
+    }
+    
+    // Корректируем позицию курсора
+    const diff = this.value.length - oldValue.length;
+    this.setSelectionRange(
+      Math.max(0, cursorStart + diff),
+      Math.max(0, cursorEnd + diff)
+    );
+  });
+  
+  // Обработчик потери фокуса - форматируем окончательное значение
+  newPaymentAmount.addEventListener('blur', function() {
+    if (!this.value || this.value === '.') {
+      this.value = '0.00';
+      rawValue = 0;
+    } else {
+      rawValue = parseNumber(this.value);
+      this.value = formatPKR(rawValue);
+    }
+    
+    // Обновляем скрытое поле
+    rawPaymentAmount.value = rawValue;
+    updateUSD(rawValue);
+  });
+  
+  // Обработчик фокуса - показываем "сырое" значение для редактирования
+  newPaymentAmount.addEventListener('focus', function() {
+    // Сохраняем позицию курсора
+    const cursorPosition = this.selectionStart;
+    
+    // Показываем значение без форматирования для удобства редактирования
+    if (this.value === '0.00') {
+      this.value = '';
+    } else {
+      this.value = rawValue.toString();
+    }
+    
+    // Устанавливаем курсор в конец
+    setTimeout(() => {
+      this.setSelectionRange(this.value.length, this.value.length);
+    }, 0);
+  });
 }
 
 // Запускаем приложение после полной загрузки DOM

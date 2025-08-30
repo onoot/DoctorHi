@@ -2,7 +2,6 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { mkdirSync } from 'fs'; // Импортируем mkdirSync напрямую из fs
@@ -10,6 +9,8 @@ import transactionController from '../controllers/transactionController.mjs';
 import { auth, adminAuth, authLocale } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
 import pool from '../config/database.mjs';
+import { createReadStream } from 'fs';
+import { mkdirSync, existsSync, statSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -171,7 +172,6 @@ router.use((error, req, res, next) => {
   });
 });
 
-// Маршрут для получения конкретного файла по относительному пути
 router.get('/files/*', adminAuth, async (req, res) => {
   try {
     // Получаем относительный путь из URL (все, что после /files/)
@@ -214,16 +214,16 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Проверяем существование файла
-    if (!fs.existsSync(realPath)) {
+    // Проверяем существование файла - ИСПОЛЬЗУЕМ existsSync из fs
+    if (!existsSync(realPath)) {
       return res.status(404).json({ 
         success: false, 
         message: 'File not found on disk' 
       });
     }
     
-    // Проверяем, является ли это файлом (а не директорией)
-    const stats = fs.statSync(realPath);
+    // Проверяем, является ли это файлом (а не директорией) - ИСПОЛЬЗУЕМ statSync из fs
+    const stats = statSync(realPath);
     if (!stats.isFile()) {
       return res.status(403).json({
         success: false,
@@ -232,7 +232,6 @@ router.get('/files/*', adminAuth, async (req, res) => {
     }
     
     // Получаем информацию о файле из базы данных для проверки прав доступа
-    // Это важно для обеспечения авторизации
     const [files] = await pool.query(
       'SELECT * FROM transaction_files WHERE file_path = ? OR file_name = ?',
       [normalizedPath, path.basename(normalizedPath)]
@@ -247,15 +246,11 @@ router.get('/files/*', adminAuth, async (req, res) => {
     
     const file = files[0];
     
-    // Проверяем, имеет ли пользователь доступ к этому файлу
-    // Для администратора пропускаем проверку, но можно добавить при необходимости
-    // Для обычных пользователей нужно проверить принадлежность транзакции
-    
     // Определяем, нужно ли скачивать файл или отображать в браузере
     const isDownload = req.query.download === 'true';
     
     // Устанавливаем правильные заголовки
-    const contentType = file.file_type || mime.getType(path.extname(file.file_name)) || 'application/octet-stream';
+    const contentType = file.file_type || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
     
     if (isDownload) {
@@ -272,7 +267,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
-    // Создаем поток для отправки файла
+    // Создаем поток для отправки файла - ИСПОЛЬЗУЕМ createReadStream
     const fileStream = createReadStream(realPath);
     fileStream.pipe(res);
     

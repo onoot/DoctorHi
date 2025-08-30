@@ -1552,3 +1552,106 @@
   max-height: 90%;
   object-fit: contain;
 }
+/*  */
+
+/* Стили для таблицы платежей */
+#paymentsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+#paymentsTable th {
+  background-color: #f5f5f5;
+  padding: 10px;
+  text-align: left;
+  border-bottom: 2px solid #ddd;
+}
+
+#paymentsTable td {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+#paymentsTable tr:hover {
+  background-color: #f9f9f9;
+}
+
+/* Стили для превью чеков */
+.receipt-cell {
+  max-width: 200px;
+}
+
+.receipt-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.receipt-thumbnail {
+  max-width: 50px;
+  max-height: 50px;
+  border-radius: 4px;
+  cursor: pointer;
+  object-fit: cover;
+}
+
+.receipt-icon {
+  font-size: 24px;
+}
+
+.receipt-actions {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8em;
+}
+
+.receipt-actions a {
+  text-decoration: none;
+  color: #0066cc;
+  margin-top: 3px;
+}
+
+.receipt-actions a:hover {
+  text-decoration: underline;
+}
+
+.no-receipt {
+  color: #666;
+  font-style: italic;
+}
+
+/* Стили для статусов платежей */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  display: inline-block;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-paid {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* Стили для действий с платежами */
+.payment-actions {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.payment-actions button {
+  padding: 3px 8px;
+  font-size: 0.85em;
+}

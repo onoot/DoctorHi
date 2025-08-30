@@ -3112,26 +3112,36 @@ function openImagePreview(imageSrc) {
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
   try {
-    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+    // Запрашиваем ВСЮ информацию о транзакции, а не только платежи
+    const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
     
-    // Проверяем, есть ли платежи в ответе
-    if (response && response.payments && Array.isArray(response.payments)) {
+    if (response && response.success && response.transaction) {
+      const transaction = response.transaction;
+      const payments = transaction.payments || [];
+      
+      // Получаем все файлы квитанций из структуры files.receipt
+      const receipts = transaction.files?.receipt || [];
+      
       const tbody = document.getElementById('paymentsTableBody');
       tbody.innerHTML = '';
       
-      if (response.payments.length === 0) {
+      if (payments.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
         return;
       }
       
-      response.payments.forEach(payment => {
+      payments.forEach(payment => {
+        // Ищем квитанцию для этого платежа по ID платежа
+        // В структуре данных файлы квитанций имеют тот же ID, что и соответствующий платеж
+        const receipt = receipts.find(r => r.id === payment.id) || null;
+        
         const row = document.createElement('tr');
         
         // Создаем ячейку для превью чека
         let receiptPreview = '';
-        if (payment.receipt) {
-          const filePath = payment.receipt.path;
-          const fileName = payment.receipt.name || 'Receipt';
+        if (receipt) {
+          const filePath = receipt.path;
+          const fileName = receipt.name || 'Receipt';
           
           // Определяем тип файла для правильного превью
           if (filePath.toLowerCase().endsWith('.pdf')) {

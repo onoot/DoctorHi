@@ -8,6 +8,7 @@ import { mkdirSync } from 'fs'; // Импортируем mkdirSync напрям
 import transactionController from '../controllers/transactionController.mjs';
 import { auth, adminAuth, authLocale } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
+import pool from '../config/database.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

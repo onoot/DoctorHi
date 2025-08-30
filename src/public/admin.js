@@ -3113,12 +3113,12 @@ function openImagePreview(imageSrc) {
 // Функция для загрузки платежей
 async function loadTransactionPayments(transactionId) {
   try {
+    // Запрашиваем информацию о транзакции
     const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
     
-    if (response && response.transaction) {
-      const transaction = response.transaction;
-      const payments = transaction.payments || [];
-      
+    // Проверяем, что ответ содержит платежи
+    if (response && Array.isArray(response.payments)) {
+      const payments = response.payments;
       const tbody = document.getElementById('paymentsTableBody');
       tbody.innerHTML = '';
       
@@ -3132,66 +3132,29 @@ async function loadTransactionPayments(transactionId) {
         
         // Создаем ячейку для превью чека
         let receiptPreview = '';
-        
-        // ИСПРАВЛЕНО: используем receipt_file_id из платежа
-        // В данных платежа может быть receipt_file_id или полный объект receipt
-        let receiptFileId = null;
-        let receiptPath = null;
-        let receiptName = null;
-        let receiptType = null;
-        
-        // Проверяем наличие receipt_file_id
-        if (payment.receipt_file_id) {
-          receiptFileId = payment.receipt_file_id;
-        } 
-        // Если нет receipt_file_id, проверяем структуру с вложенным receipt
-        else if (payment.receipt && payment.receipt.path) {
-          // В этом случае нам нужно найти ID файла по пути
-          const files = transaction.files?.receipt || [];
-          const matchingFile = files.find(f => f.path === payment.receipt.path);
-          if (matchingFile) {
-            receiptFileId = matchingFile.id;
-          }
-          receiptPath = payment.receipt.path;
-          receiptName = payment.receipt.name;
-          receiptType = payment.receipt.type;
-        }
-        // Если есть file_path в самом платеже (как в ответе /payments)
-        else if (payment.file_path) {
-          // Ищем ID файла в списке файлов транзакции
-          const files = transaction.files?.receipt || [];
-          const matchingFile = files.find(f => f.path === payment.file_path);
-          if (matchingFile) {
-            receiptFileId = matchingFile.id;
-          }
-          receiptPath = payment.file_path;
-          receiptName = payment.original_name;
-          receiptType = payment.file_type;
-        }
-        
-        // Формируем правильный URL для получения файла через API
-        if (receiptFileId) {
-          const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${receiptFileId}`;
+        if (payment.receipt) {
+          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${payment.filePath}`;
+          const fileName = payment.receipt.name || 'Receipt';
           
           // Определяем тип файла для правильного превью
-          if (receiptType && receiptType.includes('pdf')) {
+          if (filePath.toLowerCase().endsWith('.pdf')) {
             receiptPreview = `
               <div class="receipt-preview">
                 <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
                 <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
                 </div>
               </div>
             `;
-          } else if (receiptType && receiptType.includes('image')) {
+          } else if (filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
             receiptPreview = `
               <div class="receipt-preview">
-                <img src="${fileUrl}" alt="${receiptName || 'Receipt'}" class="receipt-thumbnail" 
-                     onclick="openImagePreview('${fileUrl}')">
+                <img src="${filePath}" alt="${fileName}" class="receipt-thumbnail" 
+                     onclick="openImagePreview('${filePath}')">
                 <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
                 </div>
               </div>
             `;
@@ -3200,8 +3163,8 @@ async function loadTransactionPayments(transactionId) {
               <div class="receipt-preview">
                 <i class="fas fa-file-alt receipt-icon"></i>
                 <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
+                  <a href="${filePath}" target="_blank" class="view-receipt">View</a>
+                  <a href="${filePath}" download class="download-receipt">Download</a>
                 </div>
               </div>
             `;
@@ -3241,23 +3204,30 @@ async function loadTransactionPayments(transactionId) {
                       data-payment-id="${payment.id}">
                 <i class="fas fa-times"></i> Cancel
               </button>
+              <button class="action-btn btn-edit edit-payment-btn"
+                      data-payment-id="${payment.id}">
+                <i class="fas fa-edit"></i> Edit
+              </button>
             </div>
           `;
         } else {
           actionButtons = `
-            <div class="payment-status">
-              <span class="status-badge ${getStatusClass(payment.status)}">
-                ${formatStatus(payment.status)}
-              </span>
+            <div class="payment-actions">
+              <button class="action-btn btn-edit edit-payment-btn"
+                      data-payment-id="${payment.id}">
+                <i class="fas fa-edit"></i> Edit
+              </button>
             </div>
           `;
         }
         
+        // Генерируем HTML строки с правильным порядком колонок
         row.innerHTML = `
           <td>${payment.id}</td>
           <td>${paymentDate}</td>
           <td>PKR ${amount.toFixed(2)}</td>
           <td>${formatPaymentMethod(payment.payment_method)}</td>
+          <td><span class="status-badge ${getStatusClass(payment.status)}">${formatStatus(payment.status)}</span></td>
           <td>${actionButtons}</td>
           <td class="receipt-cell">${receiptPreview}</td>
         `;
@@ -3287,6 +3257,8 @@ async function loadTransactionPayments(transactionId) {
         });
       });
     } else {
+      // Более информативное сообщение об ошибке
+      console.error('Unexpected response format:', response);
       document.getElementById('paymentsTableBody').innerHTML = 
         '<tr><td colspan="7" class="text-center">No payments found or error loading data</td></tr>';
     }

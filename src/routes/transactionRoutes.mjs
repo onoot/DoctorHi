@@ -2,6 +2,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { mkdirSync } from 'fs'; // Импортируем mkdirSync напрямую из fs

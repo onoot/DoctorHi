@@ -672,7 +672,7 @@
                     // Функция обновления конвертации в USD
                     const updateUSD = async (amountInPKR) => {
                         try {
-                            const response = await fetch('/v1/admin/latest/PKR');
+                            const response = await fetch('api/v1/admin/latest/PKR');
                             const data = await response.json();
 
                             let exchangeRate;

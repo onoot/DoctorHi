@@ -169,4 +169,77 @@ router.use((error, req, res, next) => {
   });
 });
 
+
+// Маршрут для получения конкретного файла
+router.get('/files/:fileId', adminAuth, async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    
+    // Получаем информацию о файле из базы данных
+    const [files] = await pool.query(`
+      SELECT tf.*, t.id as transaction_id 
+      FROM transaction_files tf
+      JOIN transactions t ON tf.transaction_id = t.id
+      WHERE tf.id = ?
+    `, [fileId]);
+    
+    if (files.length === 0) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    const file = files[0];
+    
+    // Проверяем, что файл принадлежит транзакции, к которой у администратора есть доступ
+    // Для администратора мы не проверяем права на конкретную транзакцию, так как он имеет доступ ко всем
+    
+    // Формируем полный путь к файлу
+    let filePath = file.file_path;
+    
+    // Если путь не абсолютный, добавляем UPLOAD_PATH
+    if (!path.isAbsolute(filePath)) {
+      filePath = path.join(UPLOAD_PATH, filePath);
+    }
+    
+    // Проверяем существование файла
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on disk' });
+    }
+    
+    // Определяем, нужно ли скачивать файл или отображать в браузере
+    const isDownload = req.query.download === 'true';
+    
+    // Устанавливаем правильные заголовки
+    res.setHeader('Content-Type', file.file_type);
+    
+    if (isDownload) {
+      // Для скачивания устанавливаем заголовок Content-Disposition как attachment
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.original_name)}"`);
+    } else {
+      // Для отображения в браузере
+      res.setHeader('Content-Disposition', 'inline');
+    }
+    
+    // Устанавливаем заголовки CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    // Создаем поток для отправки файла
+    const fileStream = createReadStream(filePath);
+    fileStream.pipe(res);
+    
+    // Обработка ошибок потока
+    fileStream.on('error', (err) => {
+      console.error(`Error sending file ${fileId}:`, err);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Error sending file' });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in file serving route:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;

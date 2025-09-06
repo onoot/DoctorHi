@@ -3688,7 +3688,7 @@ async function viewUser(userId) {
         
         if (response.success && response.user) {
             const user = response.user;
-            const modalBody = document.getElementById('userModalBody');
+            const modalBody = document.getElementById('userModal');
             
             if (modalBody) {
                 modalBody.innerHTML = `
@@ -3923,7 +3923,7 @@ async function openViewUserModal(userId) {
 
         if (response.success && response.user) {
             const user = response.user;
-            const modalBody = document.getElementById('userModalBody');
+            const modalBody = document.getElementById('userModal');
 
             modalBody.innerHTML = `
                 <div class="user-details">

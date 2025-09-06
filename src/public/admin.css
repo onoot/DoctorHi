@@ -1655,3 +1655,83 @@
   padding: 3px 8px;
   font-size: 0.85em;
 }
+
+/* Стили для отображения документов */
+.document-preview {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background-color: #f8f9fa;
+}
+
+.document-icon {
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+.document-name {
+  flex: 1;
+  margin-right: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-actions {
+  font-size: 0.85em;
+  color: #6c757d;
+}
+
+.document-actions a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.document-actions a:hover {
+  text-decoration: underline;
+}
+
+.no-document {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Стили для таблицы платежей */
+.receipt-cell {
+  padding: 8px 0;
+}
+
+.receipt-preview {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.receipt-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.receipt-actions {
+  font-size: 0.85em;
+}
+
+.receipt-actions a {
+  color: #0066cc;
+  text-decoration: none;
+  margin: 0 3px;
+}
+
+.receipt-actions a:hover {
+  text-decoration: underline;
+}
+
+.no-receipt {
+  color: #6c757d;
+  font-style: italic;
+}

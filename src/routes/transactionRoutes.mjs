@@ -175,7 +175,7 @@ router.use((error, req, res, next) => {
 router.get('/files/*', adminAuth, async (req, res) => {
   try {
     // Получаем относительный путь из URL (все, что после /files/)
-    const relativePath = req.params[0]; // Используем req.params[0] для catch-all параметра
+    const relativePath = req.params[0];
     
     if (!relativePath) {
       return res.status(400).json({
@@ -186,9 +186,9 @@ router.get('/files/*', adminAuth, async (req, res) => {
     
     // Нормализуем путь и удаляем недопустимые символы
     const normalizedPath = path.normalize(relativePath)
-      .replace(/^(\.\.[\/\\])+/, '') // Удаляем начальные ../ или ..\ 
-      .replace(/\\/g, '/') // Заменяем обратные слеши на прямые
-      .replace(/^\//, ''); // Удаляем начальный слеш если есть
+      .replace(/^(\.\.[\/\\])+/, '')
+      .replace(/\\/g, '/')
+      .replace(/^\//, '');
     
     // Проверяем на попытки выхода за пределы разрешенной директории
     if (normalizedPath.includes('../') || normalizedPath.includes('..\\')) {
@@ -214,7 +214,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Проверяем существование файла - ИСПОЛЬЗУЕМ existsSync из fs
+    // Проверяем существование файла
     if (!existsSync(realPath)) {
       return res.status(404).json({ 
         success: false, 
@@ -222,7 +222,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Проверяем, является ли это файлом (а не директорией) - ИСПОЛЬЗУЕМ statSync из fs
+    // Проверяем, является ли это файлом (а не директорией)
     const stats = statSync(realPath);
     if (!stats.isFile()) {
       return res.status(403).json({
@@ -231,7 +231,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Получаем информацию о файле из базы данных для проверки прав доступа
+    // Получаем информацию о файле из базы данных
     const [files] = await pool.query(
       'SELECT * FROM transaction_files WHERE file_path = ? OR file_name = ?',
       [normalizedPath, path.basename(normalizedPath)]
@@ -246,19 +246,14 @@ router.get('/files/*', adminAuth, async (req, res) => {
     
     const file = files[0];
     
-    // Определяем, нужно ли скачивать файл или отображать в браузере
-    const isDownload = req.query.download === 'true';
-    
     // Устанавливаем правильные заголовки
     const contentType = file.file_type || 'application/octet-stream';
     res.setHeader('Content-Type', contentType);
     
-    if (isDownload) {
-      // Для скачивания устанавливаем заголовок Content-Disposition как attachment
+    if (req.query.download === 'true') {
       const originalName = file.original_name || file.file_name;
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"`);
     } else {
-      // Для отображения в браузере
       res.setHeader('Content-Disposition', 'inline');
     }
     
@@ -267,11 +262,10 @@ router.get('/files/*', adminAuth, async (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
-    // Создаем поток для отправки файла - ИСПОЛЬЗУЕМ createReadStream
+    // Создаем поток для отправки файла
     const fileStream = createReadStream(realPath);
     fileStream.pipe(res);
     
-    // Обработка ошибок потока
     fileStream.on('error', (err) => {
       console.error(`Error sending file ${normalizedPath}:`, err);
       if (!res.headersSent) {
@@ -280,11 +274,6 @@ router.get('/files/*', adminAuth, async (req, res) => {
           message: 'Error sending file' 
         });
       }
-    });
-    
-    // Логируем успешную отправку файла
-    fileStream.on('end', () => {
-      console.log(`File served successfully: ${normalizedPath}`);
     });
     
   } catch (error) {

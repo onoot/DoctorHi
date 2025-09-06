@@ -3640,17 +3640,23 @@ function initTransactionHandlers() {
 // Универсальная функция для открытия модальных окон
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
-    console.log("modal",modal)
     if (modal) {
+        // Удаляем класс hide, если он есть
         modal.classList.remove('hide');
         
+        // Добавляем класс show для отображения
         modal.classList.add('show');
         
         console.log(`Modal ${modalId} opened successfully`);
         
+        // Дополнительная проверка для отладки
         if (!modal.classList.contains('show')) {
             console.error(`Failed to add 'show' class to modal ${modalId}`);
+            return false;
         }
+        
+        // Убедимся, что модальное окно видимо
+        modal.style.display = 'flex';
         
         return true;
     } else {
@@ -3666,36 +3672,19 @@ function closeModal(modalId) {
         modal.classList.add('hide');
         modal.classList.remove('show');
         
-        // Удаляем класс hide после завершения анимации
+        // Устанавливаем таймер для полного скрытия после анимации
         setTimeout(() => {
-            modal.classList.remove('hide');
+            if (modal.classList.contains('hide')) {
+                modal.style.display = 'none';
+            }
         }, 300);
     }
-}
-
-// Инициализация обработчиков для модальных окон
-function initModalHandlers() {
-    // Обработчик для кнопок просмотра пользователей
-    document.addEventListener('click', function(e) {
-        const viewUserBtn = e.target.closest('.view-user-btn');
-        if (viewUserBtn) {
-            e.preventDefault();
-            const userId = viewUserBtn.getAttribute('data-id');
-            if (userId) {
-                viewUser(userId); // Используем правильную функцию
-            }
-            return;
-        }
-        
-        // Остальные обработчики...
-    });
 }
 
 // Функция для просмотра пользователя
 async function viewUser(userId) {
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
-        
         if (response.success && response.user) {
             const user = response.user;
             const modalBody = document.getElementById('userModalBody');
@@ -3705,19 +3694,24 @@ async function viewUser(userId) {
                 const createdAt = user.created_at ? 
                     new Date(user.created_at).toLocaleDateString('en-GB', {
                         day: '2-digit',
-                        month: '2-digit',
+                        month: '2-digit', 
                         year: 'numeric'
                     }) : 'N/A';
                 
+                // Заполняем содержимое модального окна
                 modalBody.innerHTML = `
                     <div class="user-details">
                         <p><strong>ID:</strong> ${user.id}</p>
                         <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
                         <p><strong>CNIC:</strong> ${user.cnic || 'N/A'}</p>
-                        <p><strong>Login:</strong> ${user.login || 'N/A'}</p>
                         <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
                         <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
-                        <p><strong>Status:</strong> <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">${user.is_active ? 'Active' : 'Blocked'}</span></p>
+                        <p><strong>Login:</strong> ${user.login || 'N/A'}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">
+                                ${user.is_active ? 'Active' : 'Blocked'}
+                            </span>
+                        </p>
                         <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
                         <p><strong>Created:</strong> ${createdAt}</p>
                     </div>
@@ -3725,7 +3719,6 @@ async function viewUser(userId) {
                 
                 // КРИТИЧЕСКИ ВАЖНО: открываем модальное окно
                 const modalOpened = openModal('userModal');
-                
                 if (!modalOpened) {
                     console.error('Failed to open user modal after loading data');
                     showNotification('error', 'Error opening user details');
@@ -3743,6 +3736,154 @@ async function viewUser(userId) {
         showNotification('error', 'Error loading user details');
     }
 }
+
+// Функция для открытия модального окна просмотра пользователя
+async function openViewUserModal(userId) {
+    try {
+        const response = await apiRequest(`/v1/admin/users/${userId}`);
+        if (response.success && response.user) {
+            const user = response.user;
+            const modalBody = document.getElementById('userModal');
+            
+            if (modalBody) {
+                // Форматируем дату создания
+                const createdAt = user.created_at ? 
+                    new Date(user.created_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric'
+                    }) : 'N/A';
+                
+                // Заполняем содержимое модального окна
+                modalBody.innerHTML = `
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">User Details</h3>
+                            <button class="modal-close" data-modal="userModal">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="user-details">
+                                <p><strong>ID:</strong> ${user.id}</p>
+                                <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                                <p><strong>CNIC:</strong> ${user.cnic || 'N/A'}</p>
+                                <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+                                <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
+                                <p><strong>Login:</strong> ${user.login || 'N/A'}</p>
+                                <p><strong>Status:</strong> 
+                                    <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">
+                                        ${user.is_active ? 'Active' : 'Blocked'}
+                                    </span>
+                                </p>
+                                <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
+                                <p><strong>Created:</strong> ${createdAt}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Открываем модальное окно
+                openModal('userModal');
+                
+                // Добавляем обработчик для закрытия модального окна
+                const closeBtn = modalBody.querySelector('.modal-close');
+                if (closeBtn) {
+                    closeBtn.onclick = () => closeModal('userModal');
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showNotification('error', 'Error loading user details');
+    }
+}
+
+// Инициализация обработчиков для модальных окон
+function initModalHandlers() {
+    // Обработчик для кнопок просмотра пользователей
+    document.addEventListener('click', function(e) {
+        const viewUserBtn = e.target.closest('.view-user-btn');
+        if (viewUserBtn) {
+            e.preventDefault();
+            const userId = viewUserBtn.getAttribute('data-id');
+            if (userId) {
+                viewUser(userId);
+            }
+            return;
+        }
+        
+        // Обработчик для кнопки добавления пользователя
+        const addUserBtn = e.target.closest('#openAddUserModal');
+        if (addUserBtn) {
+            e.preventDefault();
+            openAddUserModal();
+            return;
+        }
+        
+        // Остальные обработчики...
+    });
+    
+    // Закрытие модальных окон по кнопке "×"
+    document.querySelectorAll('.modal-close, .close').forEach(button => {
+        button.addEventListener('click', function() {
+            const modalId = this.getAttribute('data-modal');
+            closeModal(modalId);
+        });
+    });
+    
+    // Закрытие модального окна при клике вне его содержимого
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target.id);
+        }
+    });
+}
+
+// Функция для открытия модального окна добавления пользователя
+function openAddUserModal() {
+    generateLoginCredentials();
+    openModal('addUserModal');
+}
+
+// Функция для генерации логина
+function regenerateLogin() {
+    const nameInput = document.getElementById('userName');
+    const fullName = nameInput ? nameInput.value || '' : '';
+    let login = '';
+    
+    if (fullName) {
+        const nameParts = fullName.toLowerCase().split(' ').filter(part => part.length > 0);
+        if (nameParts.length > 0) {
+            if (nameParts.length === 1) {
+                login = nameParts[0];
+            } else {
+                login = nameParts[0] + '.' + nameParts[nameParts.length - 1];
+            }
+        }
+    }
+    
+    // Добавляем случайные цифры для уникальности
+    if (login) {
+        login += Math.floor(100 + Math.random() * 900); // Добавляем 3 случайные цифры
+        document.getElementById('userLogin').value = login;
+    }
+}
+
+// Функция для генерации пароля
+function regeneratePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('userPassword').value = password;
+}
+
+// Функция для генерации учетных данных
+function generateLoginCredentials() {
+    regenerateLogin();
+    regeneratePassword();
+}
+
 
 // Функция для просмотра транзакции
 async function viewTransaction(transactionId) {

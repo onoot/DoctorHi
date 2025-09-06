@@ -1,6 +1,7 @@
 // Инициализация мобильного меню
 document.addEventListener('DOMContentLoaded', function() {
-    const sidebarToggle = document.getElementById('sidebar-toggle');
+    // Используем let вместо const, чтобы можно было переназначить переменную
+    let sidebarToggle = document.getElementById('sidebar-toggle');
     const sidebar = document.querySelector('.sidebar');
     const sidebarToggleBtn = document.querySelector('.sidebar-toggle-btn');
     
@@ -13,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
         toggle.className = 'sidebar-toggle';
         toggle.hidden = true;
         document.body.insertBefore(toggle, document.body.firstChild);
+        
+        // КРИТИЧЕСКИ ВАЖНО: обновляем переменную sidebarToggle
+        sidebarToggle = document.getElementById('sidebar-toggle');
     }
     
     // Функция для проверки мобильного устройства
@@ -21,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Обработчик клика по бургер-меню
-    if (sidebarToggleBtn) {
+    if (sidebarToggleBtn && sidebarToggle) {
         sidebarToggleBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -43,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Закрываем меню при клике вне его области на мобильных
     document.addEventListener('click', function(e) {
         if (isMobile() && sidebarToggle && sidebarToggle.checked && 
-            !sidebar.contains(e.target) && 
+            sidebar && !sidebar.contains(e.target) && 
             !e.target.closest('.sidebar-toggle-btn') &&
             !e.target.closest('.sidebar')) {
             

@@ -1,27 +1,4 @@
 // navigation.js
-// Функции для навигации между секциями
-
-/**
- * Инициализация навигации
- */
-function initNavigation() {
-    console.log('[NAVIGATION] Initializing navigation');
-    
-    // Навигация между секциями
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const sectionId = this.getAttribute('data-section');
-            console.log(`[NAVIGATION] Navigation link clicked for section: ${sectionId}`);
-            navigateToSection(sectionId);
-        });
-    });
-    
-    // Инициализация начальной секции
-    const initialSection = 'transactions';
-    console.log(`[NAVIGATION] Setting initial section: ${initialSection}`);
-    navigateToSection(initialSection);
-}
 
 /**
  * Переключение категорий объектов
@@ -117,13 +94,13 @@ function navigateToSection(sectionId) {
     
     // Сначала скрываем все секции
     document.querySelectorAll('.section').forEach(section => {
-        section.classList.remove('active');
+        section.style.display = 'none';
     });
     
     // Показываем выбранную секцию
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
-        targetSection.classList.add('active');
+        targetSection.style.display = 'block';
     } else {
         console.error(`[NAVIGATION] Section with id "${sectionId}" not found`);
         return;
@@ -172,3 +149,14 @@ function initNavigation() {
     console.log(`[NAVIGATION] Setting initial section: ${initialSection}`);
     navigateToSection(initialSection);
 }
+
+// Прикрепляем функции к глобальному объекту
+window.navigateToSection = navigateToSection;
+window.initNavigation = initNavigation;
+
+// Автоматическая инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.nav-link')) {
+        initNavigation();
+    }
+});

@@ -240,3 +240,131 @@ function initUserManagementHandlers() {
         });
     });
 }
+// user-management.js
+// Функции для управления пользователями
+
+/**
+ * Функция для отрисовки таблицы пользователей
+ * @param {Array} users - Массив пользователей
+ * @param {HTMLElement} tbody - Тело таблицы для отображения
+ */
+function renderUsersTable(users, tbody) {
+    if (!tbody) {
+        console.error('No tbody provided to renderUsersTable');
+        return;
+    }
+
+    tbody.innerHTML = ''; // Очищаем
+
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
+        return;
+    }
+
+    users.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.cnic}</td>
+            <td>${user.login}</td>
+            <td>${user.properties_count || 0}</td>
+            <td><span class="status-badge ${user.status}">${user.status}</span></td>
+            <td class="actions-cell"></td>
+        `;
+
+        const actionsCell = row.querySelector('.actions-cell');
+        let actionsHTML = '';
+
+        if (user.status === 'archived') {
+            actionsHTML = `
+                <div class="actions-footer">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                </div>`;
+        } else {
+            actionsHTML = `
+                <div class="actions-column">
+                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
+                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
+                </div>`;
+        }
+
+        actionsCell.innerHTML = actionsHTML;
+        tbody.appendChild(row);
+    });
+
+    // Привязываем обработчики
+    document.querySelectorAll('.btn-view').forEach(button => {
+        button.addEventListener('click', (e) => viewUser(e.target.closest('[data-id]').dataset.id));
+    });
+
+    document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
+        button.addEventListener('click', (e) => toggleUserStatus(e.target.closest('[data-id]').dataset.id));
+    });
+
+    document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
+        button.addEventListener('click', (e) => archiveUser(e.target.closest('[data-id]').dataset.id));
+    });
+
+    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
+        button.addEventListener('click', (e) => restoreUser(e.target.closest('[data-id]').dataset.id));
+    });
+}
+
+/**
+ * Обновление статуса пользователя
+ * @param {string} userId - ID пользователя
+ */
+async function toggleUserStatus(userId) {
+    try {
+        // Определяем текущий статус пользователя
+        const userElement = document.querySelector(`[data-id="${userId}"]`);
+        if (!userElement) {
+            showNotification('error', 'User element not found');
+            return;
+        }
+        
+        // Определяем текущий статус
+        let newStatus;
+        if (userElement.closest('.status-badge')?.classList.contains('active')) {
+            newStatus = 'blocked';
+        } else {
+            newStatus = 'active';
+        }
+
+        const response = await apiRequest(`/v1/admin/users/${userId}/status`, {
+            method: 'POST',
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (response.success) {
+            showNotification('success', `User status updated to: ${newStatus}`);
+
+            // Определяем, на какой странице мы сейчас
+            const activeSection = document.querySelector('.section.active').id;
+            if (activeSection === 'users') {
+                loadUsers('active');
+            } else if (activeSection === 'users-archive') {
+                loadUsers('archived');
+            }
+        } else {
+            showNotification('error', response.message || 'Error updating user status');
+        }
+    } catch (error) {
+        console.error('Error updating user status:', error);
+        showNotification('error', 'Error updating user status');
+    }
+}
+
+export { loadUsers, restoreUser, renderUsersTable, initUserManagementHandlers, toggleUserStatus };

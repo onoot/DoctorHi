@@ -229,9 +229,9 @@ function debounce(func, wait) {
 
 
 /**
- * Helper function to determine appropriate file icon based on MIME type
- * @param {string} fileType - MIME type of the file
- * @returns {string} - Font Awesome icon class
+ * Функция для получения иконки по типу файла
+ * @param {string} fileType - MIME тип файла
+ * @returns {string} - Иконка файла
  */
 function getFileIcon(fileType) {
     if (!fileType) return 'fa-file';
@@ -239,14 +239,157 @@ function getFileIcon(fileType) {
     
     if (fileType.includes('pdf')) return 'fa-file-pdf';
     if (fileType.includes('image')) return 'fa-file-image';
-    if (fileType.includes('video') || fileType.includes('mp4') || 
-        fileType.includes('mov') || fileType.includes('avi')) {
-        return 'fa-file-video';
-    }
+    if (fileType.includes('video')) return 'fa-file-video';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
+    if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
+    if (fileType.includes('powerpoint')) return 'fa-file-powerpoint';
+    if (fileType.includes('audio')) return 'fa-file-audio';
     
     return 'fa-file';
 }
 
+/**
+ * Функция для обновления конвертации в USD
+ * @param {number} amountInPKR - Сумма в PKR
+ */
+const updateUSD = async (amountInPKR) => {
+    try {
+        const response = await fetch('api/v1/admin/latest/PKR');
+        const data = await response.json();
+        let exchangeRate;
+        
+        if (data.success && data.USD) {
+            exchangeRate = data.USD;
+        } else {
+            // Fallback-курс, если API не отвечает
+            exchangeRate = 0.0036;
+        }
+        
+        const usdAmount = amountInPKR * exchangeRate;
+        const usdConversion = document.getElementById('usdConversion');
+        
+        if (usdConversion) {
+            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(usdAmount)}`;
+        }
+    } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+        const usdConversion = document.getElementById('usdConversion');
+        if (usdConversion) {
+            usdConversion.innerHTML = 'Error fetching exchange rate';
+        }
+    }
+}
+
+/**
+ * Функция для инициализации денежного форматирования
+ */
+function initPaymentFormFields() {
+    const paymentAmount = document.getElementById('paymentAmount');
+    const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+    const usdConversion = document.getElementById('usdConversion');
+    
+    if (!paymentAmount || !rawPaymentAmount || !usdConversion) {
+        console.warn('Элементы формы платежа не найдены. Возможно, модальное окно еще не создано.');
+        return;
+    }
+    
+    let rawValue = 0;
+    
+    // Функция форматирования PKR
+    const formatPKR = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    };
+    
+    // Функция парсинга числа
+    const parseNumber = (value) => {
+        const cleanValue = value.replace(/[^\d.]/g, '');
+        if (!cleanValue) return 0;
+        
+        // Обрабатываем случай, когда пользователь ввел только точку
+        if (cleanValue === '.') return 0;
+        
+        // Разделяем на целую и дробную части
+        const parts = cleanValue.split('.');
+        const integerPart = parts[0];
+        let decimalPart = parts.length > 1 ? parts.slice(1).join('') : '00';
+        
+        // Ограничиваем до 2 знаков после запятой
+        decimalPart = decimalPart.slice(0, 2);
+        
+        // Если дробная часть короче 2 знаков, дополняем нулями
+        if (decimalPart.length === 1) decimalPart += '0';
+        if (decimalPart.length === 0) decimalPart = '00';
+        
+        return parseFloat(`${integerPart}.${decimalPart}`) || 0;
+    };
+    
+    // Обработчик ввода
+    paymentAmount.addEventListener('input', function(e) {
+        // Сохраняем позицию курсора
+        const cursorStart = this.selectionStart;
+        const cursorEnd = this.selectionEnd;
+        const oldValue = this.value;
+        
+        // Чистим ввод, сохраняя цифры и точку
+        let cleanValue = this.value.replace(/[^0-9.]/g, '');
+        
+        // Проверяем, что не введено больше одной точки
+        const dotCount = (cleanValue.match(/\./g) || []).length;
+        if (dotCount > 1) {
+            cleanValue = cleanValue.replace(/\.+$/, ''); // Удаляем лишние точки в конце
+        }
+        
+        // Сохраняем текущее значение для отслеживания изменений
+        this.value = cleanValue;
+        
+        // Парсим значение
+        const newRawValue = parseNumber(cleanValue);
+        
+        // Сохраняем сырое значение ТОЛЬКО если оно изменилось
+        if (newRawValue !== rawValue) {
+            rawValue = newRawValue;
+            
+            // Обновляем конвертацию в USD
+            updateUSD(rawValue);
+            
+            // Обновляем скрытое поле
+            rawPaymentAmount.value = rawValue;
+        }
+        
+        // Корректируем позицию курсора
+        const diff = this.value.length - oldValue.length;
+        this.setSelectionRange(Math.max(0, cursorStart + diff), 
+                              Math.max(0, cursorEnd + diff));
+    });
+    
+    // Форматируем значение при потере фокуса
+    paymentAmount.addEventListener('blur', function() {
+        this.value = formatPKR(rawValue);
+    });
+    
+    // Восстанавливаем значение при фокусе
+    paymentAmount.addEventListener('focus', function() {
+        // Показываем значение без форматирования для удобства редактирования
+        if (this.value === '0.00') {
+            this.value = '';
+        } else {
+            this.value = rawValue.toString();
+        }
+        
+        // Устанавливаем курсор в конец
+        setTimeout(() => {
+            this.setSelectionRange(this.value.length, this.value.length);
+        }, 0);
+    });
+}
 
 // Экспортируем утилиты
-export { formatNumberInput, getFileIcon, attachCurrencyConverter, debounce, validatePhone, validateCNIC, formatPKR, parseNumber, updateUSD, updateRemainingAmount, formatUSD };
+export { getFileIcon, updateUSD, initPaymentFormFields, formatNumberInput, getFileIcon, attachCurrencyConverter, debounce, validatePhone, validateCNIC, formatPKR, parseNumber, updateUSD, updateRemainingAmount, formatUSD };

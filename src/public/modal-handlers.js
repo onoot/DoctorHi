@@ -1,95 +1,106 @@
 // modal-handlers.js
-// Обработчики для модальных окон
+// Функции для работы с модальными окнами
 
 /**
- * Универсальная функция для открытия модальных окон
- * @param {string} modalId - ID модального окна
- * @returns {boolean} - Успешно ли открылось модальное окно
+ * Функция для открытия модального окна добавления платежа
  */
-function openModal(modalId) {
-    console.log(`[DEBUG] Attempting to open modal with ID: ${modalId}`);
+function openAddPaymentModal() {
+    // Получаем ID текущей транзакции
+    const transactionIdElement = document.getElementById('currentTransactionId');
+    if (!transactionIdElement || !transactionIdElement.value) {
+        showNotification('error', 'Transaction ID not found');
+        return;
+    }
     
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        // Удаляем класс hide, если он есть
-        modal.classList.remove('hide');
-        
-        // Добавляем класс show для отображения
-        modal.classList.add('show');
-        
-        console.log(`[SUCCESS] Modal ${modalId} opened successfully`);
-        
-        // Дополнительная проверка для отладки
-        if (!modal.classList.contains('show')) {
-            console.error(`[ERROR] Failed to add 'show' class to modal ${modalId}`);
-            return false;
-        }
-        
-        // Устанавливаем display: flex только если класс show добавлен
-        modal.style.display = 'flex';
-        
-        // Принудительная перерисовка для анимации
-        void modal.offsetWidth;
-        
-        return true;
-    } else {
-        console.error(`[ERROR] Modal with ID "${modalId}" not found`);
-        return false;
-    }
+    const transactionId = transactionIdElement.value;
+    
+    // Устанавливаем ID транзакции
+    document.getElementById('paymentTransactionId').value = transactionId;
+    
+    // Открываем модальное окно
+    openModal('addPaymentModal');
 }
 
 /**
- * Универсальная функция для закрытия модальных окон
- * @param {string} modalId - ID модального окна
+ * Функция для открытия модального окна редактирования платежа
+ * @param {string} paymentId - ID платежа
+ * @param {string} transactionId - ID транзакции
  */
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hide');
-        modal.classList.remove('show');
-        
-        // Устанавливаем таймер для полного скрытия после анимации
-        setTimeout(() => {
-            if (modal.classList.contains('hide')) {
-                modal.style.display = 'none';
-            }
-        }, 300);
+function openEditPaymentModal(paymentId, transactionId) {
+    // Получаем ID текущей транзакции
+    const transactionIdElement = document.getElementById('currentTransactionId');
+    if (!transactionIdElement || !transactionIdElement.value) {
+        showNotification('error', 'Transaction ID not found');
+        return;
     }
+    
+    transactionId = transactionIdElement.value;
+    
+    // Загружаем данные платежа
+    apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
+        .then(response => {
+            if (response.success && response.payment) {
+                const payment = response.payment;
+                
+                // Заполняем форму
+                document.getElementById('paymentId').value = payment.id;
+                document.getElementById('paymentAmount').value = payment.amount;
+                document.getElementById('paymentMethod').value = payment.method;
+                document.getElementById('paymentStatus').value = payment.status;
+                document.getElementById('paymentNotes').value = payment.notes || '';
+                
+                // Открываем модальное окно
+                openModal('editPaymentModal');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading payment details:', error);
+            showNotification('error', 'Error loading payment details');
+        });
 }
 
 /**
- * Инициализация обработчиков закрытия модальных окон
+ * Функция для открытия модального окна просмотра транзакции
+ * @param {string} transactionId - ID транзакции
+ */
+function openViewTransactionModal(transactionId) {
+    if (!transactionId) {
+        showNotification('error', 'Transaction ID is required');
+        return;
+    }
+    
+    // Устанавливаем ID транзакции в скрытое поле
+    const currentTransactionIdElement = document.getElementById('currentTransactionId');
+    if (currentTransactionIdElement) {
+        currentTransactionIdElement.value = transactionId;
+    }
+    
+    // Открываем модальное окно
+    openModal('viewTransactionModal');
+    
+    // Загружаем данные транзакции
+    loadTransactionDetails(transactionId);
+}
+
+/**
+ * Инициализация обработчиков модальных окон
  */
 function initModalHandlers() {
-    // Закрытие модальных окон по кнопке "×"
-    document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function() {
-            const modalId = this.getAttribute('data-modal');
-            console.log(`[DEBUG] Closing modal via close button: ${modalId}`);
-            closeModal(modalId);
+    // Обработчик для кнопок отмены
+    document.querySelectorAll('.cancel-payment-btn, .cancel-transaction-btn, .cancel-user-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            closeModal('addPaymentModal');
+            closeModal('editPaymentModal');
+            closeModal('createTransactionModal');
+            closeModal('addUserModal');
         });
-    });
-    
-    // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            const modalId = event.target.id;
-            console.log(`[DEBUG] Closing modal via background click: ${modalId}`);
-            closeModal(modalId);
-        }
-    });
-    
-    // Закрытие модальных окон по клавише Esc
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                const modalId = modal.id;
-                console.log(`[DEBUG] Closing modal via Escape key: ${modalId}`);
-                closeModal(modalId);
-            });
-        }
     });
 }
 
 // Экспортируем функции
-export { openModal, closeModal, initModalHandlers };
+export { 
+    openAddPaymentModal, 
+    openEditPaymentModal, 
+    openViewTransactionModal,
+    initModalHandlers 
+};

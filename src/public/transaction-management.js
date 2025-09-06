@@ -438,4 +438,96 @@ async function addPayment() {
     }
 }
 
-export { displayTransactionDocuments, editPayment, savePaymentChanges, createPayment,initAmountInputHandlers, updateTransactionAmount, openImagePreview, addPayment};
+/**
+ * Обновление статуса сделки
+ * @param {string} transactionId - ID транзакции
+ * @param {string} status - Новый статус транзакции
+ */
+async function updateTransactionStatus(transactionId, status) {
+    try {
+        let notes = null;
+        if (status === 'rejected') {
+            notes = prompt('Please provide a reason for rejection:');
+            if (notes === null) return;
+        }
+
+        // Исправляем имя поля с admin_notes на reason
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status,
+                reason: notes
+            })
+        });
+
+        // Проверяем, что response существует и имеет поле success
+        if (response && response.success) {
+            showNotification('success', `Transaction ${status} successfully`);
+            loadTransactions();
+        } else {
+            const errorMessage = response?.message || 'Error updating transaction';
+            showNotification('error', errorMessage);
+        }
+    } catch (error) {
+        console.error('Error updating transaction status:', error);
+        showNotification('error', 'Failed to update transaction status');
+    }
+}
+
+/**
+ * Загрузка документов
+ * @param {string} transactionId - ID транзакции
+ */
+async function uploadDocuments(transactionId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+
+    input.onchange = async (e) => {
+        const files = Array.from(e.target.files);
+        const formData = new FormData();
+
+        files.forEach(file => {
+            formData.append('documents[]', file);
+        });
+
+        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+
+        if (response.ok) {
+            showNotification('success', 'Documents uploaded successfully');
+            loadTransactions();
+        } else {
+            showNotification('error', 'Failed to upload documents');
+        }
+    };
+
+    input.click();
+}
+
+/**
+ * Очистка истории сделок
+ */
+async function clearTransactionHistory() {
+    const date = prompt('Enter date to clear history before (YYYY-MM-DD):');
+    if (!date) return;
+
+    const response = await apiRequest('/v1/admin/transactions/history/clear', {
+        method: 'POST',
+        body: JSON.stringify({
+            older_than: date,
+            status: ['approved', 'rejected', 'cancelled']
+        })
+    });
+
+    if (response) {
+        showNotification('success', 'Transaction history cleared successfully');
+        loadTransactions();
+    }
+}
+
+export { displayTransactionDocuments, editPayment, savePaymentChanges, createPayment,initAmountInputHandlers, updateTransactionAmount, openImagePreview, addPayment, updateTransactionStatus, uploadDocuments, clearTransactionHistory};

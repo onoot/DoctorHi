@@ -8,10 +8,12 @@ import { initTransactionHandlers } from './transaction-handlers.js';
 import { initFileHandlers } from './file-handlers.js';
 import { initPaymentHandlers } from './payment-handlers.js';
 import { initUploadHandlers } from './upload-handlers.js';
-import { initTransferRequestHandlers } from './transfer-request-handlers.js';
+import { initTransferRequestHandlers } from './transfer-requests.js';
 import { initSearchHandlers } from './search-handlers.js';
 import { initAuthHandlers } from './auth-handlers.js';
 import { initCurrencyConverter } from './currency-converter.js';
+import { initPaymentScheduleHandlers } from './payment-schedule.js';
+import { initActionHandlers } from './action-handlers.js';
 
 /**
  * Инициализация всех обработчиков приложения
@@ -49,6 +51,12 @@ function initAllHandlers() {
     
     // Инициализация конвертера валют
     initCurrencyConverter();
+    
+    // Инициализация графика платежей
+    initPaymentScheduleHandlers();
+    
+    // Инициализация обработчиков действий
+    initActionHandlers();
     
     console.log('[HANDLERS] All handlers initialized successfully');
 }

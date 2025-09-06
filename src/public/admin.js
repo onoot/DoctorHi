@@ -2109,31 +2109,6 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
-async function loadWitnesses(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`);
-
-        if (response.success && response.witnesses) {
-            const { witness1, witness2 } = response.witnesses;
-
-            if (witness1) {
-                document.getElementById('witness1Name').value = witness1.name || '';
-                document.getElementById('witness1CNIC').value = witness1.cnic || '';
-                document.getElementById('witness1Phone').value = witness1.phone || '';
-            }
-
-            if (witness2) {
-                document.getElementById('witness2Name').value = witness2.name || '';
-                document.getElementById('witness2CNIC').value = witness2.cnic || '';
-                document.getElementById('witness2Phone').value = witness2.phone || '';
-            }
-        }
-    } catch (error) {
-        console.error('Error loading witnesses:', error);
-        showNotification('error', 'Failed to load witnesses information');
-    }
-}
-
 function formatAmount(amount) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -3530,44 +3505,55 @@ function deletePayment(paymentId, transactionId) {
         });
 }
 
-// Функция для загрузки деталей транзакции
 async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-
-        if (response.success && response.transaction) {
-            const transaction = response.transaction;
-
-            // Форматируем суммы
-            const formatAmount = (amount) => new Intl.NumberFormat('en-US', {
+        
+        // ИСПРАВЛЕНИЕ: Проверяем наличие данных сделки напрямую в ответе
+        if (response && response.id) {  // Проверяем наличие обязательного поля id
+            const transaction = response;  // Данные уже находятся в response
+            
+            // Заполнение основной информации о сделке
+            document.getElementById('transactionId').textContent = transaction.id;
+            document.getElementById('propertyName').textContent = transaction.property_name;
+            document.getElementById('propertyType').textContent = transaction.property_type;
+            document.getElementById('previousOwner').textContent = transaction.previous_owner_name;
+            document.getElementById('newOwner').textContent = transaction.new_owner_name;
+            document.getElementById('totalAmount').textContent = formatCurrency(transaction.total_amount);
+            document.getElementById('status').textContent = transaction.status;
+            document.getElementById('status').className = `status-badge ${transaction.status}`;
+            
+            // Обновляем сумму
+            const totalAmount = parseFloat(transaction.total_amount);
+            const paidAmount = parseFloat(transaction.paid_amount);
+            const remainingAmount = totalAmount - paidAmount;
+            
+            // Форматируем оставшуюся сумму
+            const formattedRemaining = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(amount);
-
-            // Обновляем суммы
-            const totalAmountView = document.getElementById('totalAmountView');
-            const paidAmount = document.getElementById('paidAmount');
-
-            if (totalAmountView) totalAmountView.textContent = formatAmount(transaction.total_amount);
-            if (paidAmount) paidAmount.textContent = formatAmount(transaction.paid_amount);
-
-            // Обновляем оставшуюся сумму
-            const remaining = transaction.total_amount - transaction.paid_amount;
-            const remainingAmount = document.getElementById('remainingAmount');
-            if (remainingAmount) {
-                remainingAmount.textContent = formatAmount(remaining);
-            }
-
+            }).format(remainingAmount);
+            
+            document.getElementById('remainingAmount').textContent = formattedRemaining;
+            
             // Обновляем дату создания
             const createdAt = document.getElementById('createdAt');
             if (createdAt) {
                 createdAt.textContent = new Date(transaction.created_at).toLocaleDateString();
             }
+            
+            // Вызываем функция для отображения свидетелей
+            displayWitnesses(transaction);
+        } else {
+            console.error('Invalid transaction data format:', response);
+            showNotification('error', 'Failed to load transaction details');
         }
     } catch (error) {
         console.error('Error loading transaction details:', error);
+        showNotification('error', 'Error loading transaction details');
     }
 }
+
 // Функция для отображения свидетелей в модальном окне
 function displayWitnesses(transaction) {
     try {

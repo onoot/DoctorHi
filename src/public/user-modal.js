@@ -226,7 +226,8 @@ function initUserModalHandlers() {
     });
 }
 
-// Убедимся, что функции доступны глобально
+// Прикрепляем функции к глобальному объекту window
+// Это позволяет другим скриптам обращаться к этим функциям
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.viewUser = viewUser;
@@ -235,3 +236,11 @@ window.regenerateLogin = regenerateLogin;
 window.regeneratePassword = regeneratePassword;
 window.generateLoginCredentials = generateLoginCredentials;
 window.initUserModalHandlers = initUserModalHandlers;
+
+// Автоматическая инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем существование необходимых элементов
+    if (document.getElementById('userModal') || document.getElementById('addUserModal')) {
+        initUserModalHandlers();
+    }
+});

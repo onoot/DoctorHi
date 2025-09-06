@@ -18,117 +18,120 @@
         <label for="sidebar-toggle" class="sidebar-toggle-btn">
             <i class="fas fa-bars"></i>
         </label>
-        
+
         <!-- Боковое меню -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <h1>Doctor Height</h1>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item"><a href="#transactions" class="nav-link active" data-section="transactions"><i class="fas fa-exchange-alt"></i> <span class="nav-text">Transactions</span></a></li>
-                <li class="nav-item"><a href="#users" class="nav-link" data-section="users"><i class="fas fa-users"></i> <span class="nav-text">Users</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="#users-archive"><i class="fas fa-archive"></i> <span class="nav-text">Users (Archive)</span></a></li>
+                <li class="nav-item"><a href="#transactions" class="nav-link active" data-section="transactions"><i
+                            class="fas fa-exchange-alt"></i> <span class="nav-text">Transactions</span></a></li>
+                <li class="nav-item"><a href="#users" class="nav-link" data-section="users"><i class="fas fa-users"></i>
+                        <span class="nav-text">Users</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="#users-archive"><i class="fas fa-archive"></i> <span
+                            class="nav-text">Users (Archive)</span></a></li>
             </ul>
         </div>
-        
+
         <!-- Основной контент -->
         <div class="main-content">
-             <!-- Секция сделок -->
-        <div id="transactions" class="section active">
-            <div class="section-header">
-                <h2 class="section-title">All Transactions</h2>
-                <button class="action-btn btn-edit" id="create">
-                    <i class="fas fa-plus"></i>
-                    New Transaction
-                </button>
+            <!-- Секция сделок -->
+            <div id="transactions" class="section active">
+                <div class="section-header">
+                    <h2 class="section-title">All Transactions</h2>
+                    <button class="action-btn btn-edit" id="create">
+                        <i class="fas fa-plus"></i>
+                        New Transaction
+                    </button>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search transactions...">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i>
+                        Search
+                    </button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Property</th>
+                            <th>Previous Owner</th>
+                            <th>New Owner</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody">
+                        <!-- Данные будут добавлены через JavaScript -->
+                    </tbody>
+                </table>
             </div>
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search transactions...">
-                <button class="search-btn">
-                    <i class="fas fa-search"></i>
-                    Search
-                </button>
-            </div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Property</th>
-                        <th>Previous Owner</th>
-                        <th>New Owner</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="transactionsTableBody">
-                    <!-- Данные будут добавлены через JavaScript -->
-                </tbody>
-            </table>
-        </div>
 
-        <!-- Секция пользователей -->
-        <div id="users" class="section">
-            <div class="section-header">
-                <h2 class="section-title">All Users</h2>
-                <button class="action-btn btn-edit" id="openAddUserModal">
-                    <i class="fas fa-user-plus"></i> Add User
-                </button>
+            <!-- Секция пользователей -->
+            <div id="users" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">All Users</h2>
+                    <button class="action-btn btn-edit" id="openAddUserModal">
+                        <i class="fas fa-user-plus"></i> Add User
+                    </button>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search users...">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>CNIC</th>
+                                <th>Login</th>
+                                <th>Properties</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Данные будут добавлены через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search users...">
-                <button class="search-btn">
-                    <i class="fas fa-search"></i> Search
-                </button>
+            <div id="users-archive" class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Archive</h2>
+                </div>
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search users...">
+                    <button class="search-btn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>CNIC</th>
+                                <th>Login</th>
+                                <th>Properties</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archivedUsersTableBody">
+                            <!-- Данные будут добавлены через JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>CNIC</th>
-                            <th>Login</th>
-                            <th>Properties</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <!-- Данные будут добавлены через JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div id="users-archive" class="section">
-            <div class="section-header">
-                <h2 class="section-title">Archive</h2>
-            </div>
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search users...">
-                <button class="search-btn">
-                    <i class="fas fa-search"></i> Search
-                </button>
-            </div>
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>CNIC</th>
-                            <th>Login</th>
-                            <th>Properties</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="archivedUsersTableBody">
-                        <!-- Данные будут добавлены через JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
             <!-- Модальное окно для просмотра пользователя -->
             <div id="userModal" class="modal">
                 <div class="modal-content">
@@ -621,14 +624,17 @@
                     </div>
                 </div>
             </div>
-            <script src="./menu.js"></script>
+            <script src="./utils.js"></script>
             <script src="./modal.js"></script>
             <script src="./user-modal.js"></script>
+            <script src="./transaction.js"></script>
             <script src="./navigation.js"></script>
+            <script src="./init.js"></script>
+
+            <script src="./menu.js"></script>
             <script src="./user-management.js"></script>
             <script src="./main.js"></script>
             <script src="./transaction-management.js"></script>
-            <script src="./utils.js"></script>
             <script src="./file-upload.js"></script>
             <script src="./config.js"></script>
             <script src="./currency-converter.js"></script>
@@ -640,7 +646,6 @@
             <script src="./file-upload-handlers.js"></script>
             <script src="./transfer-requests.js"></script>
             <script src="./init-handlers.js"></script>
-            <script src="./init.js"></script>
 </body>
 
 </html>

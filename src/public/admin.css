@@ -1754,3 +1754,116 @@ body {
     background: var(--primary);
     border-radius: 50%;
 }
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 992px) {
+    .admin-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: var(--z-index-sidebar);
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-xl);
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .main-content {
+        padding: 16px;
+        margin-left: 0 !important;
+        margin-top: 60px; /* Добавляем отступ сверху для секции на мобильных устройствах */
+    }
+    
+    #sidebar-toggle:checked ~ .sidebar {
+        transform: translateX(0);
+    }
+    
+    #sidebar-toggle:checked ~ .main-content {
+        filter: blur(2px);
+    }
+    
+    /* Улучшаем отображение бургер-меню */
+    .sidebar-toggle-btn {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        display: flex;
+        top: 12px;
+        left: 15px;
+        z-index: var(--z-index-sidebar) + 10;
+    }
+    
+    /* Добавляем внутренний отступ для секций на мобильных */
+    .section {
+        padding: 16px;
+        margin-top: 20px;
+        border-radius: var(--rounded-lg);
+    }
+    
+    /* Улучшаем навигационные ссылки на мобильных */
+    .nav-link {
+        padding: 16px 20px;
+        font-size: var(--font-size-lg);
+    }
+    
+    .nav-link i {
+        font-size: 1.3em;
+        margin-right: 14px;
+    }
+    
+    /* Увеличиваем размер заголовков на мобильных */
+    .section-title {
+        font-size: var(--font-size-xl);
+        margin-bottom: 16px;
+    }
+}
+
+/* Дополнительные улучшения для маленьких экранов */
+@media (max-width: 576px) {
+    .main-content {
+        padding: 12px;
+        margin-top: 50px; /* Небольшой отступ сверху для очень маленьких экранов */
+    }
+    
+    .section {
+        padding: 12px;
+        margin-top: 15px;
+        border-radius: var(--rounded-md);
+    }
+    
+    .section-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .search-box {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .search-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* Уменьшаем размер кнопок действий на очень маленьких экранах */
+    .action-btn {
+        padding: 6px 10px;
+        font-size: var(--font-size-sm);
+    }
+    
+    /* Улучшаем отображение таблицы на очень маленьких экранах */
+    .data-table th,
+    .data-table td {
+        padding: 10px 8px;
+        font-size: var(--font-size-sm);
+    }
+}

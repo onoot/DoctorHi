@@ -556,6 +556,52 @@ async function deleteFile(fileId, transactionId, category) {
 }
 
 /**
+ * Функция для загрузки платежей транзакции
+ * @param {string} transactionId - ID транзакции
+ */
+async function loadTransactionPayments(transactionId) {
+    try {
+        // Загружаем платежи
+        const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+        
+        // Загружаем документы, чтобы найти чеки
+        const documentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
+        
+        if (paymentsResponse.success && paymentsResponse.payments) {
+            let payments = [...paymentsResponse.payments];
+            
+            // Если есть документы, добавляем информацию о чеках к платежам
+            if (documentsResponse.success && documentsResponse.documents) {
+                const receiptFiles = documentsResponse.documents.filter(file => file.category === 'receipt');
+                
+                // Связываем чеки с платежами (пример простой логики)
+                payments = payments.map(payment => {
+                    // Ищем чек, созданный в тот же день, что и платеж
+                    const paymentDate = new Date(payment.created_at).toDateString();
+                    const matchingReceipt = receiptFiles.find(receipt => {
+                        const receiptDate = new Date(receipt.created_at).toDateString();
+                        return paymentDate === receiptDate;
+                    });
+                    
+                    return {
+                        ...payment,
+                        receipt: matchingReceipt
+                    };
+                });
+            }
+            
+            // Отображаем платежи с чеками
+            displayPayments(payments);
+            
+            // Обновляем оставшуюся сумму
+            updateRemainingAmount();
+        }
+    } catch (error) {
+        console.error('Error loading payments:', error);
+        showNotification('error', 'Error loading payments');
+    }
+}
+/**
  * Функция для настройки обработчиков действий с платежами
  * @param {string} transactionId - ID транзакции
  */

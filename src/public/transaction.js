@@ -126,9 +126,11 @@ function showTransactionLoader(tbody) {
     // Создаем прелоадер
     const loaderRow = document.createElement('tr');
     loaderRow.innerHTML = `
-        <td colspan="7" class="text-center">
-            <div class="loader">Loading transactions...</div>
-        </td>
+       <td colspan="7" class="text-center">
+    <div class="spinner-container">
+        <i class="fas fa-spinner fa-spin"></i>
+    </div>
+</td>
     `;
 
     tbody.appendChild(loaderRow);

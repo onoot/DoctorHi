@@ -423,7 +423,15 @@ async function loadUsers(status = 'active', page = 1, limit = 10) {
         
         const loadingIndicator = document.createElement('div');
         loadingIndicator.className = 'loading-indicator';
-        loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
+        loadingIndicator.innerHTML = `
+    <tr>
+        <td colspan="7" class="text-center loading-spinner-cell">
+            <div class="spinner-container">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+        </td>
+    </tr>
+`;
         
         // Удаляем предыдущий индикатор загрузки, если он есть
         const existingLoader = section.querySelector('.loading-indicator');
@@ -3491,7 +3499,15 @@ async function loadTransactions(page = 1, limit = 10) {
         }
         
         // Показываем индикатор загрузки
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+         tbody.innerHTML = `
+    <tr>
+        <td colspan="7" class="text-center loading-spinner-cell">
+            <div class="spinner-container">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+        </td>
+    </tr>
+`;
         
         const searchInput = section.querySelector('.search-input');
         const searchTerm = searchInput ? searchInput.value.trim() : '';

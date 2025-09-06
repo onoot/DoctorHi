@@ -1956,3 +1956,51 @@ body {
         font-size: var(--font-size-sm);
     }
 }
+
+/* Контейнер для спиннера */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-height: 100px;
+}
+
+/* Стилизация спиннера */
+.spinner-container i {
+    font-size: 1.8rem;
+    color: var(--primary);
+    animation: pulse 2s infinite;
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* Для индикатора в таблице */
+.loading-spinner-cell {
+    position: relative;
+}
+
+.loading-spinner-cell::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .spinner-container {
+        padding: 15px;
+    }
+    
+    .spinner-container i {
+        font-size: 1.5rem;
+    }
+}

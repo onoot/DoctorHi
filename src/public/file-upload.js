@@ -155,17 +155,17 @@ function displayFiles(files, containerId, category) {
             window.open(fileUrl, '_blank');
         });
         actions.appendChild(viewBtn);
-        
+
         // Кнопка удаления
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn-delete';
+        deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             deleteFile(file.id, document.getElementById('currentTransactionId').value, category);
         });
         actions.appendChild(deleteBtn);
-        
+
         // Создаем превью файла
         let filePreview = '';
         if (file.file_type && file.file_type.startsWith('image/')) {

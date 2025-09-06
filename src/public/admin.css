@@ -2029,3 +2029,33 @@ body {
     50% { opacity: 1; }
     100% { opacity: 0.6; }
 }
+
+/* Стили для кнопок в документах */
+.document-actions .action-btn {
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+    min-width: auto;
+}
+
+.document-actions .btn-delete {
+    background-color: var(--danger);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+
+.document-actions .btn-delete:hover {
+    background-color: #e63956;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 768px) {
+    .document-actions .action-btn {
+        padding: 5px 10px;
+        font-size: var(--font-size-xs);
+    }
+    
+    .document-actions .action-btn i {
+        font-size: 0.9em;
+    }
+}

@@ -26,13 +26,38 @@ async function apiRequest(url, options = {}) {
         console.log(`[API] Response status: ${response.status}`);
         
         let data = null;
-        try {
-            data = await response.json();
-        } catch (e) {
-            // Если не удалось распарсить JSON, используем текстовый ответ
-            const text = await response.text();
-            console.log('[API] Response text:', text);
-            data = { message: text || 'Unknown error' };
+        
+        // Проверяем, содержит ли ответ данные
+        const contentLength = response.headers.get('content-length');
+        const contentType = response.headers.get('content-type');
+        
+        if (response.status !== 204 && contentLength !== '0' && 
+            (contentType?.includes('application/json') || contentType?.includes('text'))) {
+            try {
+                // Клонируем ответ для возможности многократного чтения
+                const responseClone = response.clone();
+                data = await response.json();
+            } catch (jsonError) {
+                try {
+                    // Используем клонированный ответ для чтения текста
+                    const responseClone = response.clone();
+                    const text = await responseClone.text();
+                    console.log('[API] Response text:', text);
+                    
+                    // Пытаемся распарсить как JSON, если это возможно
+                    try {
+                        data = JSON.parse(text);
+                    } catch {
+                        data = { message: text || 'Unknown error' };
+                    }
+                } catch (textError) {
+                    console.error('[API] Failed to read response text:', textError);
+                    data = { message: 'Unknown error' };
+                }
+            }
+        } else {
+            // Для ответов без тела
+            data = { success: response.ok };
         }
         
         console.log('[API] Response data:', data);

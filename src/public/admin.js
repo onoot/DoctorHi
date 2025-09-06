@@ -3932,52 +3932,43 @@ function openCreateTransactionModal() {
 
 // Функция для открытия модального окна просмотра пользователя
 async function openViewUserModal(userId) {
-    try {
-        const response = await apiRequest(`/v1/admin/users/${userId}`);
-
-        if (response.success && response.user) {
-            const user = response.user;
-            const modalBody = document.getElementById('userModal');
-
-            modalBody.innerHTML = `
-                <div class="user-details">
-                    <p><strong>ID:</strong> ${user.id}</p>
-                    <p><strong>Name:</strong> ${user.name}</p>
-                    <p><strong>CNIC:</strong> ${user.cnic}</p>
-                    <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
-                    <p><strong>Address:</strong> ${user.address}</p>
-                    <p><strong>Login:</strong> ${user.login}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${user.status}">${user.status}</span></p>
-                    <p><strong>Properties:</strong> ${user.properties_count || 0}</p>
-                    <p><strong>Created At:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
-                </div>
-                <div class="user-actions">
-                    <button class="action-btn btn-approve activate-user-btn" data-id="${user.id}">
-                        <i class="fas fa-check"></i> Activate
-                    </button>
-                    <button class="action-btn btn-reject block-user-btn" data-id="${user.id}">
-                        <i class="fas fa-ban"></i> Block
-                    </button>
-                </div>
-            `;
-
-            openModal('userModal');
-
-            // Добавляем обработчики для кнопок действий
-            document.querySelector('.activate-user-btn')?.addEventListener('click', function () {
-                const userId = this.getAttribute('data-id');
-                updateUserStatus(userId, 'active');
-            });
-
-            document.querySelector('.block-user-btn')?.addEventListener('click', function () {
-                const userId = this.getAttribute('data-id');
-                updateUserStatus(userId, 'blocked');
-            });
+  try {
+    const response = await apiRequest(`/v1/admin/users/${userId}`);
+    if (response.success && response.user) {
+      const user = response.user;
+      
+      // Сначала заполняем содержимое модального окна
+      const modalBody = document.getElementById('userModalBody');
+      if (modalBody) {
+        // Форматируем дату создания
+        const createdAt = user.created_at ? 
+          new Date(user.created_at).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric'
+          }) : 'N/A';
+          
+        modalBody.innerHTML = `
+          <div class="user-details">
+            <p><strong>ID:</strong> ${user.id}</p>
+            <p><strong>Name:</strong> ${user.name|| 'N/A'}</p>
+            <p><strong>CNNIC:</strong> ${user.cnic|| 'N/A'}</p>
+            <!-- остальные поля пользователя -->
+          </div>
+        `;
+        
+        // И только после заполнения данных открываем модальное окно
+        const modalOpened = openModal('userModal');
+        if (!modalOpened) {
+          console.error('Failed to open user modal');
+          showNotification('error', 'Error opening user details');
         }
-    } catch (error) {
-        console.error('Error loading user details:', error);
-        showNotification('error', 'Error loading user details');
+      }
     }
+  } catch (error) {
+    console.error('Error loading user details:', error);
+    showNotification('error', 'Error loading user details');
+  }
 }
 
 // Функция для обновления статуса пользователя

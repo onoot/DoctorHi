@@ -171,12 +171,3 @@ function initTransactionHandlers() {
     // Обработчик для кнопки сохранения свидетелей
     document.querySelector('.update-witnesses-btn')?.addEventListener('click', updateWitnesses);
 }
-
-// Экспортируем функции
-export { 
-    updateTransactionAmount, 
-    displayWitnesses, 
-    updateWitnesses, 
-    loadTransactionDetails,
-    initTransactionHandlers 
-};

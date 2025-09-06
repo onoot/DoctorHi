@@ -242,13 +242,3 @@ function initFileUploadHandlers() {
         }
     });
 }
-
-// Экспортируем функции
-export { 
-    openUploadModal, 
-    openMultiplUploadModal, 
-    loadTransactionFiles, 
-    displayFiles, 
-    deleteFile,
-    initFileUploadHandlers 
-};

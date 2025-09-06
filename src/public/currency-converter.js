@@ -139,6 +139,3 @@ function initPaymentAmountConverter() {
         this.value = rawValue.toString();
     });
 }
-
-// Экспортируем функции
-export { attachCurrencyConverter, initCurrencyConverter, initPaymentAmountConverter };

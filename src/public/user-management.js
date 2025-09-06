@@ -366,5 +366,3 @@ async function toggleUserStatus(userId) {
         showNotification('error', 'Error updating user status');
     }
 }
-
-export { loadUsers, restoreUser, renderUsersTable, initUserManagementHandlers, toggleUserStatus };

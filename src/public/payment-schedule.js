@@ -107,11 +107,3 @@ function initPaymentScheduleHandlers() {
         addPaymentScheduleItem();
     }
 }
-
-// Экспортируем функции
-export { 
-    addPaymentScheduleItem, 
-    updateRemainingAmount, 
-    updatePaymentStatus,
-    initPaymentScheduleHandlers 
-};

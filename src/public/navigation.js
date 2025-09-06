@@ -172,6 +172,3 @@ function initNavigation() {
     console.log(`[NAVIGATION] Setting initial section: ${initialSection}`);
     navigateToSection(initialSection);
 }
-
-// Экспортируем функции
-export { showSection, navigateToSection, initNavigation, initCategoryHandlers };

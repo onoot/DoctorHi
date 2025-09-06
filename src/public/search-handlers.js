@@ -70,6 +70,3 @@ function initSearchHandlers() {
         }
     }, 300));
 }
-
-// Экспортируем функции
-export { initSearchHandlers, setupSearch, initSearchHandlers };

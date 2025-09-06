@@ -93,6 +93,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
-// Экспортируем функции
-export { initAllHandlers, initApp };

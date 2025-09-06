@@ -82,6 +82,3 @@ function initActionHandlers() {
         });
     });
 }
-
-// Экспортируем функции
-export { attachActionHandlers, initActionHandlers };

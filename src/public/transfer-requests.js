@@ -126,12 +126,3 @@ function initTransferRequestHandlers() {
         loadTransferRequestsAdmin();
     }
 }
-
-// Экспортируем функции
-export { 
-    loadTransferRequestsAdmin, 
-    attachTransferRequestActionHandlers, 
-    handleTransferRequest,
-    showTransferRequestDetails,
-    initTransferRequestHandlers 
-};

@@ -390,6 +390,3 @@ function initPaymentFormFields() {
         }, 0);
     });
 }
-
-// Экспортируем утилиты
-export { getFileIcon, updateUSD, initPaymentFormFields, formatNumberInput, getFileIcon, attachCurrencyConverter, debounce, validatePhone, validateCNIC, formatPKR, parseNumber, updateUSD, updateRemainingAmount, formatUSD };

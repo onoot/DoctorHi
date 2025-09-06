@@ -58,6 +58,3 @@ async function restoreUser(userId) {
         showNotification('error', 'Error restoring user');
     }
 }
-
-// Экспортируем функции
-export { archiveUser, restoreUser };

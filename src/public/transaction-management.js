@@ -529,5 +529,3 @@ async function clearTransactionHistory() {
         loadTransactions();
     }
 }
-
-export { displayTransactionDocuments, editPayment, savePaymentChanges, createPayment,initAmountInputHandlers, updateTransactionAmount, openImagePreview, addPayment, updateTransactionStatus, uploadDocuments, clearTransactionHistory};

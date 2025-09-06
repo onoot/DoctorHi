@@ -3587,61 +3587,55 @@ function openViewTransactionModal(transactionId) {
 async function loadTransactions() {
     try {
         const response = await apiRequest('/v1/admin/transactions');
-
+        
         if (response.success && response.transactions) {
             const tbody = document.getElementById('transactionsTableBody');
             tbody.innerHTML = '';
-
+            
             if (response.transactions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
                 return;
             }
-
+            
             response.transactions.forEach(transaction => {
                 const row = document.createElement('tr');
-
-                // КНОПКИ ДЛЯ ТРАНЗАКЦИЙ (Edit/Delete)
-                const actionsHTML = `
-    <div class="actions-column">
-        <button class="action-btn btn-view view-transaction-btn" data-transaction-id="${transaction.id}">
-            <i class="fas fa-eye"></i> View
-        </button>
-        ${transaction.status === 'pending'
-                        ? `
-        <button class="action-btn btn-edit" data-id="${transaction.id}" data-action="approve">
-            <i class="fas fa-check"></i> Approve
-        </button>
-        <button class="action-btn btn-delete" data-id="${transaction.id}" data-action="reject">
-            <i class="fas fa-times"></i> Reject
-        </button>`
-                        : ''}
-    </div>
-`;
-
+                
+                // Проверяем и форматируем дату
+                const createdAt = transaction.created_at ? 
+                    new Date(transaction.created_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) : 'N/A';
+                
+                // Создаем HTML для строки таблицы с правильными полями
                 row.innerHTML = `
                     <td>${transaction.id}</td>
-                    <td>${transaction.property_id}</td>
-                    <td>${transaction.previous_owner}</td>
-                    <td>${transaction.new_owner}</td>
-                    <td>${new Date(transaction.date).toLocaleDateString()}</td>
+                    <td>${transaction.property_name || transaction.property_id}</td>
+                    <td>${transaction.previous_owner_name || 'N/A'}</td>
+                    <td>${transaction.new_owner_name || 'N/A'}</td>
+                    <td>${createdAt}</td>
                     <td><span class="status-badge ${transaction.status}">${transaction.status}</span></td>
-                    <td class="actions-cell">${actionsHTML}</td>
+                    <td>
+                        <div class="actions-cell">
+                            <div class="actions-column">
+                                <button class="action-btn btn-view view-transaction-btn" data-id="${transaction.id}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </div>
+                        </div>
+                    </td>
                 `;
+                
                 tbody.appendChild(row);
             });
-
-            // Добавляем пагинацию
-            const paginationContainer = document.querySelector('.pagination-container');
-            if (paginationContainer) {
-                paginationContainer.innerHTML = '';
-                paginationContainer.appendChild(
-                    createPagination(response.total, page, limit)
-                );
-            }
+        } else {
+            document.getElementById('transactionsTableBody').innerHTML = 
+                '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
-        document.getElementById('transactionsTableBody').innerHTML =
+        document.getElementById('transactionsTableBody').innerHTML = 
             '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
     }
 }

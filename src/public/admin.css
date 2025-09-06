@@ -63,6 +63,12 @@
     --z-index-modal-overlay: 2000;
     --z-index-modal-content: 2010;
     --z-index-notification: 2020;
+    
+    /* Ширина сайдбара */
+    --sidebar-width: 260px;
+    --sidebar-width-md: 240px;
+    --sidebar-width-sm: 80px;
+    --sidebar-margin: 16px;
 }
 
 /* Анимации */
@@ -156,7 +162,7 @@ body {
 
 /* Боковое меню */
 .sidebar {
-    width: 260px;
+    width: var(--sidebar-width);
     background: var(--sidebar-bg);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
     transition: var(--transition-normal);
@@ -260,11 +266,12 @@ body {
 /* Основной контент */
 .main-content {
     flex: 1;
-    padding: 24px 24px 24px 284px; /* 284px = 260px (ширина сайдбара) + 24px (отступ) */
+    padding: 24px;
     overflow-y: auto;
     animation: var(--animation-slide-up);
     position: relative;
     z-index: var(--z-index-main-content);
+    margin-left: calc(var(--sidebar-width) + var(--sidebar-margin));
 }
 
 /* Общие стили для секций */
@@ -395,6 +402,39 @@ body {
 
 .data-table tr:last-child td {
     border-bottom: none;
+}
+
+/* Контейнер для горизонтального скролла на мобильных */
+.table-container {
+    overflow-x: auto;
+    border-radius: var(--rounded-lg);
+    box-shadow: var(--shadow-sm);
+    margin-top: 16px;
+}
+
+/* Скрыть полосу прокрутки для WebKit браузеров */
+.table-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Добавляем паддинг для лучшего восприятия скролла */
+.table-container > table {
+    min-width: 800px;
+    width: 100%;
 }
 
 /* Кнопки действий */
@@ -1241,21 +1281,21 @@ body {
 /* Адаптивность */
 @media (min-width: 1200px) {
     .main-content {
-        padding-left: 284px; /* 260px (ширина сайдбара) + 24px (отступ) */
+        margin-left: calc(var(--sidebar-width) + var(--sidebar-margin));
     }
     
     .section {
-        width: calc(100% - 24px); /* Учитываем отступы */
+        width: calc(100% - var(--sidebar-margin));
     }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1200px) and (min-width: 993px) {
     .sidebar {
-        width: 240px;
+        width: var(--sidebar-width-md);
     }
     
     .main-content {
-        padding-left: 264px; /* 240px (ширина сайдбара) + 24px (отступ) */
+        margin-left: calc(var(--sidebar-width-md) + var(--sidebar-margin));
     }
     
     .section {
@@ -1277,11 +1317,39 @@ body {
     
     .main-content {
         padding: 16px;
-        padding-left: 16px !important;
+        margin-left: 0 !important;
     }
     
     .section {
         padding: 16px;
+    }
+    
+    /* Добавляем горизонтальный скролл для таблиц на мобильных */
+    .table-container {
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+        overflow-x: auto;
+        border-radius: var(--rounded-lg);
+        box-shadow: var(--shadow-sm);
+        margin-top: 16px;
+    }
+    
+    .table-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+    
+    .table-container > table {
+        min-width: 800px;
+        width: 100%;
     }
 }
 
@@ -1572,7 +1640,7 @@ body {
 }
 
 #sidebar-toggle:checked ~ .sidebar {
-    width: 80px;
+    width: var(--sidebar-width-sm);
 }
 
 #sidebar-toggle:checked ~ .sidebar .nav-text {
@@ -1596,33 +1664,11 @@ body {
 /* Смещение основного контента */
 .main-content {
     transition: var(--transition-normal);
-    margin-left: 260px;
+    margin-left: calc(var(--sidebar-width) + var(--sidebar-margin));
 }
 
 #sidebar-toggle:checked ~ .main-content {
-    margin-left: 80px;
-}
-
-/* Адаптивность для больших экранов */
-@media (min-width: 1200px) {
-    .main-content {
-        margin-left: 260px;
-    }
-    
-    #sidebar-toggle:checked ~ .main-content {
-        margin-left: 80px;
-    }
-}
-
-/* Адаптивность для средних экранов */
-@media (max-width: 1200px) and (min-width: 993px) {
-    .main-content {
-        margin-left: 240px;
-    }
-    
-    #sidebar-toggle:checked ~ .main-content {
-        margin-left: 80px;
-    }
+    margin-left: calc(var(--sidebar-width-sm) + var(--sidebar-margin));
 }
 
 /* Адаптивность для мобильных устройств */
@@ -1639,7 +1685,7 @@ body {
     
     #sidebar-toggle:checked ~ .sidebar {
         transform: translateX(0);
-        width: 260px;
+        width: var(--sidebar-width);
     }
     
     #sidebar-toggle:checked ~ .main-content {
@@ -1651,8 +1697,35 @@ body {
         pointer-events: auto !important;
         display: flex;
     }
+    
+    /* Добавляем горизонтальный скролл для таблиц на мобильных */
+    .table-container {
+        -ms-overflow-style: -ms-autohiding-scrollbar;
+        overflow-x: auto;
+        border-radius: var(--rounded-lg);
+        box-shadow: var(--shadow-sm);
+        margin-top: 16px;
+    }
+    
+    .table-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .table-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+    
+    .table-container > table {
+        min-width: 800px;
+        width: 100%;
+    }
 }
-
 
 /* Улучшаем отображение иконок в свернутом меню */
 .nav-link i {

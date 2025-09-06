@@ -59,33 +59,6 @@ function openMultiplUploadModal() {
 }
 
 /**
- * Функция для загрузки документов транзакции
- * @param {string} transactionId - ID транзакции
- */
-async function loadTransactionFiles(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
-            method: 'GET'
-        });
-        
-        if (response.success && response.documents) {
-            // Распределяем файлы по категориям
-            const agreementFiles = response.documents.filter(file => file.category === 'agreement');
-            const videoFiles = response.documents.filter(file => file.category === 'video');
-            const proofFiles = response.documents.filter(file => file.category === 'proof');
-            
-            // Отображаем файлы в соответствующих контейнерах
-            displayFiles(agreementFiles, 'agreementFile', 'agreement');
-            displayFiles(videoFiles, 'videoFile', 'video');
-            displayFiles(proofFiles, 'proofDocuments', 'proof');
-        }
-    } catch (error) {
-        console.error('Error loading transaction files:', error);
-        showNotification('error', 'Error loading files');
-    }
-}
-
-/**
  * Функция для отображения файлов
  * @param {Array} files - Массив файлов
  * @param {string} containerId - ID контейнера

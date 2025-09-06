@@ -3641,11 +3641,23 @@ function initTransactionHandlers() {
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.classList.add('show');
+        // Удаляем класс hide, если он есть
         modal.classList.remove('hide');
-        console.log(`Modal ${modalId} opened`);
+        
+        // Добавляем класс show для отображения
+        modal.classList.add('show');
+        
+        console.log(`Modal ${modalId} opened successfully`);
+        
+        // Дополнительная проверка для отладки
+        if (!modal.classList.contains('show')) {
+            console.error(`Failed to add 'show' class to modal ${modalId}`);
+        }
+        
+        return true;
     } else {
         console.error(`Modal with ID "${modalId}" not found`);
+        return false;
     }
 }
 
@@ -3688,9 +3700,17 @@ async function viewUser(userId) {
         
         if (response.success && response.user) {
             const user = response.user;
-            const modalBody = document.getElementById('userModal');
+            const modalBody = document.getElementById('userModalBody');
             
             if (modalBody) {
+                // Форматируем дату создания
+                const createdAt = user.created_at ? 
+                    new Date(user.created_at).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) : 'N/A';
+                
                 modalBody.innerHTML = `
                     <div class="user-details">
                         <p><strong>ID:</strong> ${user.id}</p>
@@ -3701,22 +3721,16 @@ async function viewUser(userId) {
                         <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
                         <p><strong>Status:</strong> <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">${user.is_active ? 'Active' : 'Blocked'}</span></p>
                         <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
-                        <p><strong>Created:</strong> ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric'
-                        }) : 'N/A'}</p>
+                        <p><strong>Created:</strong> ${createdAt}</p>
                     </div>
                 `;
                 
                 // КРИТИЧЕСКИ ВАЖНО: открываем модальное окно
-                const modal = document.getElementById('userModal');
-                if (modal) {
-                    modal.classList.add('show');
-                    modal.classList.remove('hide');
-                    console.log('User modal opened successfully');
-                } else {
-                    console.error('User modal element not found');
+                const modalOpened = openModal('userModal');
+                
+                if (!modalOpened) {
+                    console.error('Failed to open user modal after loading data');
+                    showNotification('error', 'Error opening user details');
                 }
             } else {
                 console.error('User modal body not found');

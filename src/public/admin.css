@@ -1,1737 +1,1482 @@
-  /* Стили для статусов */
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 500;
-            display: inline-block;
-        }
-
-        .status-badge.active {
-            background-color: #e6f7ee;
-            color: #1a7f37;
-        }
-
-        .status-badge.blocked {
-            background-color: #fff1f0;
-            color: #d92d20;
-        }
-
-        .status-badge.archived {
-            background-color: #f5f5f5;
-            color: #5e6675;
-        }
-
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --background-color: #f8f9fa;
-            --border-color: #dee2e6;
-        }
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: var(--background-color);
-        }
-
-        .admin-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Боковое меню */
-        .sidebar {
-            width: 250px;
-            background: white;
-            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-            padding: 20px 0;
-        }
-
-        .sidebar-header {
-            padding: 0 20px 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sidebar-header h1 {
-            margin: 0;
-            font-size: 1.5em;
-            color: var(--primary-color);
-        }
-
-        .nav-menu {
-            list-style: none;
-            padding: 0;
-            margin: 20px 0;
-        }
-
-        .nav-item {
-            padding: 0;
-            margin: 0;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: var(--secondary-color);
-            text-decoration: none;
-            transition: background-color 0.3s;
-        }
-
-        .nav-link i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .nav-link:hover,
-        .nav-link.active {
-            background-color: var(--background-color);
-            color: var(--primary-color);
-        }
-
-        /* Основной контент */
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        /* Общие стили для секций */
-        .section {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
-
-        .section.active {
-            display: block;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            margin: 0;
-            font-size: 1.5em;
-            color: #333;
-        }
-
-        /* Поиск */
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .search-btn {
-            padding: 8px 15px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .search-btn:hover {
-            background: #0056b3;
-        }
-
-        /* Таблицы */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .data-table th {
-            background-color: var(--background-color);
-            font-weight: 600;
-        }
-
-        .data-table tr:hover {
-            background-color: #f5f5f5;
-        }
-
-        /* Кнопки действий */
-        .action-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin: 2px;
-            color: white;
-        }
-
-        .btn-view {
-            background-color: #007bff;
-        }
-
-        .btn-view:hover {
-            background-color: #0056b3;
-        }
-
-        .file-upload-container {
-            display: inline-block;
-            position: relative;
-        }
-
-        .hidden-file-input {
-            display: none;
-        }
-
-        .btn-file {
-            background-color: #28a745;
-            color: white;
-            padding: 10px 20px;
-            margin-top: 16px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        .btn-file:hover {
-            background-color: #218838;
-        }
-
-        .btn-file:active {
-            background-color: #1e7e34;
-        }
-
-        .btn-edit {
-            background-color: #28a745;
-        }
-
-        .btn-edit:hover {
-            background-color: #218838;
-            color: white
-        }
-
-        .btn-delete {
-            background-color: #dc3545;
-        }
-
-        .btn-delete:hover {
-            background-color: #c82333;
-        }
-
-        .btn-download {
-            background-color: #17a2b8;
-        }
-
-        .btn-download:hover {
-            background-color: #138496;
-        }
-
-        /* Выпадающие списки для объектов */
-        .property-category {
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .category-header {
-            padding: 12px 15px;
-            background-color: var(--background-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .category-header h3 {
-            margin: 0;
-            font-size: 1.1em;
-            color: #333;
-        }
-
-        .category-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-
-        .property-category.active .category-content {
-            max-height: 1000px;
-        }
-
-        .category-header i.fa-chevron-down {
-            transition: transform 0.3s;
-        }
-
-        .property-category.active .category-header i.fa-chevron-down {
-            transform: rotate(180deg);
-        }
-
-        /* Стили для статусов */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-
-        .status-badge.pending {
-            background-color: #ffd700;
-            color: #000;
-        }
-
-        .status-badge.approved {
-            background-color: var(--success-color);
-            color: white;
-        }
-
-        .status-badge.rejected {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .status-badge.cancelled {
-            background-color: var(--secondary-color);
-            color: white;
-        }
-
-        /* Уведомления */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 4px;
-            color: white;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 5s ease;
-            z-index: 1000;
-            max-width: 300px;
-        }
-
-        .notification.show {
-            opacity: 1;
-            transform: translateY(0);
-
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            color: white;
-            font-size: 14px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-        }
-
-        .notification.success {
-            background-color: var(--success-color);
-        }
-
-        .notification.error {
-            background-color: var(--danger-color);
-        }
-
-        /* Пагинация */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 20px;
-            gap: 10px;
-        }
-
-        .pagination button {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            background: white;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .pagination button:hover:not(:disabled) {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination .current-page {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--background-color);
-        }
-
-        /* Модальные окна */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-        }
-
-        .modal.show {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            margin: 0;
-            font-size: 1.5em;
-        }
-
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            padding: 0;
-            color: var(--secondary-color);
-        }
-
-        .modal-body {
-            margin-bottom: 20px;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        /* Загрузка */
-        .loading {
-            position: relative;
-            min-height: 200px;
-        }
-
-        .loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 40px;
-            height: 40px;
-            margin: -20px 0 0 -20px;
-            border: 4px solid var(--border-color);
-            border-top-color: var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Стили для формы */
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        .form-group input,
-        .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .form-group textarea {
-            height: 80px;
-            resize: vertical;
-        }
-
-        .form-group input[readonly] {
-            background-color: var(--background-color);
-        }
-
-        .form-group button {
-            margin-top: 5px;
-        }
-
-        /* Стили для формы транзакций */
-        #addTransactionModal .modal-content {
-            max-width: 600px;
-            width: 100%;
-        }
-
-        #addTransactionModal .form-group {
-            margin-bottom: 20px;
-        }
-
-        #addTransactionModal label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #333;
-        }
-
-        #addTransactionModal select,
-        #addTransactionModal input[type="number"],
-        #addTransactionModal textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-
-        #addTransactionModal select:focus,
-        #addTransactionModal input[type="number"]:focus,
-        #addTransactionModal textarea:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-        }
-
-        #addTransactionModal select:disabled {
-            background-color: #f5f5f5;
-            cursor: not-allowed;
-        }
-
-        #addTransactionModal textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        #addTransactionModal .modal-footer {
-            margin-top: 30px;
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            #addTransactionModal .modal-content {
-                max-width: 100%;
-                margin: 10px;
-            }
-
-            #addTransactionModal .modal-footer {
-                flex-direction: column;
-            }
-
-            #addTransactionModal .modal-footer button {
-                width: 100%;
-            }
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 800px;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .close {
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .transaction-details {
-            margin-bottom: 30px;
-        }
-
-        .files-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .file-category {
-            background-color: #1b1e20;
-            padding: 15px;
-            border-radius: 8px;
-            color: white;
-
-            & button {
-                color: black;
-            }
-        }
-
-        .file-item {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            padding: 1rem;
-            border: 1px solid var(--border-color);
-            margin-bottom: 1rem;
-            border-radius: 4px;
-            background: white;
-            gap: 1rem;
-
-            & img {
-                max-width: 200px;
-                max-height: 200px;
-                object-fit: cover;
-            }
-        }
-
-        .file-preview {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #f9f9f9;
-            text-align: center;
-        }
-
-        .file-preview img {
-            max-width: 200px;
-            max-height: 200px;
-            object-fit: contain;
-            border-radius: 4px;
-        }
-
-        .file-preview i {
-            font-size: 48px;
-            color: #666;
-        }
-
-        .file-icon {
-            font-size: 3rem;
-            color: var(--secondary-color);
-        }
-
-        .file-info {
-            flex: 1;
-            min-width: 200px;
-        }
-
-        .file-name {
-            font-weight: bold;
-            margin: 0 0 0.5rem 0;
-            word-break: break-all;
-        }
-
-        .file-type,
-        .file-date {
-            color: var(--secondary-color);
-            margin: 0 0 0.25rem 0;
-            font-size: 0.9rem;
-        }
-
-        .file-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            min-width: 120px;
-        }
-
-        .file-actions button {
-            width: 100%;
-            padding: 0.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            transition: opacity 0.2s;
-        }
-
-        .file-actions button:hover {
-            opacity: 0.9;
-        }
-
-        .file-actions button:not(.delete-btn) {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .delete-btn {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        /* Адаптивность */
-        @media (max-width: 768px) {
-            .file-item {
-                flex-direction: column;
-            }
-
-            .file-preview,
-            .file-icon {
-                align-self: center;
-            }
-
-            .file-info {
-                width: 100%;
-                text-align: center;
-            }
-
-            .file-actions {
-                width: 100%;
-            }
-        }
-
-        /* Базовые стили для контейнера уведомлений */
-        #notification-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        /* Стили для отдельного уведомления */
-        .notification {
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            color: white;
-            font-size: 14px;
-            max-width: 300px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-            opacity: 0;
-            /* Начальное состояние: невидимо */
-            transform: translateY(-20px);
-            /* Начальное положение: выше видимой области */
-            transition: all 0.3s ease;
-            /* Плавный переход */
-        }
-
-        /* Активное состояние уведомления */
-        .notification.show {
-            opacity: 1;
-            /* Полностью видимо */
-            transform: translateY(0);
-            /* Видимое положение */
-        }
-
-        /* Цветовые стили */
-        .notification.success {
-            background-color: var(--success-color, #28a745);
-            /* Зеленый цвет */
-        }
-
-        .notification.error {
-            background-color: var(--danger-color, #dc3545);
-            /* Красный цвет */
-        }
-
-        /* Добавляем стили для платежей */
-        .payments-section {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .payment-summary {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-info {
-            text-align: center;
-        }
-
-        .payment-info h3 {
-            margin: 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .payment-info p {
-            margin: 0.5rem 0;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .payment-list {
-            margin-top: 1rem;
-        }
-
-        .payment-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-item .payment-details {
-            flex: 1;
-        }
-
-        .payment-item .payment-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .payment-form {
-            margin-top: 1rem;
-            padding: 1rem;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .payment-form form {
-            display: grid;
-            gap: 1rem;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .form-group label {
-            font-weight: 500;
-            color: #666;
-        }
-
-        .form-group input,
-        .form-group select {
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .form-group input[type="file"] {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 100%;
-        }
-
-        /* Стили для формы свидетелей */
-        .witness-group {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        .witness-group h4 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 1.1em;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .form-control:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-        }
-
-        .form-control:invalid {
-            border-color: #dc3545;
-        }
-
-        .form-control::placeholder {
-            color: #adb5bd;
-        }
-
-        .form-section {
-            margin-bottom: 30px;
-        }
-
-        .form-section h3 {
-            margin: 0 0 20px 0;
-            color: #007bff;
-            font-size: 1.2em;
-        }
-
-        /* Стили для раздела transfer requests */
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .status-badge.pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .status-badge.approved {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .status-badge.rejected {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .btn-approve {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .btn-reject {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .btn-view {
-            background-color: #17a2b8;
-            color: white;
-        }
-
-        .filters {
-            margin-bottom: 20px;
-        }
-
-        .filters select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        /* Стили для секции запросов на сделку */
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .status-badge.pending {
-            background-color: #ffd700;
-            color: #000;
-        }
-
-        .status-badge.approved {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .status-badge.rejected {
-            background-color: #f44336;
-            color: white;
-        }
-
-        #transferRequestsSection .filter-section {
-            margin-bottom: 20px;
-        }
-
-        #transferRequestsSection select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        /* Styles for request section */
-        .filter-controls {
-            margin-bottom: 20px;
-        }
-
-        .filter-controls select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            min-width: 150px;
-        }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .status-badge.pending {
-            background-color: #ffd700;
-            color: #000;
-        }
-
-        .status-badge.approved {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .status-badge.rejected {
-            background-color: #f44336;
-            color: white;
-        }
-
-        /* Контейнер для действий */
-        .actions-cell {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            padding: 8px 0;
-        }
-
-        /* Основные действия в столбце */
-        .actions-column {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        /* Дополнительные действия внизу */
-        .actions-footer {
-            margin-top: auto;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .btn-edit {
-            background-color: #e6f7ee;
-            color: #1a7f37;
-        }
-
-        .btn-delete {
-            background-color: #fff1f0;
-            color: #d92d20;
-        }
-
-        .btn-approve {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .btn-reject {
-            background-color: #f44336;
-            color: white;
-        }
-
-        .action-text {
-            font-size: 12px;
-            color: #666;
-        }
-
-        .fa-info-circle {
-            color: #2196F3;
-            cursor: help;
-        }
-
-        /* Добавляем стили для секции свидетелей */
-        .witnesses-section {
-            margin: 20px 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-
-        .witnesses-section h3 {
-            margin-bottom: 20px;
-            color: #2c3e50;
-            font-size: 1.2em;
-        }
-
-        .witness-block {
-            background: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        .witness-block h4 {
-            color: #3498db;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-weight: 500;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #dce4ec;
-            border-radius: 4px;
-            font-size: 14px;
-            transition: border-color 0.15s ease-in-out;
-        }
-
-        .form-control:focus {
-            border-color: #3498db;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-        }
-
-        .witness-actions {
-            margin-top: 20px;
-            text-align: right;
-        }
-
-        .action-btn {
-            padding: 8px 16px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .btn-approve {
-            background-color: #2ecc71;
-            color: white;
-        }
-
-        .btn-approve:hover {
-            background-color: #27ae60;
-        }
-
-        /* Стили для сообщений об ошибках */
-        .error-message {
-            color: #e74c3c;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
-        }
-
-        .form-control.error {
-            border-color: #e74c3c;
-        }
-
-        .form-control.error+.error-message {
-            display: block;
-        }
-        /* Стили для таблицы платежей */
-#paymentsTable {
-    margin: 20px 0;
+:root {
+    /* Основные цвета */
+    --primary: #4361ee;
+    --primary-light: #5c7cfa;
+    --primary-dark: #3a56d4;
+    --secondary: #6c757d;
+    --success: #06d6a0;
+    --info: #118ab2;
+    --warning: #ffd166;
+    --danger: #ef476f;
+    --light: #f8f9fa;
+    --dark: #212529;
+    
+    /* Градиенты */
+    --gradient-primary: linear-gradient(135deg, #4361ee, #3a0ca3);
+    --gradient-success: linear-gradient(135deg, #06d6a0, #118ab2);
+    --gradient-warning: linear-gradient(135deg, #ffd166, #ef476f);
+    
+    /* Тени */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Радиусы */
+    --rounded-sm: 4px;
+    --rounded-md: 8px;
+    --rounded-lg: 12px;
+    --rounded-xl: 16px;
+    
+    /* Переходы */
+    --transition-fast: all 0.2s ease;
+    --transition-normal: all 0.3s ease;
+    --transition-slow: all 0.4s ease;
+    
+    /* Шрифты */
+    --font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    /* Анимации */
+    --animation-fade-in: fade-in 0.3s ease forwards;
+    --animation-scale-in: scale-in 0.3s ease forwards;
+    --animation-slide-up: slide-up 0.3s ease forwards;
+    --animation-bounce: bounce 0.5s;
+    
+    /* Фон */
+    --background: #f5f7fb;
+    --card-bg: #ffffff;
+    --sidebar-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+/* Анимации */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scale-in {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-15px);}
+    60% {transform: translateY(-10px);}
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+}
+
+@keyframes loading {
+    to { transform: rotate(360deg); }
+}
+
+/* Базовые стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    color: var(--dark);
+    background-color: var(--background);
+    transition: var(--transition-normal);
+    overflow-x: hidden;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+    transition: var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Общий контейнер */
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+    animation: var(--animation-fade-in);
+}
+
+/* Боковое меню */
+.sidebar {
+    width: 260px;
+    background: var(--sidebar-bg);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.08);
+    transition: var(--transition-normal);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+.sidebar-header {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h1 {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-header h1 i {
+    font-size: 1.3em;
+}
+
+.nav-menu {
+    list-style: none;
+    padding: 20px 0;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.nav-item {
+    padding: 0;
+    margin: 0;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    color: var(--secondary);
+    text-decoration: none;
+    transition: var(--transition-normal);
+    border-left: 3px solid transparent;
+    font-weight: var(--font-weight-medium);
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-link i {
+    margin-right: 12px;
+    width: 22px;
+    text-align: center;
+    font-size: 1.1em;
+    transition: var(--transition-fast);
+}
+
+.nav-link:hover {
+    color: var(--primary);
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.nav-link:hover i {
+    transform: translateX(3px);
+}
+
+.nav-link.active {
+    color: var(--primary);
+    border-left: 3px solid var(--primary);
+    background: rgba(67, 97, 238, 0.05);
+    font-weight: var(--font-weight-semibold);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.nav-link.active:hover::after {
+    opacity: 1;
+}
+
+/* Основной контент */
+.main-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    animation: var(--animation-slide-up);
+}
+
+/* Общие стили для секций */
+.section {
+    background: var(--card-bg);
+    border-radius: var(--rounded-xl);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+    transition: var(--transition-normal);
+    display: none;
+    overflow: hidden;
+}
+
+.section.active {
+    display: block;
+    animation: var(--animation-scale-in);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    margin: 0;
+    font-size: var(--font-size-2xl);
+    color: var(--dark);
+    font-weight: var(--font-weight-bold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title i {
+    color: var(--primary);
+}
+
+/* Поиск */
+.search-box {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--rounded-lg);
+    font-size: var(--font-size-base);
+    transition: var(--transition-fast);
+    background: #fafafa;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.search-btn {
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--rounded-lg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: var(--font-weight-medium);
+    transition: var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.search-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.search-btn:active {
+    transform: translateY(0);
+}
+
+/* Таблицы */
+.data-table {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 16px;
+    border-radius: var(--rounded-lg);
+    overflow: hidden;
 }
 
-#paymentsTable th, #paymentsTable td {
-    padding: 10px;
+.data-table th,
+.data-table td {
+    padding: 14px 16px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-color);
+    font-size: var(--font-size-base);
+    transition: var(--transition-fast);
 }
 
-#paymentsTable th {
-    background-color: #f5f5f5;
-    font-weight: 600;
+.data-table th {
+    background-color: #f8fafc;
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
-#paymentsTable tr:hover {
-    background-color: #f9f9f9;
+.data-table tr {
+    transition: var(--transition-fast);
 }
 
-.receipt-link {
-    color: #0066cc;
+.data-table tr:hover {
+    background-color: rgba(67, 97, 238, 0.03);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.data-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Кнопки действий */
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: var(--rounded-md);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: var(--transition-normal);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px;
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
 }
 
-.receipt-link:hover {
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.05);
+    z-index: -1;
+    opacity: 0;
+    transition: var(--transition-fast);
+}
+
+.action-btn:hover::before {
+    opacity: 1;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.btn-view {
+    background-color: var(--info);
+    color: white;
+}
+
+.btn-view:hover {
+    background-color: #0d7a9b;
+}
+
+.btn-edit {
+    background: linear-gradient(to right, #4cc9f0, #4895ef);
+    color: white;
+    background-size: 200% auto;
+}
+
+.btn-edit:hover {
+    background-position: right center;
+}
+
+.btn-delete {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #e63956;
+}
+
+.btn-download {
+    background: linear-gradient(to right, #ff9e00, #ff5400);
+    color: white;
+    background-size: 200% auto;
+}
+
+.btn-download:hover {
+    background-position: right center;
+}
+
+.btn-approve {
+    background: linear-gradient(to right, #06d6a0, #118ab2);
+    color: white;
+    background-size: 200% auto;
+}
+
+.btn-approve:hover {
+    background-position: right center;
+}
+
+.btn-reject {
+    background: linear-gradient(to right, #ef476f, #d62839);
+    color: white;
+    background-size: 200% auto;
+}
+
+.btn-reject:hover {
+    background-position: right center;
+}
+
+/* Стили для статусов */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: var(--font-weight-semibold);
+    display: inline-block;
+    text-transform: capitalize;
+    min-width: 90px;
+    text-align: center;
+    transition: var(--transition-fast);
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+}
+
+.status-badge.pending {
+    background-color: rgba(255, 209, 102, 0.2);
+    color: #856404;
+    border: 1px solid rgba(255, 209, 102, 0.5);
+}
+
+.status-badge.approved {
+    background-color: rgba(6, 214, 160, 0.15);
+    color: #056640;
+    border: 1px solid rgba(6, 214, 160, 0.3);
+}
+
+.status-badge.rejected {
+    background-color: rgba(239, 71, 111, 0.15);
+    color: #7a1c2d;
+    border: 1px solid rgba(239, 71, 111, 0.3);
+}
+
+.status-badge.cancelled {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #494f54;
+    border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+.status-badge.active {
+    background-color: rgba(6, 214, 160, 0.15);
+    color: #056640;
+    border: 1px solid rgba(6, 214, 160, 0.3);
+}
+
+.status-badge.blocked {
+    background-color: rgba(239, 71, 111, 0.15);
+    color: #7a1c2d;
+    border: 1px solid rgba(239, 71, 111, 0.3);
+}
+
+.status-badge.archived {
+    background-color: rgba(108, 117, 125, 0.15);
+    color: #494f54;
+    border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Уведомления */
+#notification-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.notification {
+    padding: 16px 24px;
+    border-radius: var(--rounded-lg);
+    color: white;
+    font-size: var(--font-size-base);
+    max-width: 350px;
+    box-shadow: var(--shadow-xl);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slide-up 0.3s ease forwards;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification i {
+    font-size: 1.2em;
+    min-width: 24px;
+}
+
+.notification.success {
+    background: var(--gradient-success);
+}
+
+.notification.error {
+    background: var(--gradient-warning);
+}
+
+.notification.warning {
+    background: linear-gradient(135deg, #ffd166, #ff9e00);
+}
+
+/* Пагинация */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+}
+
+.pagination {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.pagination li {
+    display: inline-block;
+}
+
+.pagination a,
+.pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--rounded-md);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    transition: var(--transition-fast);
+    color: var(--secondary);
+}
+
+.pagination a:hover {
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+}
+
+.pagination .current {
+    background: var(--primary);
+    color: white;
+    font-weight: var(--font-weight-bold);
+    box-shadow: 0 2px 5px rgba(67, 97, 238, 0.3);
+}
+
+.pagination .disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Модальные окна */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    display: flex;
+    opacity: 1;
+    animation: fade-in 0.3s ease forwards;
+}
+
+.modal-content {
+    background: white;
+    padding: 0;
+    border-radius: var(--rounded-xl);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    color: var(--dark);
+    font-weight: var(--font-weight-bold);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0;
+    color: var(--secondary);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition-fast);
+}
+
+.modal-close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--dark);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Загрузка */
+.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: loading 1s linear infinite;
+}
+
+/* Стили для формы */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: var(--font-weight-medium);
+    color: var(--dark);
+    transition: var(--transition-fast);
+}
+
+.form-group.required label::after {
+    content: ' *';
+    color: var(--danger);
+}
+
+.form-control,
+.form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--rounded-md);
+    font-size: var(--font-size-base);
+    transition: var(--transition-fast);
+    background-color: #fafafa;
+    color: var(--dark);
+}
+
+.form-control:focus,
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.form-control:disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.form-control.error {
+    border-color: var(--danger);
+}
+
+.form-control.error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.2);
+}
+
+.error-message {
+    color: var(--danger);
+    font-size: var(--font-size-sm);
+    margin-top: 6px;
+    display: block;
+    animation: slide-up 0.2s ease;
+}
+
+/* Стили для документов */
+.document-preview {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--rounded-md);
+    margin-bottom: 12px;
+    background-color: #fafafa;
+    transition: var(--transition-fast);
+    animation: slide-up 0.3s ease forwards;
+}
+
+.document-preview:hover {
+    border-color: var(--primary);
+    background-color: rgba(67, 97, 238, 0.03);
+    transform: translateX(4px);
+}
+
+.document-icon {
+    margin-right: 12px;
+    font-size: 24px;
+    min-width: 24px;
+    transition: var(--transition-fast);
+}
+
+.document-name {
+    flex: 1;
+    margin-right: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: var(--font-weight-medium);
+    color: var(--dark);
+}
+
+.document-actions {
+    font-size: 0.85em;
+    display: flex;
+    gap: 8px;
+}
+
+.document-actions a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+}
+
+.document-actions a:hover {
     text-decoration: underline;
+    color: var(--primary-dark);
 }
 
-   /* Стили для таблицы платежей */
+.document-actions a i {
+    font-size: 0.9em;
+}
+
+.no-document {
+    color: var(--secondary);
+    font-style: italic;
+    padding: 8px 0;
+}
+
+/* Стили для таблицы платежей */
 #paymentsTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    border-radius: var(--rounded-lg);
+    overflow: hidden;
 }
 
 #paymentsTable th {
-  background-color: #f5f5f5;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
 }
 
 #paymentsTable td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 #paymentsTable tr:hover {
-  background-color: #f9f9f9;
+    background-color: rgba(67, 97, 238, 0.03);
 }
 
 /* Стили для превью чеков */
 .receipt-cell {
-  max-width: 200px;
+    max-width: 250px;
 }
 
 .receipt-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: var(--rounded-md);
+    transition: var(--transition-fast);
+}
+
+.receipt-preview:hover {
+    background-color: rgba(67, 97, 238, 0.05);
 }
 
 .receipt-thumbnail {
-  max-width: 50px;
-  max-height: 50px;
-  border-radius: 4px;
-  cursor: pointer;
-  object-fit: cover;
+    max-width: 40px;
+    max-height: 40px;
+    border-radius: var(--rounded-sm);
+    cursor: pointer;
+    object-fit: cover;
+    border: 1px solid var(--border-color);
 }
 
 .receipt-icon {
-  font-size: 24px;
+    font-size: 20px;
+    color: var(--primary);
 }
 
 .receipt-actions {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.8em;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85em;
+    gap: 4px;
 }
 
 .receipt-actions a {
-  text-decoration: none;
-  color: #0066cc;
-  margin-top: 3px;
+    text-decoration: none;
+    color: var(--primary);
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
 }
 
 .receipt-actions a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
+    color: var(--primary-dark);
+}
+
+.receipt-actions a i {
+    font-size: 0.9em;
 }
 
 .no-receipt {
-  color: #666;
-  font-style: italic;
+    color: var(--secondary);
+    font-style: italic;
+    font-size: var(--font-size-sm);
 }
 
 /* Стили для статусов платежей */
 .status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
 }
 
 .status-pending {
-  background-color: #fff3cd;
-  color: #856404;
+    background-color: rgba(255, 209, 102, 0.2);
+    color: #856404;
+    border: 1px solid rgba(255, 209, 102, 0.5);
 }
 
 .status-paid {
-  background-color: #d4edda;
-  color: #155724;
+    background-color: rgba(6, 214, 160, 0.15);
+    color: #056640;
+    border: 1px solid rgba(6, 214, 160, 0.3);
 }
 
 .status-cancelled {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-        /* Стили для кастомной кнопки выбора файла */
-        .file-upload {
-            position: relative;
-            display: inline-block;
-        }
-
-        .file-upload-input {
-            position: absolute;
-            left: 0;
-            top: 0;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .file-upload-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background-color: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .file-upload-button:hover {
-            background-color: #0052a3;
-        }
-
-        .file-upload-button i {
-            font-size: 16px;
-        }
-
-        .file-name-display {
-            margin-top: 8px;
-            padding: 6px 10px;
-            background-color: #f5f5f5;
-            border-radius: 4px;
-            font-size: 14px;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: none;
-        }
-
-        /* Стили для денежного формата */
-        .amount-input-container {
-            position: relative;
-        }
-
-        .currency-prefix {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #666;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .formatted-amount {
-            padding-left: 30px;
-        }
-
-        /* Стили для предпросмотра квитанции */
-        #receiptPreview {
-            margin-top: 10px;
-        }
-
-        #receiptPreview img {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        #receiptPreview i {
-            font-size: 48px;
-            color: #dc3545;
-        }
-
-        /* Стили для таблицы платежей */
-#paymentsTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+    background-color: rgba(239, 71, 111, 0.15);
+    color: #7a1c2d;
+    border: 1px solid rgba(239, 71, 111, 0.3);
 }
 
-#paymentsTable th {
-  background-color: #f5f5f5;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
+/* Стили для кастомной кнопки выбора файла */
+.file-upload {
+    position: relative;
+    display: inline-block;
+    width: 100%;
 }
 
-#paymentsTable td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+.file-upload-input {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
 }
 
-#paymentsTable tr:hover {
-  background-color: #f9f9f9;
+.file-upload-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--rounded-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    width: 100%;
+    justify-content: center;
+    font-weight: var(--font-weight-medium);
+    background: var(--gradient-primary);
+    box-shadow: var(--shadow-sm);
 }
 
-/* Стили для превью чеков */
-.receipt-cell {
-  max-width: 200px;
+.file-upload-button:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.receipt-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.file-upload-button:active {
+    transform: translateY(0);
 }
 
-.receipt-thumbnail {
-  max-width: 50px;
-  max-height: 50px;
-  border-radius: 4px;
-  cursor: pointer;
-  object-fit: cover;
+.file-upload-button i {
+    font-size: 16px;
 }
 
-.receipt-icon {
-  font-size: 24px;
+.file-name-display {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8fafc;
+    border-radius: var(--rounded-md);
+    font-size: var(--font-size-sm);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px dashed var(--border-color);
+    color: var(--dark);
+    min-height: 24px;
 }
 
-.receipt-actions {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.8em;
+/* Стили для денежного формата */
+.amount-input-container {
+    position: relative;
 }
 
-.receipt-actions a {
-  text-decoration: none;
-  color: #0066cc;
-  margin-top: 3px;
+.currency-prefix {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary);
+    pointer-events: none;
+    z-index: 2;
+    font-weight: var(--font-weight-medium);
 }
 
-.receipt-actions a:hover {
-  text-decoration: underline;
+.formatted-amount {
+    padding-left: 40px;
 }
 
-.no-receipt {
-  color: #666;
-  font-style: italic;
+/* Стили для предпросмотра квитанции */
+#receiptPreview {
+    margin-top: 12px;
+    border-radius: var(--rounded-md);
+    overflow: hidden;
 }
 
-/* Стили для статусов платежей */
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  display: inline-block;
+#receiptPreview img {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: var(--rounded-sm);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-fast);
 }
 
-.status-pending {
-  background-color: #fff3cd;
-  color: #856404;
+#receiptPreview img:hover {
+    transform: scale(1.02);
 }
 
-.status-paid {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-cancelled {
-  background-color: #f8d7da;
-  color: #721c24;
+#receiptPreview i {
+    font-size: 48px;
+    color: var(--danger);
 }
 
 /* Стили для действий с платежами */
 .payment-actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .payment-actions button {
-  padding: 3px 8px;
-  font-size: 0.85em;
+    padding: 6px 12px;
+    font-size: var(--font-size-sm);
+    border-radius: var(--rounded-md);
 }
 
 /* Стили для модального окна изображения */
 .image-preview-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  cursor: pointer;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-preview-modal.show {
+    opacity: 1;
 }
 
 .image-preview-modal img {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;
-}
-/*  */
-
-/* Стили для таблицы платежей */
-#paymentsTable {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    border-radius: var(--rounded-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
 }
 
-#paymentsTable th {
-  background-color: #f5f5f5;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 2px solid #ddd;
+.image-preview-modal.show img {
+    transform: scale(1);
 }
 
-#paymentsTable td {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
+/* Стили для секции свидетелей */
+.witnesses-section {
+    margin: 24px 0;
+    padding: 24px;
+    background-color: #f8fafc;
+    border-radius: var(--rounded-xl);
+    border: 1px solid var(--border-color);
+    transition: var(--transition-normal);
 }
 
-#paymentsTable tr:hover {
-  background-color: #f9f9f9;
+.witnesses-section:hover {
+    box-shadow: var(--shadow-md);
+    border-color: rgba(67, 97, 238, 0.3);
 }
 
-/* Стили для превью чеков */
-.receipt-cell {
-  max-width: 200px;
+.witnesses-section h3 {
+    margin-bottom: 20px;
+    color: var(--dark);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.receipt-preview {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.witnesses-section h3 i {
+    color: var(--primary);
 }
 
-.receipt-thumbnail {
-  max-width: 50px;
-  max-height: 50px;
-  border-radius: 4px;
-  cursor: pointer;
-  object-fit: cover;
+.witness-block {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: var(--rounded-lg);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+    border: 1px solid var(--border-color);
 }
 
-.receipt-icon {
-  font-size: 24px;
+.witness-block:hover {
+    box-shadow: var(--shadow-md);
+    border-color: rgba(67, 97, 238, 0.2);
 }
 
-.receipt-actions {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.8em;
+.witness-block h4 {
+    color: var(--primary);
+    margin-bottom: 16px;
+    font-size: 1.2em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
-.receipt-actions a {
-  text-decoration: none;
-  color: #0066cc;
-  margin-top: 3px;
+.witness-block h4 i {
+    font-size: 1.1em;
 }
 
-.receipt-actions a:hover {
-  text-decoration: underline;
+.witness-actions {
+    margin-top: 20px;
+    text-align: right;
 }
 
-.no-receipt {
-  color: #666;
-  font-style: italic;
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .sidebar {
+        width: 240px;
+    }
+    
+    .section {
+        padding: 20px;
+    }
 }
 
-/* Стили для статусов платежей */
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.85em;
-  display: inline-block;
+@media (max-width: 992px) {
+    .admin-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    
+    .sidebar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    }
+    
+    .main-content {
+        padding: 16px;
+    }
+    
+    .section {
+        padding: 16px;
+    }
 }
 
-.status-pending {
-  background-color: #fff3cd;
-  color: #856404;
+@media (max-width: 768px) {
+    .search-box {
+        flex-direction: column;
+    }
+    
+    .search-input {
+        width: 100%;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-width: 100%;
+    }
+    
+    .section-title {
+        font-size: var(--font-size-xl);
+    }
+    
+    .document-preview {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .document-name {
+        text-align: center;
+        width: 100%;
+    }
+    
+    .document-actions {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .witness-block {
+        padding: 16px;
+    }
 }
 
-.status-paid {
-  background-color: #d4edda;
-  color: #155724;
+@media (max-width: 576px) {
+    .section {
+        padding: 12px;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .section-title {
+        font-size: var(--font-size-lg);
+    }
+    
+    .actions-cell {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    
+    .action-btn {
+        padding: 6px 10px;
+        font-size: var(--font-size-sm);
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
 }
 
-.status-cancelled {
-  background-color: #f8d7da;
-  color: #721c24;
+/* Эффекты при наведении на карточки */
+.card-hover {
+    transition: var(--transition-normal);
+    cursor: pointer;
 }
 
-/* Стили для действий с платежами */
-.payment-actions {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
 }
 
-.payment-actions button {
-  padding: 3px 8px;
-  font-size: 0.85em;
+/* Эффекты для кнопок при наведении */
+.btn-hover {
+    position: relative;
+    overflow: hidden;
 }
 
-/* Стили для отображения документов */
-.document-preview {
-  display: flex;
-  align-items: center;
-  padding: 8px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  background-color: #f8f9fa;
+.btn-hover::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
 }
 
-.document-icon {
-  margin-right: 10px;
-  font-size: 20px;
+.btn-hover:focus:not(:active)::after {
+    animation: ripple 1s ease-out;
 }
 
-.document-name {
-  flex: 1;
-  margin-right: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(100, 100);
+        opacity: 0;
+    }
 }
 
-.document-actions {
-  font-size: 0.85em;
-  color: #6c757d;
+/* Стили для загрузки */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: loading 1s linear infinite;
+    margin-right: 8px;
 }
 
-.document-actions a {
-  color: #0066cc;
-  text-decoration: none;
+/* Стили для табличных заголовков */
+.table-header-cell {
+    position: relative;
+    cursor: pointer;
 }
 
-.document-actions a:hover {
-  text-decoration: underline;
+.table-header-cell::after {
+    content: '\f0dc';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7em;
+    opacity: 0.3;
+    transition: var(--transition-fast);
 }
 
-.no-document {
-  color: #6c757d;
-  font-style: italic;
+.table-header-cell.sortable:hover::after {
+    opacity: 0.7;
 }
 
-/* Стили для таблицы платежей */
-.receipt-cell {
-  padding: 8px 0;
+.table-header-cell.asc::after {
+    content: '\f162';
+    opacity: 1;
 }
 
-.receipt-preview {
-  display: flex;
-  align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background-color: #f8f9fa;
+.table-header-cell.desc::after {
+    content: '\f163';
+    opacity: 1;
 }
 
-.receipt-icon {
-  margin-right: 8px;
-  font-size: 18px;
+/* Стили для свайп-эффектов */
+.swipe-effect {
+    position: relative;
+    overflow: hidden;
 }
 
-.receipt-actions {
-  font-size: 0.85em;
+.swipe-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.6s;
 }
 
-.receipt-actions a {
-  color: #0066cc;
-  text-decoration: none;
-  margin: 0 3px;
+.swipe-effect:hover::before {
+    left: 100%;
 }
 
-.receipt-actions a:hover {
-  text-decoration: underline;
+/* Стили для подсветки поиска */
+.highlight {
+    background-color: #fff9c4;
+    padding: 0 2px;
+    border-radius: 2px;
+    font-weight: var(--font-weight-bold);
 }
 
-.no-receipt {
-  color: #6c757d;
-  font-style: italic;
+/* Стили для тултипов */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--dark);
+    color: #fff;
+    text-align: center;
+    border-radius: var(--rounded-md);
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-md);
+    font-weight: var(--font-weight-normal);
+}
+
+.tooltip .tooltip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--dark) transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }

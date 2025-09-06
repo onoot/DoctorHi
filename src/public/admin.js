@@ -3681,7 +3681,7 @@ function initModalHandlers() {
     });
 }
 
-// Функция для просмотра пользователя (аналогично viewTransaction)
+// Функция для просмотра пользователя
 async function viewUser(userId) {
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
@@ -3710,7 +3710,14 @@ async function viewUser(userId) {
                 `;
                 
                 // КРИТИЧЕСКИ ВАЖНО: открываем модальное окно
-                openModal('userModal');
+                const modal = document.getElementById('userModal');
+                if (modal) {
+                    modal.classList.add('show');
+                    modal.classList.remove('hide');
+                    console.log('User modal opened successfully');
+                } else {
+                    console.error('User modal element not found');
+                }
             } else {
                 console.error('User modal body not found');
                 showNotification('error', 'Error displaying user details');

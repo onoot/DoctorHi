@@ -93,3 +93,61 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+/**
+ * Обработчик формы добавления платежа
+ */
+document.getElementById('addPaymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const transactionId = document.getElementById('paymentTransactionId').value;
+    const amount = parseNumber(document.getElementById('paymentAmount').value);
+    const method = document.getElementById('paymentMethod').value;
+    const status = document.getElementById('paymentStatus').value;
+    const notes = document.getElementById('paymentNotes').value;
+    const receiptFile = document.getElementById('receiptFile').files[0];
+    
+    if (amount <= 0) {
+        showNotification('error', 'Amount must be greater than 0');
+        return;
+    }
+    
+    try {
+        // Создаем объект платежа
+        const paymentData = {
+            amount,
+            method,
+            status,
+            notes
+        };
+        
+        // Сначала создаем платеж
+        const paymentResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+            method: 'POST',
+            body: JSON.stringify(paymentData)
+        });
+        
+        if (paymentResponse.success && paymentResponse.payment) {
+            // Если есть файл чека, загружаем его
+            if (receiptFile) {
+                const formData = new FormData();
+                formData.append('file', receiptFile);
+                formData.append('category', 'receipt');
+                
+                // Загружаем чек как документ транзакции
+                await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+            }
+            
+            showNotification('success', 'Payment added successfully');
+            closeModal('addPaymentModal');
+            await loadTransactionPayments(transactionId);
+        }
+    } catch (error) {
+        console.error('Error adding payment:', error);
+        showNotification('error', error.message || 'Error adding payment');
+    }
+});

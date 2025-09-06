@@ -320,61 +320,40 @@ async function loadTransactionDetails(transactionId) {
  */
 async function loadTransactionPayments(transactionId) {
     try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+        // Загружаем платежи
+        const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
         
-        if (response && response.payments) {
-            const payments = response.payments;
-            const tableBody = document.getElementById('paymentsTableBody');
+        // Загружаем документы, чтобы найти чеки
+        const documentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
+        
+        if (paymentsResponse.success && paymentsResponse.payments) {
+            let payments = [...paymentsResponse.payments];
             
-            if (tableBody) {
-                if (payments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
-                } else {
-                    let html = '';
-                    payments.forEach(payment => {
-                        const paymentDate = payment.payment_date ? 
-                            new Date(payment.payment_date).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit', 
-                                year: 'numeric'
-                            }) : 'N/A';
-                        
-                        const amount = formatPKR(payment.amount);
-                        const statusClass = getStatusClass(payment.status);
-                        
-                        html += `
-                            <tr>
-                                <td>${payment.id}</td>
-                                <td>${paymentDate}</td>
-                                <td>${amount}</td>
-                                <td>${formatPaymentMethod(payment.payment_method)}</td>
-                                <td class="${statusClass}">${formatStatus(payment.status)}</td>
-                                <td>
-                                    <button class="action-btn btn-edit edit-payment-btn" 
-                                            data-payment-id="${payment.id}">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="action-btn btn-approve confirm-payment-btn" 
-                                            data-payment-id="${payment.id}">
-                                        <i class="fas fa-check"></i> Confirm
-                                    </button>
-                                </td>
-                                <td>
-                                    ${payment.file_path ? `
-                                    <a href="${API_BASE_URL}/v1/admin/files/${payment.id}" target="_blank">
-                                        <i class="fas fa-file-invoice"></i> View
-                                    </a>` : 'No receipt'}
-                                </td>
-                            </tr>
-                        `;
+            // Если есть документы, добавляем информацию о чеках к платежам
+            if (documentsResponse.success && documentsResponse.documents) {
+                const receiptFiles = documentsResponse.documents.filter(file => file.category === 'receipt');
+                
+                // Связываем чеки с платежами (пример простой логики)
+                payments = payments.map(payment => {
+                    // Ищем чек, созданный в тот же день, что и платеж
+                    const paymentDate = new Date(payment.created_at).toDateString();
+                    const matchingReceipt = receiptFiles.find(receipt => {
+                        const receiptDate = new Date(receipt.created_at).toDateString();
+                        return paymentDate === receiptDate;
                     });
                     
-                    tableBody.innerHTML = html;
-                    
-                    // Инициализируем обработчики действий с платежами
-                    setupPaymentActionHandlers(transactionId);
-                }
+                    return {
+                        ...payment,
+                        receipt: matchingReceipt
+                    };
+                });
             }
+            
+            // Отображаем платежи с чеками
+            displayPayments(payments);
+            
+            // Обновляем оставшуюся сумму
+            updateRemainingAmount();
         }
     } catch (error) {
         console.error('Error loading payments:', error);

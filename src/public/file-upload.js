@@ -225,6 +225,113 @@ async function deleteFile(fileId, transactionId, category) {
         showNotification('error', 'Error deleting file: ' + error.message);
     }
 }
+/**
+ * Отображение платежей в таблице
+ * @param {Array} payments - Массив платежей
+ */
+function displayPayments(payments) {
+    const paymentsTableBody = document.querySelector('#paymentsTable tbody');
+    if (!paymentsTableBody) return;
+    
+    paymentsTableBody.innerHTML = '';
+    
+    if (!payments || payments.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="7" style="text-align: center; padding: 20px;">
+                No payments found
+            </td>
+        `;
+        paymentsTableBody.appendChild(row);
+        return;
+    }
+    
+    payments.forEach(payment => {
+        const row = document.createElement('tr');
+        
+        // ID платежа
+        const idCell = document.createElement('td');
+        idCell.textContent = payment.id;
+        row.appendChild(idCell);
+        
+        // Сумма
+        const amountCell = document.createElement('td');
+        amountCell.textContent = formatPKR(payment.amount);
+        row.appendChild(amountCell);
+        
+        // Метод
+        const methodCell = document.createElement('td');
+        methodCell.textContent = payment.method;
+        row.appendChild(methodCell);
+        
+        // Статус
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status-badge status-${payment.status.toLowerCase()}`;
+        statusBadge.textContent = payment.status;
+        statusCell.appendChild(statusBadge);
+        row.appendChild(statusCell);
+        
+        // Дата
+        const dateCell = document.createElement('td');
+        dateCell.textContent = new Date(payment.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        row.appendChild(dateCell);
+        
+        // Чек
+        const receiptCell = document.createElement('td');
+        receiptCell.className = 'receipt-cell';
+        
+        // Проверяем, есть ли связанный чек (предполагаем, что чеки хранятся в payment.receipt)
+        if (payment.receipt || (payment.files && payment.files.some(f => f.category === 'receipt'))) {
+            const receipt = payment.receipt || payment.files.find(f => f.category === 'receipt');
+            
+            receiptCell.innerHTML = `
+                <div class="receipt-preview">
+                    <img src="${API_BASE_URL}/v1/admin/files/${receipt.id}" 
+                         alt="Receipt" class="receipt-thumbnail">
+                    <div class="receipt-actions">
+                        <a href="${API_BASE_URL}/v1/admin/files/${receipt.id}" target="_blank">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="#" onclick="deleteFile(${receipt.id}, ${payment.transaction_id}, 'receipt'); return false;">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                </div>
+            `;
+        } else {
+            receiptCell.innerHTML = '<span class="no-receipt">No receipt</span>';
+        }
+        
+        row.appendChild(receiptCell);
+        
+        // Действия
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-cell';
+        
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn btn-edit';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+        editBtn.addEventListener('click', () => openEditPaymentModal(payment.transaction_id, payment.id));
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn btn-delete';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        deleteBtn.addEventListener('click', () => deletePayment(payment.id, payment.transaction_id));
+        
+        actionsCell.appendChild(editBtn);
+        actionsCell.appendChild(deleteBtn);
+        row.appendChild(actionsCell);
+        
+        paymentsTableBody.appendChild(row);
+    });
+}
 
 /**
  * Функция для загрузки документов транзакции

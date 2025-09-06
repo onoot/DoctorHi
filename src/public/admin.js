@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', async function () {
           <input type="text" class="search-input" placeholder="Search archived users...">
           <button class="search-btn">
             <i class="fas fa-search"></i> Search
-          </button>
+          </button> 
         </div>
         <table class="data-table">
           <thead>
@@ -873,47 +873,6 @@ document.addEventListener('click', function (event) {
     }
 });
 
-// Просмотр деталей пользователя
-async function viewUser(userId) {
-    const data = await apiRequest(`/v1/admin/users/${userId}`);
-    if (!data) return;
-
-    const modalBody = document.getElementById('userModalBody');
-    modalBody.innerHTML = `
-                <div class="user-details">
-                    <p><strong>ID:</strong> ${data.id}</p>
-                    <p><strong>Name:</strong> ${data.name}</p>
-                    <p><strong>CNIC:</strong> ${data.cnic}</p>
-                    <p><strong>Email:</strong> ${data.email}</p>
-                    <p><strong>Status:</strong> <span class="status-badge ${data.status.toLowerCase()}">${data.status}</span></p>
-                    <p><strong>Created:</strong> ${new Date(data.created_at).toLocaleString()}</p>
-                    
-                    <h4>Properties</h4>
-                    ${data.properties && data.properties.length > 0 ? `
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${data.properties.map(p => `
-                                    <tr>
-                                        <td>${p.id}</td>
-                                        <td>${p.name}</td>
-                                        <td>${p.type}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    ` : '<p>No properties owned</p>'}
-                </div>
-            `;
-
-    openModal('userModal');
-}
 
 
 // Функция для создания нового платежа
@@ -2466,30 +2425,6 @@ async function getCachedExchangeRate() {
     return exchangeRateCache;
 }
 
-// Общая функция для открытия модальных окон
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'block';
-        // Добавляем класс для анимации
-        setTimeout(() => {
-            modal.classList.add('show');
-        }, 10);
-    } else {
-        console.error(`Modal with id "${modalId}" not found`);
-    }
-}
-
-// Общая функция для закрытия модальных окон
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
-    }
-}
 
 // Функция для открытия модального окна загрузки одного файла
 function openUploadModal(category) {
@@ -3702,7 +3637,144 @@ function initTransactionHandlers() {
     });
 }
 
-// Функция для просмотра деталей транзакции
+// Универсальная функция для открытия модальных окон
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        modal.classList.remove('hide');
+    } else {
+        console.error(`Modal with ID "${modalId}" not found`);
+    }
+}
+
+// Универсальная функция для закрытия модальных окон
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hide');
+        modal.classList.remove('show');
+        
+        // Удаляем класс hide после завершения анимации
+        setTimeout(() => {
+            modal.classList.remove('hide');
+        }, 300);
+    }
+}
+
+// Инициализация обработчиков для модальных окон
+function initModalHandlers() {
+    // Обработчик для кнопок открытия модальных окон
+    document.addEventListener('click', function(e) {
+        // Обработка кнопок просмотра пользователей
+        const viewUserBtn = e.target.closest('.view-user-btn');
+        if (viewUserBtn) {
+            e.preventDefault();
+            const userId = viewUserBtn.getAttribute('data-id');
+            if (userId) {
+                viewUser(userId);
+            }
+            return;
+        }
+        
+        // Обработка кнопок просмотра транзакций
+        const viewTransactionBtn = e.target.closest('.view-transaction-btn');
+        if (viewTransactionBtn) {
+            e.preventDefault();
+            const transactionId = viewTransactionBtn.getAttribute('data-id');
+            if (transactionId) {
+                viewTransaction(transactionId);
+            }
+            return;
+        }
+        
+        // Обработка кнопок закрытия модальных окон
+        const closeBtn = e.target.closest('.modal-close, .close');
+        if (closeBtn) {
+            e.preventDefault();
+            const modalId = closeBtn.getAttribute('data-modal') || 
+                           (closeBtn.closest('.modal') ? closeBtn.closest('.modal').id : null);
+            if (modalId) {
+                closeModal(modalId);
+            }
+            return;
+        }
+        
+        // Закрытие модального окна при клике на overlay
+        if (e.target.classList.contains('modal')) {
+            const modalId = e.target.id;
+            if (modalId) {
+                closeModal(modalId);
+            }
+        }
+    });
+    
+    // Обработчик для кнопки "Add User"
+    document.getElementById('openAddUserModal')?.addEventListener('click', function() {
+        openAddUserModal();
+    });
+    
+    // Обработчик для кнопки "New Transaction"
+    document.getElementById('create')?.addEventListener('click', function() {
+        openCreateTransactionModal();
+    });
+    
+    // Обработчик для кнопок действий в модальном окне транзакции
+    document.addEventListener('click', function(e) {
+        const transactionActionsBtn = e.target.closest('[data-action]');
+        if (transactionActionsBtn && transactionActionsBtn.closest('#viewTransactionModal')) {
+            e.preventDefault();
+            const action = transactionActionsBtn.getAttribute('data-action');
+            const transactionId = document.getElementById('currentTransactionId')?.value;
+            
+            if (transactionId) {
+                handleTransactionAction(transactionId, action);
+            }
+        }
+    });
+}
+
+// Функция для просмотра пользователя
+async function viewUser(userId) {
+    try {
+        const response = await apiRequest(`/v1/admin/users/${userId}`);
+        
+        if (response.success && response.user) {
+            const user = response.user;
+            const modalBody = document.getElementById('userModalBody');
+            
+            if (modalBody) {
+                modalBody.innerHTML = `
+                    <div class="user-details">
+                        <p><strong>ID:</strong> ${user.id}</p>
+                        <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                        <p><strong>CNIC:</strong> ${user.cnic || 'N/A'}</p>
+                        <p><strong>Login:</strong> ${user.login || 'N/A'}</p>
+                        <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+                        <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">${user.is_active ? 'Active' : 'Blocked'}</span></p>
+                        <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
+                        <p><strong>Created:</strong> ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB') : 'N/A'}</p>
+                    </div>
+                `;
+                
+                // Открываем модальное окно
+                openModal('userModal');
+            } else {
+                console.error('User modal body not found');
+                showNotification('error', 'Error displaying user details');
+            }
+        } else {
+            console.error('Invalid user data format:', response);
+            showNotification('error', 'Failed to load user data');
+        }
+    } catch (error) {
+        console.error('Error loading user details:', error);
+        showNotification('error', 'Error loading user details');
+    }
+}
+
+// Функция для просмотра транзакции
 async function viewTransaction(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
@@ -3714,7 +3786,7 @@ async function viewTransaction(transactionId) {
             document.getElementById('transactionId').textContent = transaction.id;
             document.getElementById('propertyName').textContent = transaction.property_name || transaction.property_id;
             document.getElementById('previousOwner').textContent = transaction.previous_owner_name || 'N/A';
-            document.getElementById('newOwner').textContent = transaction.new_owner_name;
+            document.getElementById('newOwner').textContent = transaction.new_owner_name || 'N/A';
             document.getElementById('transactionStatus').textContent = transaction.status;
             document.getElementById('transactionStatus').className = `status-badge ${transaction.status}`;
             
@@ -3778,7 +3850,56 @@ async function viewTransaction(transactionId) {
     }
 }
 
+// Функция для обработки действий в модальном окне транзакции
+function handleTransactionAction(transactionId, action) {
+    switch(action) {
+        case 'upload-modal':
+            const category = event.target.getAttribute('data-category');
+            openUploadFileModal(transactionId, category);
+            break;
+        case 'upload-multiple':
+            openMultipleUploadModal(transactionId);
+            break;
+        case 'add-payment':
+            openAddPaymentModal(transactionId);
+            break;
+        default:
+            console.error(`Unknown transaction action: ${action}`);
+    }
+}
 
+// Универсальная функция для безопасного получения элемента
+function getElement(id) {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.warn(`Element with ID "${id}" not found`);
+    }
+    return element;
+}
+
+// Функция для безопасного обновления содержимого элемента
+function updateElementContent(id, content) {
+    const element = getElement(id);
+    if (element) {
+        element.innerHTML = content;
+        return true;
+    }
+    return false;
+}
+
+// Обработчик ошибок API
+function handleApiError(error, defaultMessage = 'An error occurred') {
+    console.error('API Error:', error);
+    
+    let message = defaultMessage;
+    if (error.response && error.response.data && error.response.data.message) {
+        message = error.response.data.message;
+    } else if (error.message) {
+        message = error.message;
+    }
+    
+    showNotification('error', message);
+}
 
 // Функция для загрузки архивных пользователей
 async function loadArchivedUsers(page = 1, limit = 10) {
@@ -4814,139 +4935,137 @@ function getFileIcon(fileType) {
 
 // Function to display transaction documents properly
 function displayTransactionDocuments(transaction) {
-  const API_BASE_URL = 'https://doctor-height.online';
-  
-  // Функция для получения иконки по типу файла
-  function getFileIcon(fileType) {
-    if (!fileType) return 'fa-file';
+    const API_BASE_URL = 'https://doctor-height.online';
     
-    fileType = fileType.toLowerCase();
-    
-    if (fileType.includes('pdf')) return 'fa-file-pdf';
-    if (fileType.includes('image')) return 'fa-file-image';
-    if (fileType.includes('video')) return 'fa-file-video';
-    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
-    if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
-    if (fileType.includes('powerpoint')) return 'fa-file-powerpoint';
-    if (fileType.includes('audio')) return 'fa-file-audio';
-    
-    return 'fa-file';
-  }
-  
-  // Отображение Agreement File
-  const agreementFileDiv = document.getElementById('agreementFile');
-  if (agreementFileDiv) {
-    let agreementFound = false;
-    
-    // Ищем файлы в файловой системе (из свойства files)
-    if (transaction.files && Array.isArray(transaction.files.receipt)) {
-      for (const file of transaction.files.receipt) {
-        if (file.path.includes('agreements') || 
-            file.name.toLowerCase().includes('agreement') || 
-            file.path.toLowerCase().includes('agreement')) {
-          
-          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
-          const iconClass = getFileIcon(file.type);
-          
-          agreementFileDiv.innerHTML = `
-            <div class="document-preview">
-              <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
-              <span class="document-name">${file.name}</span>
-              <div class="document-actions">
-                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
-                <a href="${filePath}?download=true" download class="download-document">Download</a>
-              </div>
-            </div>
-          `;
-          agreementFound = true;
-          break;
-        }
-      }
-    }
-    
-    // Если файл не найден
-    if (!agreementFound) {
-      agreementFileDiv.innerHTML = '<span class="no-document">N/A</span>';
-    }
-  }
-  
-  // Отображение Video File
-  const videoFileDiv = document.getElementById('videoFile');
-  if (videoFileDiv) {
-    let videoFound = false;
-    
-    if (transaction.files && Array.isArray(transaction.files.receipt)) {
-      for (const file of transaction.files.receipt) {
-        if (file.path.includes('videos') || 
-            file.name.toLowerCase().includes('video') || 
-            file.type.includes('video')) {
-          
-          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
-          const iconClass = getFileIcon(file.type);
-          
-          videoFileDiv.innerHTML = `
-            <div class="document-preview">
-              <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
-              <span class="document-name">${file.name}</span>
-              <div class="document-actions">
-                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
-                <a href="${filePath}?download=true" download class="download-document">Download</a>
-              </div>
-            </div>
-          `;
-          videoFound = true;
-          break;
-        }
-      }
-    }
-    
-    if (!videoFound) {
-      videoFileDiv.innerHTML = '<span class="no-document">N/A</span>';
-    }
-  }
-  
-  // Отображение Proof Documents
-  const proofDocumentsDiv = document.getElementById('proofDocuments');
-  if (proofDocumentsDiv) {
-    let proofHTML = '';
-    let proofFound = false;
-    
-    if (transaction.files && Array.isArray(transaction.files.receipt)) {
-      for (const file of transaction.files.receipt) {
-        // Пропускаем файлы, которые уже отнесены к другим категориям
-        const isAgreement = file.path.includes('agreements') || 
-                           file.name.toLowerCase().includes('agreement') || 
-                           file.path.toLowerCase().includes('agreement');
-                           
-        const isVideo = file.path.includes('videos') || 
-                        file.name.toLowerCase().includes('video') || 
-                        file.type.includes('video');
+    // Функция для получения иконки по типу файла
+    function getFileIcon(fileType) {
+        if (!fileType) return 'fa-file';
         
-        if (!isAgreement && !isVideo) {
-          const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
-          const iconClass = getFileIcon(file.type);
-          
-          proofHTML += `
-            <div class="document-preview">
-              <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
-              <span class="document-name">${file.name}</span>
-              <div class="document-actions">
-                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
-                <a href="${filePath}?download=true" download class="download-document">Download</a>
-              </div>
-            </div>
-          `;
-          proofFound = true;
-        }
-      }
+        fileType = fileType.toLowerCase();
+        
+        if (fileType.includes('pdf')) return 'fa-file-pdf';
+        if (fileType.includes('image')) return 'fa-file-image';
+        if (fileType.includes('video')) return 'fa-file-video';
+        if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
+        if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
+        if (fileType.includes('powerpoint')) return 'fa-file-powerpoint';
+        if (fileType.includes('audio')) return 'fa-file-audio';
+        
+        return 'fa-file';
     }
     
-    if (proofFound) {
-      proofDocumentsDiv.innerHTML = proofHTML;
-    } else {
-      proofDocumentsDiv.innerHTML = '<span class="no-document">N/A</span>';
+    // Отображение Agreement File
+    const agreementFileDiv = getElement('agreementFile');
+    if (agreementFileDiv) {
+        let agreementFound = false;
+        
+        if (transaction.files && Array.isArray(transaction.files)) {
+            for (const file of transaction.files) {
+                if (file.path.includes('agreements') || 
+                    file.name.toLowerCase().includes('agreement') || 
+                    file.path.toLowerCase().includes('agreement')) {
+                    
+                    const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                    const iconClass = getFileIcon(file.type);
+                    
+                    agreementFileDiv.innerHTML = `
+                        <div class="document-preview">
+                            <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
+                            <span class="document-name">${file.name}</span>
+                            <div class="document-actions">
+                                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
+                                <a href="${filePath}?download=true" download class="download-document">Download</a>
+                            </div>
+                        </div>
+                    `;
+                    agreementFound = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!agreementFound) {
+            agreementFileDiv.innerHTML = '<span class="no-document">N/A</span>';
+        }
     }
-  }
+    
+    // Отображение Video File
+    const videoFileDiv = getElement('videoFile');
+    if (videoFileDiv) {
+        let videoFound = false;
+        
+        if (transaction.files && Array.isArray(transaction.files)) {
+            for (const file of transaction.files) {
+                if (file.path.includes('videos') || 
+                    file.name.toLowerCase().includes('video') || 
+                    file.type.includes('video')) {
+                    
+                    const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                    const iconClass = getFileIcon(file.type);
+                    
+                    videoFileDiv.innerHTML = `
+                        <div class="document-preview">
+                            <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
+                            <span class="document-name">${file.name}</span>
+                            <div class="document-actions">
+                                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
+                                <a href="${filePath}?download=true" download class="download-document">Download</a>
+                            </div>
+                        </div>
+                    `;
+                    videoFound = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!videoFound) {
+            videoFileDiv.innerHTML = '<span class="no-document">N/A</span>';
+        }
+    }
+    
+    // Отображение Proof Documents
+    const proofDocumentsDiv = getElement('proofDocuments');
+    if (proofDocumentsDiv) {
+        let proofHTML = '';
+        let proofFound = false;
+        
+        if (transaction.files && Array.isArray(transaction.files)) {
+            for (const file of transaction.files) {
+                // Пропускаем файлы, которые уже отнесены к другим категориям
+                const isAgreement = file.path.includes('agreements') || 
+                                   file.name.toLowerCase().includes('agreement') || 
+                                   file.path.toLowerCase().includes('agreement');
+                                   
+                const isVideo = file.path.includes('videos') || 
+                                file.name.toLowerCase().includes('video') || 
+                                file.type.includes('video');
+                
+                if (!isAgreement && !isVideo) {
+                    const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                    const iconClass = getFileIcon(file.type);
+                    
+                    proofHTML += `
+                        <div class="document-preview">
+                            <i class="fas ${iconClass} document-icon" style="color: #0066cc;"></i>
+                            <span class="document-name">${file.name}</span>
+                            <div class="document-actions">
+                                <a href="${filePath}" target="_blank" class="view-document">View</a> | 
+                                <a href="${filePath}?download=true" download class="download-document">Download</a>
+                            </div>
+                        </div>
+                    `;
+                    proofFound = true;
+                }
+            }
+        }
+        
+        if (proofFound) {
+            proofDocumentsDiv.innerHTML = proofHTML;
+        } else {
+            proofDocumentsDiv.innerHTML = '<span class="no-document">N/A</span>';
+        }
+    }
 }
 
 // Инициализация полей для редактирования платежа

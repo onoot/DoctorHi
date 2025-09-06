@@ -98,6 +98,11 @@ function displayTransactionDocuments(transaction) {
     if (transaction.files) {
         // Обработка всех файлов из ответа
         Object.keys(transaction.files).forEach(category => {
+            // Игнорируем категорию receipt
+            if (category === 'receipt' || category.includes('receipt')) {
+                return;
+            }
+            
             const files = transaction.files[category];
             
             if (!Array.isArray(files) || files.length === 0) return;
@@ -126,7 +131,7 @@ function displayTransactionDocuments(transaction) {
                 
                 // Добавляем кнопку удаления
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-delete';
+                deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -141,6 +146,11 @@ function displayTransactionDocuments(transaction) {
         // Если структура files отсутствует, обрабатываем как массив файлов
         if (Array.isArray(transaction)) {
             transaction.forEach(file => {
+                // Игнорируем файлы с категорией receipt
+                if (file.category === 'receipt' || file.category.includes('receipt')) {
+                    return;
+                }
+                
                 const container = file.category === 'agreement' ? agreementFile : 
                                file.category === 'video' ? videoFile : proofDocuments;
                 
@@ -157,7 +167,7 @@ function displayTransactionDocuments(transaction) {
                     
                     // Добавляем кнопку удаления
                     const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'btn-delete';
+                    deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
                     deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();

@@ -431,13 +431,14 @@ async function loadTransactionFiles(transactionId) {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
             method: 'GET'
         });
-
+        
         if (response.success && response.documents) {
             // Распределяем файлы по категориям
+            // Игнорируем категорию 'receipt', так как она не должна отображаться в этом разделе
             const agreementFiles = response.documents.filter(file => file.category === 'agreement');
             const videoFiles = response.documents.filter(file => file.category === 'video');
             const proofFiles = response.documents.filter(file => file.category === 'proof');
-
+            
             // Отображаем файлы в соответствующих контейнерах
             displayFiles(agreementFiles, 'agreementFile', 'agreement');
             displayFiles(videoFiles, 'videoFile', 'video');

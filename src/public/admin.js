@@ -2770,31 +2770,11 @@ function setupFilePreview() {
   }
 }
 
-// Функция для отображения файлов
-function displayFiles(transaction) {
-  try {
-    // Отображаем файлы квитанций
-    const receiptFiles = transaction.files?.receipt || [];
-    const agreementFiles = transaction.files?.agreement || [];
-    const videoFiles = transaction.files?.video || [];
-    const proofFiles = transaction.files?.proof_documents || [];
-    
-    displayFilesList(agreementFiles, 'agreementFile', 'agreement');
-    displayFilesList(videoFiles, 'videoFile', 'video');
-    displayFilesList(proofFiles, 'proofDocuments', 'proof');
-  } catch (error) {
-    console.error('Error loading transaction files:', error);
-    showNotification('error', 'Error loading files');
-  }
-}
-
-// Функция для отображения списка файлов
-function displayFilesList(files, containerId, category) {
+// Функция для отображения файлов в интерфейсе
+function displayFiles(files, containerId, fileCategory) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  
   container.innerHTML = '';
-  
   if (!files || files.length === 0) {
     container.innerHTML = '<p>No files uploaded yet</p>';
     return;
@@ -2812,9 +2792,11 @@ function displayFilesList(files, containerId, category) {
     const viewBtn = document.createElement('button');
     viewBtn.innerHTML = '<i class="fas fa-eye"></i> View';
     
-    // ИСПРАВЛЕНО: используем правильный URL через безопасный маршрут
-    const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${file.id}`;
-    
+    // Формируем правильный URL
+    const fileUrl = file.file_path 
+      ? `${API_BASE_URL}/uploads/${encodeURIComponent(file.file_path)}`
+      : `${API_BASE_URL}/uploads/${encodeURIComponent(file.file_name)}`;
+      
     viewBtn.onclick = () => window.open(fileUrl, '_blank');
     actions.appendChild(viewBtn);
     
@@ -2823,9 +2805,8 @@ function displayFilesList(files, containerId, category) {
     downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
     downloadBtn.onclick = () => {
       const a = document.createElement('a');
-      // ИСПРАВЛЕНО: добавляем параметр download=true
       a.href = `${fileUrl}?download=true`;
-      a.download = file.name || file.original_name;
+      a.download = file.original_name || file.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2834,15 +2815,17 @@ function displayFilesList(files, containerId, category) {
     
     // Определяем тип файла для отображения иконки
     let fileIcon = 'fa-file';
-    if (file.path && file.path.toLowerCase().endsWith('.pdf')) {
+    if (file.file_name.toLowerCase().endsWith('.pdf')) {
       fileIcon = 'fa-file-pdf';
-    } else if (file.path && file.path.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
+    } else if (file.file_name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
       fileIcon = 'fa-file-image';
+    } else if (file.file_name.toLowerCase().match(/\.(mp4|mov|avi)$/)) {
+      fileIcon = 'fa-file-video';
     }
     
     // Формируем отображение файла
     fileElement.innerHTML = `<i class="fas ${fileIcon}"></i>
-      <span class="file-name">${file.name || file.original_name}</span>
+      <span class="file-name">${file.original_name || file.file_name}</span>
       <span class="file-date">${new Date(file.created_at).toLocaleDateString()}</span>`;
       
     fileElement.appendChild(actions);
@@ -2872,69 +2855,25 @@ async function loadTransactionFiles(transactionId) {
         console.error('Error loading transaction files:', error);
         showNotification('error', 'Error loading files');
     }
-}
-
-
-// Вспомогательные функции для форматирования
+}// Функция для форматирования метода оплаты
 function formatPaymentMethod(method) {
-  const methods = {
-    'cash': 'Cash',
-    'bank_transfer': 'Bank Transfer',
-    'credit_card': 'Credit Card',
-    'other': 'Other'
-  };
-  return methods[method] || method.charAt(0).toUpperCase() + method.slice(1);
+    const methods = {
+        'cash': 'Cash',
+        'bank_transfer': 'Bank Transfer',
+        'credit_card': 'Credit Card',
+        'other': 'Other'
+    };
+    return methods[method] || method.charAt(0).toUpperCase() + method.slice(1);
 }
 
+// Функция для форматирования статуса платежа
 function formatStatus(status) {
-  const statuses = {
-    'pending': 'Pending',
-    'paid': 'Paid',
-    'cancelled': 'Cancelled'
-  };
-  return statuses[status] || status.charAt(0).toUpperCase() + status.slice(1);
-}
-
-function getStatusClass(status) {
-  const classes = {
-    'pending': 'status-pending',
-    'paid': 'status-paid',
-    'cancelled': 'status-cancelled'
-  };
-  return classes[status] || '';
-}
-
-// Функция для открытия полноразмерного изображения
-function openImagePreview(imageSrc) {
-  const modal = document.createElement('div');
-  modal.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    cursor: pointer;
-  `;
-  
-  const img = document.createElement('img');
-  img.src = imageSrc;
-  img.style.cssText = `
-    max-width: 90%;
-    max-height: 90%;
-    object-fit: contain;
-  `;
-  
-  modal.appendChild(img);
-  document.body.appendChild(modal);
-  
-  modal.addEventListener('click', function() {
-    document.body.removeChild(modal);
-  });
+    const statuses = {
+        'pending': 'Pending',
+        'paid': 'Paid',
+        'cancelled': 'Cancelled'
+    };
+    return statuses[status] || status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 // Функция для получения CSS класса статуса
@@ -3590,238 +3529,66 @@ function deletePayment(paymentId, transactionId) {
         });
 }
 
-// Функция для загрузки платежей
-async function loadTransactionPayments(transactionId) {
-  try {
-    const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-    
-    // Проверяем, что ответ содержит транзакцию с платежами
-    if (response && response.transaction && Array.isArray(response.transaction.payments)) {
-      const payments = response.transaction.payments;
-      const tbody = document.getElementById('paymentsTableBody');
-      tbody.innerHTML = '';
-      
-      if (payments.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
-        return;
-      }
-      
-      payments.forEach(payment => {
-        const row = document.createElement('tr');
-        
-        // Создаем ячейку для превью чека
-        let receiptPreview = '';
-        
-        // Проверяем, есть ли информация о квитанции
-        if (payment.receipt) {
-          // ИСПРАВЛЕНО: используем правильный путь к файлу
-          const fileUrl = `${API_BASE_URL}/v1/admin/transactions/files/${payment.id}`;
-          
-          // Определяем тип файла для правильного превью
-          if (payment.receipt.type && payment.receipt.type.includes('pdf')) {
-            receiptPreview = `
-              <div class="receipt-preview">
-                <i class="fas fa-file-pdf receipt-icon" style="font-size: 24px; color: #dc3545;"></i>
-                <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
-                </div>
-              </div>
-            `;
-          } else if (payment.receipt.type && payment.receipt.type.includes('image')) {
-            receiptPreview = `
-              <div class="receipt-preview">
-                <img src="${fileUrl}" alt="${payment.receipt.name || 'Receipt'}" class="receipt-thumbnail" 
-                     onclick="openImagePreview('${fileUrl}')">
-                <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
-                </div>
-              </div>
-            `;
-          } else {
-            receiptPreview = `
-              <div class="receipt-preview">
-                <i class="fas fa-file-alt receipt-icon"></i>
-                <div class="receipt-actions">
-                  <a href="${fileUrl}" target="_blank" class="view-receipt">View</a>
-                  <a href="${fileUrl}?download=true" class="download-receipt">Download</a>
-                </div>
-              </div>
-            `;
-          }
-        } else {
-          receiptPreview = '<span class="no-receipt">No receipt</span>';
-        }
-        
-        // Форматируем дату платежа
-        let paymentDate = 'Invalid date';
-        try {
-          const date = new Date(payment.payment_date);
-          if (!isNaN(date)) {
-            paymentDate = date.toLocaleDateString('en-GB', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-            });
-          }
-        } catch (e) {
-          console.error('Error parsing date:', e);
-        }
-        
-        // Форматируем сумму
-        const amount = parseFloat(payment.amount) || 0;
-        
-        // Добавляем кнопки действий для платежей в статусе pending
-        let actionButtons = '';
-        if (payment.status === 'pending') {
-          actionButtons = `
-            <div class="payment-actions">
-              <button class="action-btn btn-approve confirm-payment-btn" 
-                      data-payment-id="${payment.id}">
-                <i class="fas fa-check"></i> Confirm
-              </button>
-              <button class="action-btn btn-reject cancel-payment-btn" 
-                      data-payment-id="${payment.id}">
-                <i class="fas fa-times"></i> Cancel
-              </button>
-            </div>
-          `;
-        } else {
-          actionButtons = `
-            <div class="payment-status">
-              <span class="status-badge ${getStatusClass(payment.status)}">
-                ${formatStatus(payment.status)}
-              </span>
-            </div>
-          `;
-        }
-        
-        row.innerHTML = `
-          <td>${payment.id}</td>
-          <td>${paymentDate}</td>
-          <td>PKR ${amount.toFixed(2)}</td>
-          <td>${formatPaymentMethod(payment.payment_method)}</td>
-          <td>${actionButtons}</td>
-          <td class="receipt-cell">${receiptPreview}</td>
-        `;
-        
-        tbody.appendChild(row);
-      });
-      
-      // Добавляем обработчики событий для кнопок
-      document.querySelectorAll('.confirm-payment-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const paymentId = e.target.closest('.confirm-payment-btn').dataset.paymentId;
-          confirmPayment(paymentId, transactionId);
-        });
-      });
-      
-      document.querySelectorAll('.cancel-payment-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const paymentId = e.target.closest('.cancel-payment-btn').dataset.paymentId;
-          cancelPayment(paymentId, transactionId);
-        });
-      });
-      
-      document.querySelectorAll('.edit-payment-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const paymentId = e.target.closest('.edit-payment-btn').dataset.paymentId;
-          editPayment(paymentId, transactionId);
-        });
-      });
-    } else {
-      // Более информативное сообщение об ошибке
-      console.error('Unexpected response format:', response);
-      document.getElementById('paymentsTableBody').innerHTML = 
-        '<tr><td colspan="7" class="text-center">No payments found or error loading data</td></tr>';
-    }
-  } catch (error) {
-    console.error('Error loading payments:', error);
-    document.getElementById('paymentsTableBody').innerHTML = 
-      '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
-  }
-}
+// Функция для загрузки деталей транзакции
+async function loadTransactionDetails(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
 
-// Функция для отображения свидетелей
+        if (response.success && response.transaction) {
+            const transaction = response.transaction;
+
+            // Форматируем суммы
+            const formatAmount = (amount) => new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+
+            // Обновляем суммы
+            const totalAmountView = document.getElementById('totalAmountView');
+            const paidAmount = document.getElementById('paidAmount');
+
+            if (totalAmountView) totalAmountView.textContent = formatAmount(transaction.total_amount);
+            if (paidAmount) paidAmount.textContent = formatAmount(transaction.paid_amount);
+
+            // Обновляем оставшуюся сумму
+            const remaining = transaction.total_amount - transaction.paid_amount;
+            const remainingAmount = document.getElementById('remainingAmount');
+            if (remainingAmount) {
+                remainingAmount.textContent = formatAmount(remaining);
+            }
+
+            // Обновляем дату создания
+            const createdAt = document.getElementById('createdAt');
+            if (createdAt) {
+                createdAt.textContent = new Date(transaction.created_at).toLocaleDateString();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+    }
+}
+// Функция для отображения свидетелей в модальном окне
 function displayWitnesses(transaction) {
-  try {
-    // Проверяем, есть ли данные свидетелей
-    if (transaction.witnesses && transaction.witnesses.witness1) {
-      document.getElementById('witness1Name').value = transaction.witnesses.witness1.name || '';
-      document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
-      document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
-    }
-    
-    if (transaction.witnesses && transaction.witnesses.witness2) {
-      document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
-      document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
-      document.getElementById('witness2Phone').value = transaction.witnesses.witness2.phone || '';
-    }
-    
-    // Добавляем обработчик для сохранения свидетелей
-    document.querySelector('.update-witnesses-btn')?.addEventListener('click', async () => {
-      await saveWitnesses(transaction.id);
-    });
-    
-    console.log('Witnesses displayed successfully');
-  } catch (error) {
-    console.error('Error displaying witnesses:', error);
-    showNotification('error', 'Error displaying witness information');
-  }
-}
+    try {
+        // Проверяем, есть ли данные свидетелей в формате, который мы ожидаем
+        if (transaction.witnesses && transaction.witnesses.witness1) {
+            document.getElementById('witness1Name').value = transaction.witnesses.witness1.name || '';
+            document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
+            document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
+        }
 
-// Функция для сохранения информации о свидетелях
-async function saveWitnesses(transactionId) {
-  try {
-    const witness1Name = document.getElementById('witness1Name').value;
-    const witness1CNIC = document.getElementById('witness1CNIC').value;
-    const witness1Phone = document.getElementById('witness1Phone').value;
-    const witness2Name = document.getElementById('witness2Name').value;
-    const witness2CNIC = document.getElementById('witness2CNIC').value;
-    const witness2Phone = document.getElementById('witness2Phone').value;
-    
-    // Валидация данных
-    if (!witness1Name || !witness1CNIC) {
-      showNotification('error', 'Witness 1 name and CNIC are required');
-      return;
-    }
-    
-    if (!witness2Name || !witness2CNIC) {
-      showNotification('error', 'Witness 2 name and CNIC are required');
-      return;
-    }
-    
-    const response = await apiRequest(
-      `/v1/admin/transactions/${transactionId}/witnesses`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({
-          witness1: {
-            name: witness1Name,
-            cnic: witness1CNIC,
-            phone: witness1Phone
-          },
-          witness2: {
-            name: witness2Name,
-            cnic: witness2CNIC,
-            phone: witness2Phone
-          }
-        })
-      }
-    );
-    
-    if (response.success) {
-      showNotification('success', 'Witness information updated successfully');
-    } else {
-      throw new Error(response.message || 'Failed to update witness information');
-    }
-  } catch (error) {
-    console.error('Error saving witnesses:', error);
-    showNotification('error', error.message || 'Error saving witness information');
-  }
-}
+        if (transaction.witnesses && transaction.witnesses.witness2) {
+            document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
+            document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
+            document.getElementById('witness2Phone').value = transaction.witnesses.witness2.phone || '';
+        }
 
+        console.log('Witnesses displayed successfully');
+    } catch (error) {
+        console.error('Error displaying witnesses:', error);
+        showNotification('error', 'Error displaying witness information');
+    }
+}
 // Функция для открытия модального окна просмотра транзакции
 function openViewTransactionModal(transactionId) {
     if (!transactionId) {

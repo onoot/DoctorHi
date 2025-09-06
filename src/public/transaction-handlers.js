@@ -237,6 +237,7 @@ function updateWitnesses() {
     }
 }
 
+
 /**
  * Функция для загрузки деталей транзакции
  * @param {string} transactionId - ID транзакции
@@ -245,55 +246,20 @@ async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
         
-        // Проверяем, что response содержит данные транзакции
-        if (response && response.id) {
-            const transaction = response;
+        if (response.success && response.transaction) {
+            const transaction = response.transaction;
             
-            // Получаем элементы
-            const transactionIdEl = document.getElementById('transactionId');
-            const propertyNameEl = document.getElementById('propertyName');
-            const previousOwnerEl = document.getElementById('previousOwner');
-            const newOwnerEl = document.getElementById('newOwner');
-            const statusEl = document.getElementById('transactionStatus');
-            const createdAtEl = document.getElementById('createdAt');
-            const totalAmountViewEl = document.getElementById('totalAmountView');
-            const paidAmountEl = document.getElementById('paidAmount');
-            const remainingAmountEl = document.getElementById('remainingAmount');
-            
-            // Проверяем существование элементов
-            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl || !newOwnerEl || 
-                !statusEl || !createdAtEl || !totalAmountViewEl || !paidAmountEl || !remainingAmountEl) {
-                console.error('One or more transaction detail elements not found');
-                return;
-            }
-            
-            // Заполняем основную информацию о сделке
-            transactionIdEl.textContent = transaction.id;
-            propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
-            previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
-            newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
-            
-            // Обновляем статус
-            statusEl.textContent = transaction.status;
-            statusEl.className = `status-badge ${transaction.status}`;
-            
-            // Обновляем дату создания
-            createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-            
-            // Обновляем сумму
-            totalAmountViewEl.textContent = formatPKR(transaction.total_amount);
-            paidAmountEl.textContent = formatPKR(transaction.paid_amount);
+            // Отображаем основную информацию
+            document.getElementById('transactionId').textContent = transaction.id;
+            document.getElementById('totalAmountView').textContent = formatPKR(transaction.total_amount);
+            document.getElementById('paidAmount').textContent = formatPKR(transaction.paid_amount);
             
             // Используем payment_summary, если доступен, иначе вычисляем вручную
             if (transaction.payment_summary) {
-                remainingAmountEl.textContent = formatPKR(transaction.payment_summary.remaining_amount);
+                document.getElementById('remainingAmount').textContent = formatPKR(transaction.payment_summary.remaining_amount);
             } else {
                 const remainingAmount = parseFloat(transaction.total_amount) - parseFloat(transaction.paid_amount);
-                remainingAmountEl.textContent = formatPKR(remainingAmount);
+                document.getElementById('remainingAmount').textContent = formatPKR(remainingAmount);
             }
             
             // Отображаем свидетелей
@@ -303,7 +269,7 @@ async function loadTransactionDetails(transactionId) {
             displayTransactionDocuments(transaction);
             
             // Загружаем платежи
-            loadTransactionPayments(transactionId);
+            await loadTransactionPayments(transactionId);
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -314,53 +280,6 @@ async function loadTransactionDetails(transactionId) {
     }
 }
 
-
-/**
- * Функция для загрузки платежей транзакции
- * @param {string} transactionId - ID транзакции
- */
-async function loadTransactionPayments(transactionId) {
-    try {
-        // Загружаем платежи
-        const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        
-        // Загружаем документы, чтобы найти чеки
-        const documentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
-        
-        if (paymentsResponse.success && paymentsResponse.payments) {
-            let payments = [...paymentsResponse.payments];
-            
-            // Если есть документы, добавляем информацию о чеках к платежам
-            if (documentsResponse.success && documentsResponse.documents) {
-                const receiptFiles = documentsResponse.documents.filter(file => file.category === 'receipt');
-                
-                // Связываем чеки с платежами (пример простой логики)
-                payments = payments.map(payment => {
-                    // Ищем чек, созданный в тот же день, что и платеж
-                    const paymentDate = new Date(payment.created_at).toDateString();
-                    const matchingReceipt = receiptFiles.find(receipt => {
-                        const receiptDate = new Date(receipt.created_at).toDateString();
-                        return paymentDate === receiptDate;
-                    });
-                    
-                    return {
-                        ...payment,
-                        receipt: matchingReceipt
-                    };
-                });
-            }
-            
-            // Отображаем платежи с чеками
-            displayPayments(payments);
-            
-            // Обновляем оставшуюся сумму
-            updateRemainingAmount();
-        }
-    } catch (error) {
-        console.error('Error loading payments:', error);
-        showNotification('error', 'Error loading payments');
-    }
-}
 
 /**
  * Функция для настройки обработчиков действий с платежами

@@ -52,10 +52,12 @@ async function openEditPaymentModal(transactionId, paymentId) {
             
             // Открываем модальное окно
             openModal('editPaymentModal');
+        } else {
+            throw new Error(response.message || 'Payment not found');
         }
     } catch (error) {
         console.error('[PAYMENT] Error loading payment details:', error);
-        showNotification('error', 'Error loading payment details');
+        showNotification('error', 'Error loading payment details: ' + error.message);
     }
 }
 
@@ -225,6 +227,7 @@ async function deleteFile(fileId, transactionId, category) {
         showNotification('error', 'Error deleting file: ' + error.message);
     }
 }
+
 /**
  * Отображение платежей в таблице
  * @param {Array} payments - Массив платежей
@@ -261,14 +264,14 @@ function displayPayments(payments) {
         
         // Метод
         const methodCell = document.createElement('td');
-        methodCell.textContent = payment.method;
+        methodCell.textContent = formatPaymentMethod(payment.method);
         row.appendChild(methodCell);
         
         // Статус
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
-        statusBadge.className = `status-badge status-${payment.status.toLowerCase()}`;
-        statusBadge.textContent = payment.status;
+        statusBadge.className = `status-badge ${getStatusClass(payment.status)}`;
+        statusBadge.textContent = formatStatus(payment.status);
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
         
@@ -287,21 +290,19 @@ function displayPayments(payments) {
         const receiptCell = document.createElement('td');
         receiptCell.className = 'receipt-cell';
         
-        // Проверяем, есть ли связанный чек (предполагаем, что чеки хранятся в payment.receipt)
-        if (payment.receipt || (payment.files && payment.files.some(f => f.category === 'receipt'))) {
-            const receipt = payment.receipt || payment.files.find(f => f.category === 'receipt');
-            
+        // Проверяем наличие чека
+        if (payment.receipt) {
             receiptCell.innerHTML = `
                 <div class="receipt-preview">
-                    <img src="${API_BASE_URL}/v1/admin/files/${receipt.id}" 
-                         alt="Receipt" class="receipt-thumbnail">
+                    <img src="${API_BASE_URL}/v1/admin/files/${payment.receipt.id}" 
+                         alt="Receipt" class="receipt-thumbnail" onclick="openImagePreview('${API_BASE_URL}/v1/admin/files/${payment.receipt.id}')">
                     <div class="receipt-actions">
-                        <a href="${API_BASE_URL}/v1/admin/files/${receipt.id}" target="_blank">
+                        <button class="action-btn btn-view" onclick="window.open('${API_BASE_URL}/v1/admin/files/${payment.receipt.id}', '_blank')">
                             <i class="fas fa-eye"></i> View
-                        </a>
-                        <a href="#" onclick="deleteFile(${receipt.id}, ${payment.transaction_id}, 'receipt'); return false;">
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteFile(${payment.receipt.id}, ${payment.transaction_id}, 'receipt')">
                             <i class="fas fa-trash"></i> Delete
-                        </a>
+                        </button>
                     </div>
                 </div>
             `;

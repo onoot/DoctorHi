@@ -83,7 +83,7 @@ function setupPaymentActionHandlers(transactionId) {
     document.querySelectorAll('.edit-payment-btn').forEach(button => {
         button.addEventListener('click', function() {
             const paymentId = this.getAttribute('data-payment-id');
-            openEditPaymentModal(paymentId, transactionId);
+            openEditPaymentModal(transactionId, paymentId);
         });
     });
     

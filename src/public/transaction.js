@@ -554,7 +554,6 @@ async function deleteFile(fileId, transactionId, category) {
         showNotification('error', 'Error deleting file: ' + error.message);
     }
 }
-
 /**
  * Функция для загрузки платежей транзакции
  * @param {string} transactionId - ID транзакции
@@ -563,7 +562,6 @@ async function loadTransactionPayments(transactionId) {
     try {
         // Загружаем платежи
         const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        
         // Загружаем документы, чтобы найти чеки
         const documentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
         
@@ -574,19 +572,24 @@ async function loadTransactionPayments(transactionId) {
             if (documentsResponse.success && documentsResponse.documents) {
                 const receiptFiles = documentsResponse.documents.filter(file => file.category === 'receipt');
                 
-                // Связываем чеки с платежами (пример простой логики)
+                // Улучшенная логика связывания чеков с платежами
                 payments = payments.map(payment => {
-                    // Ищем чек, созданный в тот же день, что и платеж
-                    const paymentDate = new Date(payment.created_at).toDateString();
+                    // Ищем чек по ID платежа (предполагаем, что в метаданных чека хранится ID платежа)
                     const matchingReceipt = receiptFiles.find(receipt => {
-                        const receiptDate = new Date(receipt.created_at).toDateString();
-                        return paymentDate === receiptDate;
+                        // Проверяем, содержит ли метаданные чека информацию о платеже
+                        return receipt.metadata?.payment_id == payment.id;
                     });
                     
-                    return {
-                        ...payment,
-                        receipt: matchingReceipt
-                    };
+                    // Если не нашли по ID платежа, пытаемся связать по дате
+                    if (!matchingReceipt) {
+                        const paymentDate = new Date(payment.created_at).toDateString();
+                        return receiptFiles.find(receipt => {
+                            const receiptDate = new Date(receipt.created_at).toDateString();
+                            return paymentDate === receiptDate;
+                        });
+                    }
+                    
+                    return matchingReceipt;
                 });
             }
             
@@ -595,12 +598,16 @@ async function loadTransactionPayments(transactionId) {
             
             // Обновляем оставшуюся сумму
             updateRemainingAmount();
+            
+            // Настройка обработчиков действий после отображения платежей
+            setupPaymentActionHandlers(transactionId);
         }
     } catch (error) {
         console.error('Error loading payments:', error);
         showNotification('error', 'Error loading payments');
     }
 }
+
 /**
  * Функция для настройки обработчиков действий с платежами
  * @param {string} transactionId - ID транзакции

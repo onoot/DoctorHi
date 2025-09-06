@@ -3522,6 +3522,7 @@ async function loadTransactionDetails(transactionId) {
             
             // Вызываем функцию для отображения свидетелей
             displayWitnesses(transaction);
+            displayTransactionDocuments(transaction);
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -4652,6 +4653,149 @@ function initPaymentFormFields() {
         }, 0);
     });
 }
+
+// Helper function to determine appropriate file icon based on MIME type
+function getFileIcon(fileType) {
+    if (!fileType) return 'fa-file';
+    
+    fileType = fileType.toLowerCase();
+    
+    if (fileType.includes('pdf')) return 'fa-file-pdf';
+    if (fileType.includes('image')) return 'fa-file-image';
+    if (fileType.includes('video')) return 'fa-file-video';
+    if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
+    if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
+    if (fileType.includes('powerpoint')) return 'fa-file-powerpoint';
+    if (fileType.includes('audio')) return 'fa-file-audio';
+    
+    return 'fa-file';
+}
+
+// Function to display transaction documents properly
+function displayTransactionDocuments(transaction) {
+    try {
+        const API_BASE_URL = 'https://doctor-height.online';
+        
+        // Process Agreement File
+        const agreementFileDiv = document.getElementById('agreementFile');
+        if (agreementFileDiv) {
+            let hasAgreement = false;
+            
+            // Check if there are any agreement files
+            if (transaction.files && Array.isArray(transaction.files.receipt)) {
+                for (const file of transaction.files.receipt) {
+                    if (file.name.toLowerCase().includes('agreement') || 
+                        file.path.toLowerCase().includes('agreement')) {
+                        const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                        const iconClass = getFileIcon(file.type);
+                        
+                        agreementFileDiv.innerHTML = `
+                            <div class="file-preview">
+                                <i class="fas ${iconClass}" style="font-size: 24px; color: #0066cc; margin-right: 8px;"></i>
+                                <span>${file.name || 'Agreement Document'}</span>
+                                <div class="file-actions">
+                                    <a href="${filePath}" target="_blank" class="view-file">View</a> | 
+                                    <a href="${filePath}" download class="download-file">Download</a>
+                                </div>
+                            </div>
+                        `;
+                        hasAgreement = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!hasAgreement) {
+                agreementFileDiv.textContent = 'N/A';
+            }
+        }
+        
+        // Process Video File
+        const videoFileDiv = document.getElementById('videoFile');
+        if (videoFileDiv) {
+            let hasVideo = false;
+            
+            // Check if there are any video files
+            if (transaction.files && Array.isArray(transaction.files.receipt)) {
+                for (const file of transaction.files.receipt) {
+                    if (file.name.toLowerCase().includes('video') || 
+                        file.type.toLowerCase().includes('video') ||
+                        file.path.toLowerCase().includes('video')) {
+                        const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                        const iconClass = getFileIcon(file.type);
+                        
+                        videoFileDiv.innerHTML = `
+                            <div class="file-preview">
+                                <i class="fas ${iconClass}" style="font-size: 24px; color: #0066cc; margin-right: 8px;"></i>
+                                <span>${file.name || 'Video File'}</span>
+                                <div class="file-actions">
+                                    <a href="${filePath}" target="_blank" class="view-file">View</a> | 
+                                    <a href="${filePath}" download class="download-file">Download</a>
+                                </div>
+                            </div>
+                        `;
+                        hasVideo = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!hasVideo) {
+                videoFileDiv.textContent = 'N/A';
+            }
+        }
+        
+        // Process Proof Documents
+        const proofDocumentsDiv = document.getElementById('proofDocuments');
+        if (proofDocumentsDiv) {
+            let proofHTML = '';
+            let hasProofs = false;
+            
+            // Check if there are any proof documents
+            if (transaction.files && Array.isArray(transaction.files.receipt)) {
+                for (const file of transaction.files.receipt) {
+                    // Skip files already categorized as agreement or video
+                    if ((file.name.toLowerCase().includes('agreement') || file.path.toLowerCase().includes('agreement')) ||
+                        (file.name.toLowerCase().includes('video') || file.type.toLowerCase().includes('video') || file.path.toLowerCase().includes('video'))) {
+                        continue;
+                    }
+                    
+                    const filePath = `${API_BASE_URL}/v1/admin/transactions/files/${file.path}`;
+                    const iconClass = getFileIcon(file.type);
+                    
+                    proofHTML += `
+                        <div class="file-preview" style="margin-bottom: 8px;">
+                            <i class="fas ${iconClass}" style="font-size: 20px; color: #0066cc; margin-right: 6px;"></i>
+                            <span>${file.name || 'Document'}</span>
+                            <div class="file-actions" style="display: inline-block; margin-left: 8px;">
+                                <a href="${filePath}" target="_blank" class="view-file">View</a> | 
+                                <a href="${filePath}" download class="download-file">Download</a>
+                            </div>
+                        </div>
+                    `;
+                    hasProofs = true;
+                }
+            }
+            
+            if (hasProofs) {
+                proofDocumentsDiv.innerHTML = proofHTML;
+            } else {
+                proofDocumentsDiv.textContent = 'N/A';
+            }
+        }
+    } catch (error) {
+        console.error('Error displaying transaction documents:', error);
+        // Display N/A for all document sections in case of error
+        const agreementFileDiv = document.getElementById('agreementFile');
+        const videoFileDiv = document.getElementById('videoFile');
+        const proofDocumentsDiv = document.getElementById('proofDocuments');
+        
+        if (agreementFileDiv) agreementFileDiv.textContent = 'N/A';
+        if (videoFileDiv) videoFileDiv.textContent = 'N/A';
+        if (proofDocumentsDiv) proofDocumentsDiv.textContent = 'N/A';
+    }
+}
+
 // Инициализация полей для редактирования платежа
 document.addEventListener('DOMContentLoaded', function () {
     // Инициализация формы редактирования платежа

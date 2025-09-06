@@ -9,30 +9,28 @@
         media='all' />
 
     <link rel="stylesheet" href="./admin.css">
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
 </head>
 
 <body>
     <div class="admin-container">
+        <!-- Кнопка для сворачивания меню -->
+        <label for="sidebar-toggle" class="sidebar-toggle-btn">
+            <i class="fas fa-bars"></i>
+        </label>
+        
         <!-- Боковое меню -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h1>Admin Panel</h1>
+                <h1>Doctor Height</h1>
             </div>
             <ul class="nav-menu">
-                <li class="nav-item"><a href="#transactions" class="nav-link active" data-section="transactions"><i
-                            class="fas fa-exchange-alt"></i> Transactions</a></li>
-                <li class="nav-item"><a href="#users" class="nav-link" data-section="users">
-                        <i class="fas fa-users"></i>
-                        Users
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#users-archive">
-                        <i class="fas fa-users"></i> Users (Archive)
-                    </a>
-                </li>
+                <li class="nav-item"><a href="#transactions" class="nav-link active" data-section="transactions"><i class="fas fa-exchange-alt"></i> <span class="nav-text">Transactions</span></a></li>
+                <li class="nav-item"><a href="#users" class="nav-link" data-section="users"><i class="fas fa-users"></i> <span class="nav-text">Users</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="#users-archive"><i class="fas fa-archive"></i> <span class="nav-text">Users (Archive)</span></a></li>
             </ul>
         </div>
+        
         <!-- Секция сделок -->
         <div id="transactions" class="section active">
             <div class="section-header">

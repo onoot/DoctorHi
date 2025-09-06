@@ -1517,3 +1517,168 @@ body {
     visibility: visible;
     opacity: 1;
 }
+
+/* Скрытое переключение для меню */
+.sidebar-toggle {
+    display: none;
+}
+
+/* Кнопка для сворачивания меню */
+.sidebar-toggle-btn {
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    width: 40px;
+    height: 40px;
+    background: var(--primary);
+    color: white;
+    border-radius: var(--rounded-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: var(--shadow-md);
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition-normal);
+}
+
+/* Показываем кнопку только на больших экранах при свернутом состоянии */
+#sidebar-toggle:checked ~ .sidebar-toggle-btn {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Скрываем кнопку на маленьких экранах */
+@media (max-width: 992px) {
+    .sidebar-toggle-btn {
+        display: none;
+    }
+}
+
+/* Навигационные пункты */
+.nav-text {
+    transition: var(--transition-normal);
+    opacity: 1;
+    width: auto;
+    display: inline;
+}
+
+/* Стили для свернутого меню */
+.sidebar {
+    transition: var(--transition-normal);
+    overflow: hidden;
+}
+
+#sidebar-toggle:checked ~ .sidebar {
+    width: 80px;
+}
+
+#sidebar-toggle:checked ~ .sidebar .nav-text {
+    opacity: 0;
+    width: 0;
+    display: none;
+}
+
+#sidebar-toggle:checked ~ .sidebar .nav-link i {
+    margin-right: 0;
+}
+
+#sidebar-toggle:checked ~ .sidebar .sidebar-header h1 {
+    display: none;
+}
+
+#sidebar-toggle:checked ~ .sidebar .nav-link:hover::after {
+    opacity: 0;
+}
+
+/* Смещение основного контента */
+.main-content {
+    transition: var(--transition-normal);
+    margin-left: 260px;
+}
+
+#sidebar-toggle:checked ~ .main-content {
+    margin-left: 80px;
+}
+
+/* Адаптивность для больших экранов */
+@media (min-width: 1200px) {
+    .main-content {
+        margin-left: 260px;
+    }
+    
+    #sidebar-toggle:checked ~ .main-content {
+        margin-left: 80px;
+    }
+}
+
+/* Адаптивность для средних экранов */
+@media (max-width: 1200px) and (min-width: 993px) {
+    .main-content {
+        margin-left: 240px;
+    }
+    
+    #sidebar-toggle:checked ~ .main-content {
+        margin-left: 80px;
+    }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 992px) {
+    .sidebar {
+        position: fixed;
+        z-index: 900;
+        transform: translateX(-100%);
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+    }
+    
+    #sidebar-toggle:checked ~ .sidebar {
+        transform: translateX(0);
+        width: 260px;
+    }
+    
+    #sidebar-toggle:checked ~ .main-content {
+        filter: blur(2px);
+    }
+    
+    .sidebar-toggle-btn {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        display: flex;
+    }
+}
+
+
+/* Улучшаем отображение иконок в свернутом меню */
+.nav-link i {
+    font-size: 1.2em;
+    width: 24px;
+    text-align: center;
+    transition: var(--transition-fast);
+}
+
+.nav-link:hover i {
+    transform: scale(1.1);
+}
+
+/* Стили для активного пункта меню в свернутом состоянии */
+#sidebar-toggle:checked ~ .sidebar .nav-link.active {
+    border-left: none;
+}
+
+#sidebar-toggle:checked ~ .sidebar .nav-link.active::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+}

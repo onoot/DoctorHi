@@ -4424,7 +4424,7 @@ function initEventHandlers() {
     document.addEventListener('click', function (e) {
         const viewTransactionBtn = e.target.closest('.view-transaction-btn');
         if (viewTransactionBtn) {
-            const transactionId = viewTransactionBtn.getAttribute('data- data-id');
+            const transactionId = viewTransactionBtn.getAttribute('data-id');
             openViewTransactionModal(transactionId);
         }
 

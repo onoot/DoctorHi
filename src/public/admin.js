@@ -3640,16 +3640,14 @@ function initTransactionHandlers() {
 // Универсальная функция для открытия модальных окон
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
+    console.log("modal",modal)
     if (modal) {
-        // Удаляем класс hide, если он есть
         modal.classList.remove('hide');
         
-        // Добавляем класс show для отображения
         modal.classList.add('show');
         
         console.log(`Modal ${modalId} opened successfully`);
         
-        // Дополнительная проверка для отладки
         if (!modal.classList.contains('show')) {
             console.error(`Failed to add 'show' class to modal ${modalId}`);
         }

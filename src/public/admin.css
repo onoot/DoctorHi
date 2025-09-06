@@ -650,27 +650,30 @@ body {
     background: linear-gradient(135deg, #ffd166, #ff9e00);
 }
 
-/* Стили для пагинации */
+/* Контейнер для пагинации */
 .pagination-container {
     display: flex;
     justify-content: center;
     margin-top: 24px;
-    padding: 0 16px;
+    padding: 0 24px;
 }
 
+/* Основной контейнер пагинации */
 .pagination {
     display: flex;
+    align-items: center;
     gap: 8px;
     list-style: none;
     padding: 0;
     margin: 0;
-    background: white;
+    background: var(--card-bg);
     border-radius: var(--rounded-xl);
     box-shadow: var(--shadow-md);
     overflow: hidden;
     border: 1px solid var(--border-color);
 }
 
+/* Стили для кнопок пагинации */
 .pagination button {
     display: inline-flex;
     align-items: center;
@@ -680,52 +683,66 @@ body {
     padding: 0;
     background: white;
     border: none;
-    border-right: 1px solid var(--border-color);
+    border-radius: 0;
     cursor: pointer;
     transition: var(--transition-normal);
     color: var(--secondary);
     font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
 }
 
-.pagination button:last-child {
-    border-right: none;
+/* Стили для стрелок */
+.pagination button i {
+    font-size: 14px;
+    transition: var(--transition-fast);
 }
 
-.pagination button:hover:not(:disabled) {
-    background-color: rgba(67, 97, 238, 0.1);
+/* Ховер для активных кнопок */
+.pagination button:not([disabled]):hover {
+    background: rgba(67, 97, 238, 0.1);
     color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.pagination button:disabled {
+.pagination button:not([disabled]):hover i {
+    transform: scale(1.1);
+}
+
+/* Активная страница */
+.pagination button.active {
+    background: var(--primary);
+    color: white;
+    font-weight: var(--font-weight-bold);
+}
+
+.pagination button.active:hover {
+    background: var(--primary-dark);
+    color: white;
+}
+
+/* Отключенные кнопки */
+.pagination button[disabled] {
     opacity: 0.5;
     cursor: not-allowed;
     color: var(--secondary);
 }
 
-.pagination button i {
-    font-size: 0.9em;
+/* Специальные стили для крайних кнопок */
+.pagination button:first-child {
+    border-right: 1px solid var(--border-color);
 }
 
-.pagination .active {
-    background: var(--primary);
-    color: white;
-    font-weight: var(--font-weight-bold);
-    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+.pagination button:last-child {
+    border-left: 1px solid var(--border-color);
 }
 
-.pagination .active:hover {
-    background: var(--primary);
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
-}
-
-/* Адаптивность для пагинации */
+/* Адаптивность для мобильных устройств */
 @media (max-width: 576px) {
+    .pagination-container {
+        padding: 0 12px;
+    }
+    
     .pagination {
-        gap: 4px;
+        border-radius: var(--rounded-lg);
     }
     
     .pagination button {
@@ -734,54 +751,64 @@ body {
     }
     
     .pagination button i {
-        font-size: 0.8em;
+        font-size: 13px;
     }
 }
 
-@media (max-width: 400px) {
+/* Адаптивность для планшетов */
+@media (max-width: 768px) {
+    .pagination button {
+        width: 38px;
+        height: 38px;
+    }
+}
+
+/* Анимации для пагинации */
+.pagination button {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pagination button:not([disabled]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pagination button:not([disabled]):active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Дополнительные эффекты */
+.pagination button.active {
+    position: relative;
+    box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+    animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(67, 97, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(67, 97, 238, 0); }
+}
+
+/* Стили для пагинации в темном режиме (если будет реализован) */
+@media (prefers-color-scheme: dark) {
     .pagination {
-        gap: 2px;
+        background: #1e293b;
+        border-color: #334155;
     }
     
     .pagination button {
-        width: 32px;
-        height: 32px;
+        color: #e2e8f0;
     }
-}
-
-.pagination li {
-    display: inline-block;
-}
-
-.pagination a,
-.pagination span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: var(--rounded-md);
-    text-decoration: none;
-    font-weight: var(--font-weight-medium);
-    transition: var(--transition-fast);
-    color: var(--secondary);
-}
-
-.pagination a:hover {
-    background-color: rgba(67, 97, 238, 0.1);
-    color: var(--primary);
-}
-
-.pagination .current {
-    background: var(--primary);
-    color: white;
-    font-weight: var(--font-weight-bold);
-    box-shadow: 0 2px 5px rgba(67, 97, 238, 0.3);
-}
-
-.pagination .disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    
+    .pagination button:not([disabled]):hover {
+        background: rgba(67, 97, 238, 0.2);
+    }
+    
+    .pagination button[disabled] {
+        opacity: 0.4;
+    }
 }
 
 /* Модальные окна */

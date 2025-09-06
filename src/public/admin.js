@@ -3805,7 +3805,7 @@ async function loadArchivedUsers(page = 1, limit = 10) {
                     <td>${user.properties_count || 0}</td>
                     <td><span class="status-badge ${user.status}">${user.status}</span></td>
                     <td>
-                        <button class="action-btn btn-view view-user-btn" data-user-id="${user.id}">
+                        <button class="action-btn btn-view view-user-btn" data-id="${user.id}">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </td>
@@ -3859,10 +3859,10 @@ async function openViewUserModal(userId) {
                     <p><strong>Created At:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
                 </div>
                 <div class="user-actions">
-                    <button class="action-btn btn-approve activate-user-btn" data-user-id="${user.id}">
+                    <button class="action-btn btn-approve activate-user-btn" data-id="${user.id}">
                         <i class="fas fa-check"></i> Activate
                     </button>
-                    <button class="action-btn btn-reject block-user-btn" data-user-id="${user.id}">
+                    <button class="action-btn btn-reject block-user-btn" data-id="${user.id}">
                         <i class="fas fa-ban"></i> Block
                     </button>
                 </div>
@@ -3872,12 +3872,12 @@ async function openViewUserModal(userId) {
 
             // Добавляем обработчики для кнопок действий
             document.querySelector('.activate-user-btn')?.addEventListener('click', function () {
-                const userId = this.getAttribute('data-user-id');
+                const userId = this.getAttribute('data-id');
                 updateUserStatus(userId, 'active');
             });
 
             document.querySelector('.block-user-btn')?.addEventListener('click', function () {
-                const userId = this.getAttribute('data-user-id');
+                const userId = this.getAttribute('data-id');
                 updateUserStatus(userId, 'blocked');
             });
         }
@@ -4309,7 +4309,7 @@ function initEventHandlers() {
 
         const viewUserBtn = e.target.closest('.view-user-btn');
         if (viewUserBtn) {
-            const userId = viewUserBtn.getAttribute('data-user-id');
+            const userId = viewUserBtn.getAttribute('data-id');
             openViewUserModal(userId);
         }
     });

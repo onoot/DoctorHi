@@ -201,11 +201,11 @@ function openViewTransactionModal(transactionId) {
 async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-        
+
         // Проверяем, что response содержит данные транзакции
         if (response && response.id) {
             const transaction = response;
-            
+
             // Получаем элементы
             const transactionIdEl = document.getElementById('transactionId');
             const propertyNameEl = document.getElementById('propertyName');
@@ -215,28 +215,29 @@ async function loadTransactionDetails(transactionId) {
             const createdAtEl = document.getElementById('createdAt');
             const totalAmountViewEl = document.getElementById('totalAmountView');
             const paidAmountEl = document.getElementById('paidAmount');
-            
+            const remainingAmountEl = document.getElementById('remainingAmount');
+
             // Проверяем существование элементов
-            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl || 
-                !newOwnerEl || !statusEl || !createdAtEl || 
-                !totalAmountViewEl || !paidAmountEl) {
+            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl ||
+                !newOwnerEl || !statusEl || !createdAtEl ||
+                !totalAmountViewEl || !paidAmountEl || !remainingAmountEl) {
                 console.error('One or more transaction detail elements not found');
                 return;
             }
-            
+
             // Заполняем основную информацию о сделке
             transactionIdEl.textContent = transaction.id;
             propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
             previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
             newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
-            
+
             // Обновляем статус
             const statusBadge = document.createElement('span');
             statusBadge.className = `status-badge ${getStatusClass(transaction.status)}`;
             statusBadge.textContent = formatStatus(transaction.status);
             statusEl.innerHTML = '';
             statusEl.appendChild(statusBadge);
-            
+
             // Обновляем дату
             createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -245,28 +246,24 @@ async function loadTransactionDetails(transactionId) {
                 hour: '2-digit',
                 minute: '2-digit'
             });
-            
+
             // Обновляем сумму
             const newAmount = parseFloat(transaction.total_amount);
             totalAmountViewEl.textContent = formatPKR(newAmount);
             paidAmountEl.textContent = formatPKR(transaction.paid_amount);
-            
-            // Используем payment_summary, если доступен, иначе вычисляем вручную
-            if (transaction.payment_summary) {
-                document.getElementById('remainingAmount').textContent = formatPKR(transaction.payment_summary.remaining_amount);
-            } else {
-                const remainingAmount = newAmount - parseFloat(transaction.paid_amount);
-                document.getElementById('remainingAmount').textContent = formatPKR(remainingAmount);
-            }
-            
-            // ВАЖНО: Убедимся, что отображаем свидетелей
+
+            // Обновляем оставшуюся сумму
+            const remainingAmount = newAmount - parseFloat(transaction.paid_amount);
+            remainingAmountEl.textContent = formatPKR(remainingAmount);
+
+            // Отображаем свидетелей
             displayWitnesses(transaction);
-            
+
             // Отображаем документы
             displayTransactionDocuments(transaction);
-            
-            // Загружаем платежи
-            await loadTransactionPayments(transactionId);
+
+            // ВАЖНО: Отображаем платежи, используя данные из основного запроса и информацию о чеках
+            displayPaymentsWithReceipts(transaction.payments, transaction.files?.receipt);
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -278,13 +275,164 @@ async function loadTransactionDetails(transactionId) {
 }
 
 /**
+ * Отображение платежей в таблице с учетом чеков
+ * @param {Array} payments - Массив платежей
+ * @param {Array} receiptFiles - Массив файлов чеков
+ */
+function displayPaymentsWithReceipts(payments, receiptFiles = []) {
+    const paymentsTableBody = document.querySelector('#paymentsTable tbody');
+    if (!paymentsTableBody) return;
+
+    paymentsTableBody.innerHTML = '';
+
+    if (!payments || payments.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="7" style="text-align: center; padding: 20px;">
+                No payments found
+            </td>
+        `;
+        paymentsTableBody.appendChild(row);
+        return;
+    }
+
+    // Создаем маппинг чеков по дате создания для быстрого поиска
+    const receiptMap = new Map();
+    receiptFiles.forEach(receipt => {
+        // Используем timestamp как ключ для поиска
+        const timestamp = new Date(receipt.created_at).getTime();
+        receiptMap.set(timestamp, receipt);
+    });
+
+    payments.forEach(payment => {
+        const row = document.createElement('tr');
+
+        // ID платежа
+        const idCell = document.createElement('td');
+        idCell.textContent = payment.id;
+        row.appendChild(idCell);
+
+        // Сумма
+        const amountCell = document.createElement('td');
+        amountCell.textContent = formatPKR(payment.amount);
+        row.appendChild(amountCell);
+
+        // Метод
+        const methodCell = document.createElement('td');
+        methodCell.textContent = formatPaymentMethod(payment.payment_method);
+        row.appendChild(methodCell);
+
+        // Статус
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `status-badge ${getStatusClass(payment.status)}`;
+        statusBadge.textContent = formatStatus(payment.status);
+        statusCell.appendChild(statusBadge);
+        row.appendChild(statusCell);
+
+        // Дата
+        const dateCell = document.createElement('td');
+        dateCell.textContent = new Date(payment.created_at).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        row.appendChild(dateCell);
+
+        // Чек
+        const receiptCell = document.createElement('td');
+        receiptCell.className = 'receipt-cell';
+
+        // Ищем чек, соответствующий платежу по дате
+        const paymentTimestamp = new Date(payment.created_at).getTime();
+        const matchingReceipt = receiptMap.get(paymentTimestamp);
+
+        if (matchingReceipt) {
+            receiptCell.innerHTML = `
+                <div class="receipt-preview">
+                    <img src="${API_BASE_URL}/v1/admin/files/${matchingReceipt.id}" 
+                         alt="Receipt" class="receipt-thumbnail">
+                    <div class="receipt-actions">
+                        <button class="action-btn btn-view" onclick="window.open('${API_BASE_URL}/v1/admin/files/${matchingReceipt.id}', '_blank')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="action-btn btn-delete" onclick="deleteReceiptFile(${matchingReceipt.id}, ${payment.transaction_id}, 'receipt')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            receiptCell.innerHTML = '<span class="no-receipt">No receipt</span>';
+        }
+
+        row.appendChild(receiptCell);
+
+        // Действия
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'actions-cell';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn btn-edit';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+        editBtn.addEventListener('click', () => openEditPaymentModal(payment.transaction_id, payment.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn btn-delete';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        deleteBtn.addEventListener('click', () => deletePayment(payment.id, payment.transaction_id));
+
+        actionsCell.appendChild(editBtn);
+        actionsCell.appendChild(deleteBtn);
+        row.appendChild(actionsCell);
+
+        paymentsTableBody.appendChild(row);
+    });
+
+    // Устанавливаем обработчики действий
+    setupPaymentActionHandlers(transactionId);
+}
+
+/**
+ * Удаление файла чека
+ * @param {string} fileId - ID файла
+ * @param {string} transactionId - ID транзакции
+ * @param {string} category - Категория файла
+ */
+async function deleteReceiptFile(fileId, transactionId, category) {
+    if (!confirm(`Вы уверены, что хотите удалить файл?`)) {
+        return;
+    }
+
+    try {
+        const response = await apiRequest(`/v1/admin/files/${fileId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.success) {
+            showNotification('success', 'File deleted successfully');
+
+            // Перезагружаем детали транзакции для обновления данных
+            await loadTransactionDetails(transactionId);
+        } else {
+            throw new Error(response.message || 'Failed to delete file');
+        }
+    } catch (error) {
+        console.error('Error deleting file:', error);
+        showNotification('error', 'Error deleting file: ' + error.message);
+    }
+}
+
+/**
  * Функция для отображения свидетелей
  * @param {Object} transaction - Данные транзакции
  */
 function displayWitnesses(transaction) {
     try {
         console.log('[WITNESSES] Displaying witnesses for transaction:', transaction.id);
-        
+
         // Проверяем, есть ли элементы для свидетелей в DOM
         const witness1Name = document.getElementById('witness1Name');
         const witness1CNIC = document.getElementById('witness1CNIC');
@@ -292,13 +440,13 @@ function displayWitnesses(transaction) {
         const witness2Name = document.getElementById('witness2Name');
         const witness2CNIC = document.getElementById('witness2CNIC');
         const witness2Phone = document.getElementById('witness2Phone');
-        
+
         // Если элементы не найдены, попробуем найти их в модальном окне
         if (!witness1Name || !witness1CNIC || !witness1Phone ||
             !witness2Name || !witness2CNIC || !witness2Phone) {
-            
+
             console.log('[WITNESSES] Primary elements not found, searching in modal...');
-            
+
             const modal = document.getElementById('witnessesModal');
             if (modal) {
                 witness1Name = modal.querySelector('#witness1Name');
@@ -309,19 +457,19 @@ function displayWitnesses(transaction) {
                 witness2Phone = modal.querySelector('#witness2Phone');
             }
         }
-        
+
         // Проверяем существование элементов
         if (!witness1Name || !witness1CNIC || !witness1Phone ||
             !witness2Name || !witness2CNIC || !witness2Phone) {
             console.error('Witness form elements not found in DOM');
             return;
         }
-        
+
         console.log('[WITNESSES] Found witness elements in DOM');
-        
+
         // Проверяем структуру данных
         let witnessesData = null;
-        
+
         // Пытаемся найти данные о свидетелях в разных местах структуры
         if (transaction.witnesses) {
             witnessesData = transaction.witnesses;
@@ -330,7 +478,7 @@ function displayWitnesses(transaction) {
         } else if (transaction.data && transaction.data.witnesses) {
             witnessesData = transaction.data.witnesses;
         }
-        
+
         // Если данные не найдены, создаем пустую структуру
         if (!witnessesData) {
             console.log('[WITNESSES] No witnesses data found, initializing empty structure');
@@ -339,20 +487,20 @@ function displayWitnesses(transaction) {
                 witness2: { name: '', cnic: '', phone: '' }
             };
         }
-        
+
         // Убедимся, что структура данных корректна
         if (!witnessesData.witness1) witnessesData.witness1 = { name: '', cnic: '', phone: '' };
         if (!witnessesData.witness2) witnessesData.witness2 = { name: '', cnic: '', phone: '' };
-        
+
         // Заполняем форму свидетелей
         witness1Name.value = witnessesData.witness1.name || '';
         witness1CNIC.value = witnessesData.witness1.cnic || '';
         witness1Phone.value = witnessesData.witness1.phone || '';
-        
+
         witness2Name.value = witnessesData.witness2.name || '';
         witness2CNIC.value = witnessesData.witness2.cnic || '';
         witness2Phone.value = witnessesData.witness2.phone || '';
-        
+
         console.log('[WITNESSES] Witnesses displayed successfully');
     } catch (error) {
         console.error('Error displaying witnesses:', error);
@@ -411,17 +559,17 @@ async function loadTransactionPayments(transactionId) {
     try {
         // Загружаем платежи
         const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        
+
         // Загружаем документы, чтобы найти чеки
         const documentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
-        
+
         if (paymentsResponse.success && paymentsResponse.payments) {
             let payments = [...paymentsResponse.payments];
-            
+
             // Если есть документы, добавляем информацию о чеках к платежам
             if (documentsResponse.success && documentsResponse.documents) {
                 const receiptFiles = documentsResponse.documents.filter(file => file.category === 'receipt');
-                
+
                 // Связываем чеки с платежами
                 payments = payments.map(payment => {
                     // Ищем чек, связанный с этим платежом
@@ -429,20 +577,20 @@ async function loadTransactionPayments(transactionId) {
                     const matchingReceipt = receiptFiles.find(receipt => {
                         // Предполагаем, что в метаданных чека есть payment_id
                         // Если API не предоставляет такой связи, используем временную метку
-                        return receipt.payment_id === payment.id || 
-                               (new Date(receipt.created_at).getTime() === new Date(payment.created_at).getTime());
+                        return receipt.payment_id === payment.id ||
+                            (new Date(receipt.created_at).getTime() === new Date(payment.created_at).getTime());
                     });
-                    
+
                     return {
                         ...payment,
                         receipt: matchingReceipt
                     };
                 });
             }
-            
+
             // Отображаем платежи с чеками
             displayPayments(payments);
-            
+
             // Обновляем оставшуюся сумму
             updateRemainingAmount();
         }
@@ -459,9 +607,9 @@ async function loadTransactionPayments(transactionId) {
 function displayPayments(payments) {
     const paymentsTableBody = document.querySelector('#paymentsTable tbody');
     if (!paymentsTableBody) return;
-    
+
     paymentsTableBody.innerHTML = '';
-    
+
     if (!payments || payments.length === 0) {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -472,25 +620,25 @@ function displayPayments(payments) {
         paymentsTableBody.appendChild(row);
         return;
     }
-    
+
     payments.forEach(payment => {
         const row = document.createElement('tr');
-        
+
         // ID платежа
         const idCell = document.createElement('td');
         idCell.textContent = payment.id;
         row.appendChild(idCell);
-        
+
         // Сумма
         const amountCell = document.createElement('td');
         amountCell.textContent = formatPKR(payment.amount);
         row.appendChild(amountCell);
-        
+
         // Метод
         const methodCell = document.createElement('td');
         methodCell.textContent = formatPaymentMethod(payment.method);
         row.appendChild(methodCell);
-        
+
         // Статус
         const statusCell = document.createElement('td');
         const statusBadge = document.createElement('span');
@@ -498,7 +646,7 @@ function displayPayments(payments) {
         statusBadge.textContent = formatStatus(payment.status);
         statusCell.appendChild(statusBadge);
         row.appendChild(statusCell);
-        
+
         // Дата
         const dateCell = document.createElement('td');
         dateCell.textContent = new Date(payment.created_at).toLocaleDateString('en-US', {
@@ -509,11 +657,11 @@ function displayPayments(payments) {
             minute: '2-digit'
         });
         row.appendChild(dateCell);
-        
+
         // Чек
         const receiptCell = document.createElement('td');
         receiptCell.className = 'receipt-cell';
-        
+
         if (payment.receipt) {
             receiptCell.innerHTML = `
                 <div class="receipt-preview">
@@ -532,30 +680,30 @@ function displayPayments(payments) {
         } else {
             receiptCell.innerHTML = '<span class="no-receipt">No receipt</span>';
         }
-        
+
         row.appendChild(receiptCell);
-        
+
         // Действия
         const actionsCell = document.createElement('td');
         actionsCell.className = 'actions-cell';
-        
+
         const editBtn = document.createElement('button');
         editBtn.className = 'action-btn btn-edit';
         editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
         editBtn.addEventListener('click', () => openEditPaymentModal(payment.transaction_id, payment.id));
-        
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'action-btn btn-delete';
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
         deleteBtn.addEventListener('click', () => deletePayment(payment.id, payment.transaction_id));
-        
+
         actionsCell.appendChild(editBtn);
         actionsCell.appendChild(deleteBtn);
         row.appendChild(actionsCell);
-        
+
         paymentsTableBody.appendChild(row);
     });
-    
+
     // После отображения платежей устанавливаем обработчики действий
     setupPaymentActionHandlers(transactionId);
 }
@@ -629,14 +777,14 @@ async function loadTransactionFiles(transactionId) {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
             method: 'GET'
         });
-        
+
         if (response.success && response.documents) {
             // Распределяем файлы по категориям
             // Игнорируем категорию 'receipt', так как она не должна отображаться в этом разделе
             const agreementFiles = response.documents.filter(file => file.category === 'agreement');
             const videoFiles = response.documents.filter(file => file.category === 'video');
             const proofFiles = response.documents.filter(file => file.category === 'proof');
-            
+
             // Отображаем файлы в соответствующих контейнерах
             displayFiles(agreementFiles, 'agreementFile', 'agreement');
             displayFiles(videoFiles, 'videoFile', 'video');
@@ -763,18 +911,18 @@ function setupPaymentActionHandlers(transactionId) {
         const clonedBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(clonedBtn, btn);
     });
-    
+
     // Добавляем обработчики для редактирования платежей
     document.querySelectorAll('.edit-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             openEditPaymentModal(transactionId, paymentId);
         });
     });
-    
+
     // Добавляем обработчики для удаления платежей
     document.querySelectorAll('.delete-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             deletePayment(paymentId, transactionId);
         });

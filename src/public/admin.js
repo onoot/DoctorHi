@@ -498,6 +498,7 @@ async function loadUsers(status = 'active') {
             console.error(`Failed to find tbody with id: ${tbodyId}`);
             return;
         }
+        console.log('FDSAF',data)
 
         if (data && Array.isArray(data)) {
             // Простой массив

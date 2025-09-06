@@ -920,55 +920,6 @@ async function viewUser(userId) {
     openModal('userModal');
 }
 
-// Просмотр деталей сделки
-async function viewTransaction(transactionId) {
-    try {
-        // Устанавливаем ID текущей транзакции
-        document.getElementById('currentTransactionId').value = transactionId;
-
-        const response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}`, {
-            credentials: 'include'
-        });
-
-        if (!response.ok)
-            throw new Error('Error load data');
-
-        const transaction = await response.json();
-
-        // Заполняем данные в модальном окне
-        document.getElementById('transactionId').textContent = transaction.id;
-        document.getElementById('propertyName').textContent = transaction.property_id;
-        document.getElementById('previousOwner').textContent = transaction.previous_owner_name || 'N/A';
-        document.getElementById('newOwner').textContent = transaction.new_owner_name;
-        document.getElementById('transactionStatus').textContent = transaction.status;
-        document.getElementById('totalAmount').textContent = `${transaction.total_amount} PKR`;
-        document.getElementById('paidAmount').textContent = `${transaction.paid_amount} PKR`;
-        document.getElementById('remainingAmount').textContent = `${transaction.total_amount - transaction.paid_amount} PKR`;
-        document.getElementById('createdAt').textContent = new Date(transaction.created_at).toLocaleString();
-
-        // Заполняем данные свидетелей из объекта witnesses
-        const { witness1, witness2 } = transaction.witnesses || {};
-
-        // Заполняем поля для первого свидетеля
-        document.getElementById('witness1Name').value = witness1 ? witness1.name : 'Not assigned';
-        document.getElementById('witness1CNIC').value = witness1 ? witness1.cnic : 'Not assigned';
-        document.getElementById('witness1Phone').value = witness1 ? (witness1.phone || '') : '';
-
-        // Заполняем поля для второго свидетеля
-        document.getElementById('witness2Name').value = witness2 ? witness2.name : 'Not assigned';
-        document.getElementById('witness2CNIC').value = witness2 ? witness2.cnic : 'Not assigned';
-        document.getElementById('witness2Phone').value = witness2 ? (witness2.phone || '') : '';
-
-        // Загружаем платежи и файлы
-        await loadTransactionPayments(transactionId),
-        await loadTransactionFiles(transactionId)
-
-        openModal('viewTransactionModal');
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('error', 'Error load data');
-    }
-}
 
 // Функция для создания нового платежа
 async function createPayment(event) {
@@ -2459,48 +2410,6 @@ function showNotification(type, message, duration = 3000) {
     }, duration);
 }
 
-// Функция для пагинации
-function createPagination(totalItems, currentPage, itemsPerPage) {
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const pagination = document.createElement('div');
-    pagination.className = 'pagination';
-
-    // Кнопка "Предыдущая"
-    const prevButton = document.createElement('button');
-    prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevButton.disabled = currentPage === 1;
-    prevButton.addEventListener('click', () => {
-        if (currentPage > 1) {
-            loadTransactions(currentPage - 1);
-        }
-    });
-    pagination.appendChild(prevButton);
-
-    // Номера страниц
-    for (let i = 1; i <= totalPages; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.textContent = i;
-        pageButton.className = i === currentPage ? 'active' : '';
-        pageButton.addEventListener('click', () => {
-            loadTransactions(i);
-        });
-        pagination.appendChild(pageButton);
-    }
-
-    // Кнопка "Следующая"
-    const nextButton = document.createElement('button');
-    nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.addEventListener('click', () => {
-        if (currentPage < totalPages) {
-            loadTransactions(currentPage + 1);
-        }
-    });
-    pagination.appendChild(nextButton);
-
-    return pagination;
-}
-
 // Форматирование суммы в долларах
 function formatUSD(amount) {
     return new Intl.NumberFormat('en-US', {
@@ -3583,24 +3492,30 @@ function openViewTransactionModal(transactionId) {
     loadTransactionPayments(transactionId);
 }
 
-// Функция для загрузки транзакций
-async function loadTransactions() {
+// Функция для загрузки транзакций с пагинацией
+async function loadTransactions(page = 1, limit = 10) {
     try {
-        const response = await apiRequest('/v1/admin/transactions');
+        // Показываем индикатор загрузки
+        const tbody = document.getElementById('transactionsTableBody');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
+        
+        const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}`);
         
         if (response.success && response.transactions) {
-            const tbody = document.getElementById('transactionsTableBody');
+            // Очищаем таблицу
             tbody.innerHTML = '';
             
+            // Проверяем, есть ли транзакции
             if (response.transactions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
                 return;
             }
             
+            // Заполняем таблицу данными
             response.transactions.forEach(transaction => {
                 const row = document.createElement('tr');
                 
-                // Проверяем и форматируем дату
+                // Форматируем дату
                 const createdAt = transaction.created_at ? 
                     new Date(transaction.created_at).toLocaleDateString('en-GB', {
                         day: '2-digit',
@@ -3608,7 +3523,7 @@ async function loadTransactions() {
                         year: 'numeric'
                     }) : 'N/A';
                 
-                // Создаем HTML для строки таблицы с правильными полями
+                // Создаем HTML для строки таблицы
                 row.innerHTML = `
                     <td>${transaction.id}</td>
                     <td>${transaction.property_name || transaction.property_id}</td>
@@ -3629,14 +3544,219 @@ async function loadTransactions() {
                 
                 tbody.appendChild(row);
             });
+            
+            // Добавляем пагинацию
+            createPagination(response.total, page, limit);
+            
         } else {
-            document.getElementById('transactionsTableBody').innerHTML = 
-                '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
+            console.error('Error loading transactions:', response);
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
         document.getElementById('transactionsTableBody').innerHTML = 
             '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
+    }
+}
+
+// Функция для создания компонента пагинации
+function createPagination(totalItems, currentPage, itemsPerPage) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    
+    // Проверяем существование контейнера пагинации
+    const paginationContainer = document.querySelector('.pagination-container');
+    if (!paginationContainer) return;
+    
+    // Очищаем контейнер
+    paginationContainer.innerHTML = '';
+    
+    // Если всего одна страница, не показываем пагинацию
+    if (totalPages <= 1) {
+        return;
+    }
+    
+    // Создаем контейнер для пагинации
+    const pagination = document.createElement('div');
+    pagination.className = 'pagination';
+    
+    // Кнопка "Назад"
+    if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        prevBtn.setAttribute('data-page', currentPage - 1);
+        prevBtn.addEventListener('click', () => loadTransactions(currentPage - 1, itemsPerPage));
+        pagination.appendChild(prevBtn);
+    } else {
+        const prevBtn = document.createElement('button');
+        prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        prevBtn.disabled = true;
+        pagination.appendChild(prevBtn);
+    }
+    
+    // Всегда показываем первую страницу
+    const firstPageBtn = document.createElement('button');
+    firstPageBtn.textContent = '1';
+    firstPageBtn.setAttribute('data-page', '1');
+    if (currentPage === 1) {
+        firstPageBtn.classList.add('active');
+    } else {
+        firstPageBtn.addEventListener('click', () => loadTransactions(1, itemsPerPage));
+    }
+    pagination.appendChild(firstPageBtn);
+    
+    // Показываем многоточие, если текущая страница далеко от начала
+    if (currentPage > 3) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.className = 'ellipsis';
+        pagination.appendChild(ellipsis);
+    }
+    
+    // Показываем страницы вокруг текущей
+    const startPage = Math.max(2, currentPage - 1);
+    const endPage = Math.min(totalPages - 1, currentPage + 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        pageBtn.setAttribute('data-page', i);
+        if (i === currentPage) {
+            pageBtn.classList.add('active');
+        } else {
+            pageBtn.addEventListener('click', () => loadTransactions(i, itemsPerPage));
+        }
+        pagination.appendChild(pageBtn);
+    }
+    
+    // Показываем многоточие, если текущая страница далеко от конца
+    if (currentPage < totalPages - 2) {
+        const ellipsis = document.createElement('span');
+        ellipsis.textContent = '...';
+        ellipsis.className = 'ellipsis';
+        pagination.appendChild(ellipsis);
+    }
+    
+    // Всегда показываем последнюю страницу
+    if (totalPages > 1) {
+        const lastPageBtn = document.createElement('button');
+        lastPageBtn.textContent = totalPages;
+        lastPageBtn.setAttribute('data-page', totalPages);
+        if (currentPage === totalPages) {
+            lastPageBtn.classList.add('active');
+        } else {
+            lastPageBtn.addEventListener('click', () => loadTransactions(totalPages, itemsPerPage));
+        }
+        pagination.appendChild(lastPageBtn);
+    }
+    
+    // Кнопка "Вперед"
+    if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        nextBtn.setAttribute('data-page', currentPage + 1);
+        nextBtn.addEventListener('click', () => loadTransactions(currentPage + 1, itemsPerPage));
+        pagination.appendChild(nextBtn);
+    } else {
+        const nextBtn = document.createElement('button');
+        nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        nextBtn.disabled = true;
+        pagination.appendChild(nextBtn);
+    }
+    
+    // Добавляем пагинацию в контейнер
+    paginationContainer.appendChild(pagination);
+}
+
+// Инициализация обработчиков событий для транзакций
+function initTransactionHandlers() {
+    // Обработчик для кнопки "View" в таблице транзакций
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.view-transaction-btn')) {
+            e.preventDefault();
+            const transactionId = e.target.closest('.view-transaction-btn').getAttribute('data-id');
+            viewTransaction(transactionId);
+        }
+    });
+    
+    // Обработчик для кнопки создания новой транзакции
+    document.getElementById('create')?.addEventListener('click', function() {
+        openCreateTransactionModal();
+    });
+}
+
+// Функция для просмотра деталей транзакции
+async function viewTransaction(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
+        
+        if (response && response.id) {
+            const transaction = response;
+            
+            // Заполняем основную информацию о сделке
+            document.getElementById('transactionId').textContent = transaction.id;
+            document.getElementById('propertyName').textContent = transaction.property_name || transaction.property_id;
+            document.getElementById('previousOwner').textContent = transaction.previous_owner_name || 'N/A';
+            document.getElementById('newOwner').textContent = transaction.new_owner_name;
+            document.getElementById('transactionStatus').textContent = transaction.status;
+            document.getElementById('transactionStatus').className = `status-badge ${transaction.status}`;
+            
+            // Обновляем дату создания
+            const createdAt = document.getElementById('createdAt');
+            if (createdAt) {
+                createdAt.textContent = new Date(transaction.created_at).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+            
+            // Обновляем сумму
+            const totalAmountView = document.getElementById('totalAmountView');
+            if (totalAmountView) {
+                const formattedAmount = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(transaction.total_amount);
+                totalAmountView.textContent = formattedAmount;
+            }
+            
+            const paidAmount = document.getElementById('paidAmount');
+            if (paidAmount) {
+                const formattedAmount = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(transaction.paid_amount);
+                paidAmount.textContent = formattedAmount;
+            }
+            
+            const remainingAmount = document.getElementById('remainingAmount');
+            if (remainingAmount) {
+                const remaining = transaction.total_amount - transaction.paid_amount;
+                const formattedAmount = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(remaining);
+                remainingAmount.textContent = formattedAmount;
+            }
+            
+            // Отображаем документы
+            displayTransactionDocuments(transaction);
+            
+            // Отображаем свидетелей
+            displayWitnesses(transaction);
+            
+            // Загружаем платежи
+            loadTransactionPayments(transaction.id);
+            
+            // Показываем модальное окно
+            openModal('viewTransactionModal');
+        } else {
+            console.error('Invalid transaction data format:', response);
+            showNotification('error', 'Failed to load transaction details');
+        }
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+        showNotification('error', 'Error loading transaction details');
     }
 }
 

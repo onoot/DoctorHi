@@ -414,147 +414,134 @@ function renderUsersTable(users, tbody) {
 }
 
 
-async function loadUsers(status = 'active') {
-    // Определяем, в каком разделе мы находимся
-    const section = status === 'archived'
-        ? document.getElementById('users-archive')
-        : document.getElementById('users');
-
-    const loadingIndicator = document.createElement('div');
-    loadingIndicator.className = 'loading-indicator';
-    loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
-
-    // Удаляем предыдущий индикатор загрузки, если он есть
-    const existingLoader = section.querySelector('.loading-indicator');
-    if (existingLoader) {
-        existingLoader.remove();
-    }
-
-    // Добавляем новый индикатор загрузки
-    section.appendChild(loadingIndicator);
-
+// Функция для загрузки пользователей
+async function loadUsers(status = 'active', page = 1, limit = 10) {
     try {
-        const searchInput = section.querySelector('.search-input');
-        const searchParams = new URLSearchParams({
-            page: currentPage,
-            limit: itemsPerPage
-        });
-
-        // Добавляем параметр статуса только если он не 'all'
-        if (status && status !== 'all') {
-            searchParams.append('status', status);
+        const section = status === 'archived' ? 
+            document.getElementById('users-archive') : 
+            document.getElementById('users');
+        
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.className = 'loading-indicator';
+        loadingIndicator.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading users...';
+        
+        // Удаляем предыдущий индикатор загрузки, если он есть
+        const existingLoader = section.querySelector('.loading-indicator');
+        if (existingLoader) {
+            existingLoader.remove();
         }
-
-        if (searchInput && searchInput.value) {
-            searchParams.append('search', searchInput.value);
-        }
-
-        console.log('Loading users with params:', searchParams.toString());
-        const data = await apiRequest(`/v1/admin/users?${searchParams.toString()}`);
-
-        // Удаляем индикатор загрузки
-        loadingIndicator.remove();
-
-        // --- ОПРЕДЕЛЯЕМ УНИКАЛЬНЫЙ ID ДЛЯ tbody ---
-        const tbodyId = status === 'archived' ? 'archivedUsersTableBody' : 'usersTableBody';
-
-        // Находим или создаем таблицу
-        let table = section.querySelector('.data-table');
-        if (!table) {
-            // Если таблицы нет, создаем новую структуру
-            const tableContainer = document.createElement('div');
-            tableContainer.className = 'table-container';
-
-            table = document.createElement('table');
-            table.className = 'data-table';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>CNIC</th>
-                        <th>Login</th>
-                        <th>Properties</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="${tbodyId}"></tbody>
-            `;
-
-            tableContainer.appendChild(table);
-
-            // Проверяем, есть ли уже пагинация
-            const existingPagination = section.querySelector('.pagination');
-            if (existingPagination) {
-                section.insertBefore(tableContainer, existingPagination);
+        
+        // Добавляем новый индикатор загрузки
+        section.appendChild(loadingIndicator);
+        
+        try {
+            const searchInput = section.querySelector('.search-input');
+            const searchTerm = searchInput ? searchInput.value.trim() : '';
+            const searchParams = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
+            
+            const response = await apiRequest(`/v1/admin/users?page=${page}&limit=${limit}&status=${status}${searchParams}`);
+            
+            if (response.success && response.users) {
+                const tbody = status === 'archived' ? 
+                    document.getElementById('archivedUsersTableBody') : 
+                    document.getElementById('usersTableBody');
+                
+                if (!tbody) {
+                    console.error('Failed to find tbody element');
+                    return;
+                }
+                
+                // Очищаем таблицу
+                tbody.innerHTML = '';
+                
+                // Проверяем, есть ли пользователи
+                if (response.users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
+                } else {
+                    // Заполняем таблицу данными
+                    response.users.forEach(user => {
+                        const row = document.createElement('tr');
+                        
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.name || 'N/A'}</td>
+                            <td>${user.cnic || 'N/A'}</td>
+                            <td>${user.login || 'N/A'}</td>
+                            <td>${user.properties ? user.properties.length : 0}</td>
+                            <td><span class="status-badge ${user.is_active ? 'active' : 'blocked'}">${user.is_active ? 'Active' : 'Blocked'}</span></td>
+                            <td>
+                                <div class="actions-cell">
+                                    <div class="actions-column">
+                                        <button class="action-btn btn-view view-user-btn" data-id="${user.id}">
+                                            <i class="fas fa-eye"></i> View
+                                        </button>
+                                        ${status === 'archived' ? 
+                                            `<button class="action-btn btn-approve restore-user-btn" data-id="${user.id}">
+                                                <i class="fas fa-undo"></i> Restore
+                                            </button>` : 
+                                            `<button class="action-btn btn-delete archive-user-btn" data-id="${user.id}">
+                                                <i class="fas fa-archive"></i> Archive
+                                            </button>`
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                }
+                
+                // Добавляем пагинацию
+                const paginationContainer = document.querySelector('.pagination-container');
+                if (paginationContainer) {
+                    const pagination = createPagination(response.total, page, limit, loadUsers, status);
+                    if (pagination) {
+                        paginationContainer.innerHTML = ''; // Очищаем перед добавлением
+                        paginationContainer.appendChild(pagination);
+                    }
+                }
             } else {
-                section.appendChild(tableContainer);
+                const tbody = status === 'archived' ? 
+                    document.getElementById('archivedUsersTableBody') : 
+                    document.getElementById('usersTableBody');
+                
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            let errorContainer = section.querySelector('.error-message');
+            if (!errorContainer) {
+                errorContainer = document.createElement('div');
+                errorContainer.className = 'error-message';
+                errorContainer.style = 'color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 4px; margin: 10px 0;';
+                section.appendChild(errorContainer);
+            }
+            
+            errorContainer.innerHTML = `<i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
+                <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Retry</button>`;
+            
+            const retryBtn = errorContainer.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    errorContainer.remove();
+                    loadUsers(status);
+                });
+            }
+        } finally {
+            // Удаляем индикатор загрузки
+            const loader = section.querySelector('.loading-indicator');
+            if (loader) {
+                loader.remove();
             }
         }
-
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody) {
-            console.error(`Failed to find tbody with id: ${tbodyId}`);
-            return;
-        }
-        console.log('FDSAF',data)
-
-        if (data && Array.isArray(data)) {
-            // Простой массив
-            renderUsersTable(data, tbody);
-            const pagination = createPagination(data.length, currentPage, itemsPerPage);
-            const existingPagination = section.querySelector('.pagination');
-            if (existingPagination) {
-                existingPagination.replaceWith(pagination);
-            } else {
-                section.appendChild(pagination);
-            }
-        } else if (data && Array.isArray(data.users)) {
-            // Структурированный ответ
-            renderUsersTable(data.users, tbody);
-            const pagination = createPagination(data.total, currentPage, itemsPerPage);
-            const existingPagination = section.querySelector('.pagination');
-            if (existingPagination) {
-                existingPagination.replaceWith(pagination);
-            } else {
-                section.appendChild(pagination);
-            }
-        } else {
-            console.error('Invalid users data format:', data);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found or error loading data</td></tr>';
-        }
-
-        // Привязываем обработчики событий
-        attachActionHandlers();
     } catch (error) {
-        console.error('Error loading users:', error);
-        loadingIndicator.remove();
-
-        let errorContainer = section.querySelector('.error-message');
-        if (!errorContainer) {
-            errorContainer = document.createElement('div');
-            errorContainer.className = 'error-message';
-            errorContainer.style = 'color: #dc3545; padding: 15px; background: #f8d7da; border-radius: 4px; margin: 10px 0;';
-            section.appendChild(errorContainer);
-        }
-
-        errorContainer.innerHTML = `
-            <i class="fas fa-exclamation-circle"></i> Error loading users: ${error.message || 'Unknown error'}
-            <button class="retry-btn" style="margin-left: 10px; background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                Retry
-            </button>
-        `;
-
-        const retryBtn = errorContainer.querySelector('.retry-btn');
-        if (retryBtn) {
-            retryBtn.addEventListener('click', () => {
-                errorContainer.remove();
-                loadUsers(status);
-            });
-        }
+        console.error('Error in loadUsers:', error);
     }
 }
+
 document.querySelector('#users .search-input')?.addEventListener('input', debounce(function () {
     currentPage = 1;
     const activeSection = document.querySelector('.section.active').id;
@@ -3492,14 +3479,25 @@ function openViewTransactionModal(transactionId) {
     loadTransactionPayments(transactionId);
 }
 
-// Функция для загрузки транзакций с пагинацией
+// Функция для загрузки транзакций
 async function loadTransactions(page = 1, limit = 10) {
     try {
-        // Показываем индикатор загрузки
+        const section = document.getElementById('transactions');
         const tbody = document.getElementById('transactionsTableBody');
+        
+        if (!tbody) {
+            console.error('Transactions tbody not found');
+            return;
+        }
+        
+        // Показываем индикатор загрузки
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
         
-        const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}`);
+        const searchInput = section.querySelector('.search-input');
+        const searchTerm = searchInput ? searchInput.value.trim() : '';
+        const searchParams = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
+        
+        const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}${searchParams}`);
         
         if (response.success && response.transactions) {
             // Очищаем таблицу
@@ -3523,7 +3521,6 @@ async function loadTransactions(page = 1, limit = 10) {
                         year: 'numeric'
                     }) : 'N/A';
                 
-                // Создаем HTML для строки таблицы
                 row.innerHTML = `
                     <td>${transaction.id}</td>
                     <td>${transaction.property_name || transaction.property_id}</td>
@@ -3546,8 +3543,14 @@ async function loadTransactions(page = 1, limit = 10) {
             });
             
             // Добавляем пагинацию
-            createPagination(response.total, page, limit);
-            
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (paginationContainer) {
+                const pagination = createPagination(response.total, page, limit, loadTransactions);
+                if (pagination) {
+                    paginationContainer.innerHTML = ''; // Очищаем перед добавлением
+                    paginationContainer.appendChild(pagination);
+                }
+            }
         } else {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
             console.error('Error loading transactions:', response);
@@ -3559,20 +3562,20 @@ async function loadTransactions(page = 1, limit = 10) {
     }
 }
 
-// Функция для создания компонента пагинации
-function createPagination(totalItems, currentPage, itemsPerPage) {
+// Универсальная функция для создания компонента пагинации
+function createPagination(totalItems, currentPage, itemsPerPage, loadFunction, status = '') {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     
     // Проверяем существование контейнера пагинации
     const paginationContainer = document.querySelector('.pagination-container');
-    if (!paginationContainer) return;
+    if (!paginationContainer) return null;
     
     // Очищаем контейнер
     paginationContainer.innerHTML = '';
     
     // Если всего одна страница, не показываем пагинацию
     if (totalPages <= 1) {
-        return;
+        return null;
     }
     
     // Создаем контейнер для пагинации
@@ -3584,7 +3587,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         const prevBtn = document.createElement('button');
         prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
         prevBtn.setAttribute('data-page', currentPage - 1);
-        prevBtn.addEventListener('click', () => loadTransactions(currentPage - 1, itemsPerPage));
+        prevBtn.addEventListener('click', () => loadFunction(currentPage - 1, itemsPerPage, status));
         pagination.appendChild(prevBtn);
     } else {
         const prevBtn = document.createElement('button');
@@ -3600,7 +3603,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
     if (currentPage === 1) {
         firstPageBtn.classList.add('active');
     } else {
-        firstPageBtn.addEventListener('click', () => loadTransactions(1, itemsPerPage));
+        firstPageBtn.addEventListener('click', () => loadFunction(1, itemsPerPage, status));
     }
     pagination.appendChild(firstPageBtn);
     
@@ -3623,7 +3626,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         if (i === currentPage) {
             pageBtn.classList.add('active');
         } else {
-            pageBtn.addEventListener('click', () => loadTransactions(i, itemsPerPage));
+            pageBtn.addEventListener('click', () => loadFunction(i, itemsPerPage, status));
         }
         pagination.appendChild(pageBtn);
     }
@@ -3644,7 +3647,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         if (currentPage === totalPages) {
             lastPageBtn.classList.add('active');
         } else {
-            lastPageBtn.addEventListener('click', () => loadTransactions(totalPages, itemsPerPage));
+            lastPageBtn.addEventListener('click', () => loadFunction(totalPages, itemsPerPage, status));
         }
         pagination.appendChild(lastPageBtn);
     }
@@ -3654,7 +3657,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         const nextBtn = document.createElement('button');
         nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
         nextBtn.setAttribute('data-page', currentPage + 1);
-        nextBtn.addEventListener('click', () => loadTransactions(currentPage + 1, itemsPerPage));
+        nextBtn.addEventListener('click', () => loadFunction(currentPage + 1, itemsPerPage, status));
         pagination.appendChild(nextBtn);
     } else {
         const nextBtn = document.createElement('button');
@@ -3663,8 +3666,7 @@ function createPagination(totalItems, currentPage, itemsPerPage) {
         pagination.appendChild(nextBtn);
     }
     
-    // Добавляем пагинацию в контейнер
-    paginationContainer.appendChild(pagination);
+    return pagination;
 }
 
 // Инициализация обработчиков событий для транзакций
@@ -3981,31 +3983,39 @@ async function updateWitnesses() {
     }
 }
 
-// Функция для обработки навигации между секциями
+// Функция для навигации между секциями
 function navigateToSection(sectionId) {
-    // Скрываем все секции
+    // Сначала скрываем все секции
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
-
-    // Убираем активный класс со всех ссылок
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('active');
-    });
-
+    
     // Показываем выбранную секцию
-    document.getElementById(sectionId).classList.add('active');
-
-    // Добавляем активный класс к выбранной ссылке
-    document.querySelector(`.nav-link[data-section="${sectionId}"]`).classList.add('active');
-
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+    } else {
+        console.error(`Section with id "${sectionId}" not found`);
+        return;
+    }
+    
+    // Обновляем активную ссылку в меню
+    document.querySelectorAll('.nav-link').forEach(link => {
+        const linkSectionId = link.getAttribute('data-section') || link.getAttribute('href').substring(1);
+        if (linkSectionId === sectionId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+    
     // Загружаем данные для секции
-    if (sectionId === 'transactions') {
-        loadTransactions();
-    } else if (sectionId === 'users') {
-        loadUsers();
+    if (sectionId === 'users') {
+        loadUsers('active');
     } else if (sectionId === 'users-archive') {
-        loadArchivedUsers();
+        loadUsers('archived');
+    } else if (sectionId === 'transactions') {
+        loadTransactions();
     }
 }
 

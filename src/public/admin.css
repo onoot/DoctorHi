@@ -650,11 +650,12 @@ body {
     background: linear-gradient(135deg, #ffd166, #ff9e00);
 }
 
-/* Пагинация */
+/* Стили для пагинации */
 .pagination-container {
     display: flex;
     justify-content: center;
     margin-top: 24px;
+    padding: 0 16px;
 }
 
 .pagination {
@@ -663,6 +664,89 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
+    background: white;
+    border-radius: var(--rounded-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.pagination button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: white;
+    border: none;
+    border-right: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: var(--transition-normal);
+    color: var(--secondary);
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-sm);
+}
+
+.pagination button:last-child {
+    border-right: none;
+}
+
+.pagination button:hover:not(:disabled) {
+    background-color: rgba(67, 97, 238, 0.1);
+    color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--secondary);
+}
+
+.pagination button i {
+    font-size: 0.9em;
+}
+
+.pagination .active {
+    background: var(--primary);
+    color: white;
+    font-weight: var(--font-weight-bold);
+    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+}
+
+.pagination .active:hover {
+    background: var(--primary);
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(67, 97, 238, 0.3);
+}
+
+/* Адаптивность для пагинации */
+@media (max-width: 576px) {
+    .pagination {
+        gap: 4px;
+    }
+    
+    .pagination button {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .pagination button i {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 400px) {
+    .pagination {
+        gap: 2px;
+    }
+    
+    .pagination button {
+        width: 32px;
+        height: 32px;
+    }
 }
 
 .pagination li {

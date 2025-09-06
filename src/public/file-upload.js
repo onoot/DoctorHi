@@ -158,7 +158,7 @@ function displayFiles(files, containerId, category) {
 
         // Кнопка удаления
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
+        deleteBtn.className = 'action-btn btn-delete'; 
         deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();

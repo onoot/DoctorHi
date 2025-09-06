@@ -505,6 +505,10 @@ body {
 .btn-delete {
     background-color: var(--danger);
     color: white;
+    border: none;
+    border-radius: var(--rounded-lg);
+    padding: 10px;
+
 }
 
 .btn-delete:hover {

@@ -1,5 +1,5 @@
 // api-utils.js
-// Этот файл должен быть загружен первым!
+// Этот файл ДОЛЖЕН быть загружен ПЕРВЫМ!
 
 // Глобальные конфигурационные переменные
 const API_BASE_URL = `https://${window?.location?.host}/api`;
@@ -8,12 +8,14 @@ let itemsPerPage = 10;
 
 // Функция универсального API запроса
 async function apiRequest(url, options = {}) {
+    console.log(`[API] Making request to: ${API_BASE_URL}${url}`);
+    
     const requestOptions = {
         method: options.method || 'GET',
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            ...options.headers
+            ...(options.headers || {})
         },
         credentials: 'include',
         ...options
@@ -21,15 +23,28 @@ async function apiRequest(url, options = {}) {
     
     try {
         const response = await fetch(API_BASE_URL + url, requestOptions);
-        const data = await response.json();
+        console.log(`[API] Response status: ${response.status}`);
+        
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Если не удалось распарсить JSON, используем текстовый ответ
+            const text = await response.text();
+            console.log('[API] Response text:', text);
+            data = { message: text || 'Unknown error' };
+        }
+        
+        console.log('[API] Response data:', data);
         
         if (!response.ok) {
+            console.log('[API] Request failed:', data);
             throw new Error(data.message || 'API request failed');
         }
         
         return data;
     } catch (error) {
-        console.error('API request error:', error);
+        console.error('[API] Request failed:', error);
         throw error;
     }
 }
@@ -66,45 +81,6 @@ function parseNumber(value) {
     return parseFloat(cleanValue) || 0;
 }
 
-// Функция обновления конвертации в USD
-async function updateUSD(amountInPKR) {
-    try {
-        const response = await fetch('api/v1/admin/latest/PKR');
-        const data = await response.json();
-        let exchangeRate;
-        
-        if (data.success && data.USD) {
-            exchangeRate = data.USD;
-        } else {
-            // Fallback-курс, если API не отвечает
-            exchangeRate = 0.0036;
-        }
-        
-        const usdAmount = amountInPKR * exchangeRate;
-        const usdConversion = document.getElementById('usdConversion') || 
-                              document.getElementById('toUSD');
-        
-        if (usdConversion) {
-            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(usdAmount)}<span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">(1 PKR = ${exchangeRate.toFixed(6)} USD)</span>`;
-        }
-    } catch (error) {
-        console.error('Error fetching exchange rate:', error);
-        const exchangeRate = 0.0036;
-        const usdAmount = amountInPKR * exchangeRate;
-        const usdConversion = document.getElementById('usdConversion') || 
-                              document.getElementById('toUSD');
-        
-        if (usdConversion) {
-            usdConversion.innerHTML = `Error fetching exchange rate. Using fallback rate: 1 PKR = ${exchangeRate.toFixed(6)} USD`;
-        }
-    }
-}
-
 // Функция для обновления оставшейся суммы
 function updateRemainingAmount() {
     const totalAmountText = document.getElementById('totalAmountView')?.textContent?.replace(/,/g, '') || '0';
@@ -120,7 +96,10 @@ function updateRemainingAmount() {
         maximumFractionDigits: 2
     }).format(remainingAmount);
     
-    document.getElementById('remainingAmount')?.textContent = formattedRemaining;
+    const remainingAmountEl = document.getElementById('remainingAmount');
+    if (remainingAmountEl) {
+        remainingAmountEl.textContent = formattedRemaining;
+    }
 }
 
 // Прикрепляем функции к глобальному объекту
@@ -131,7 +110,6 @@ window.apiRequest = apiRequest;
 window.showNotification = showNotification;
 window.formatPKR = formatPKR;
 window.parseNumber = parseNumber;
-window.updateUSD = updateUSD;
 window.updateRemainingAmount = updateRemainingAmount;
 
 console.log('[API UTILS] Initialized successfully');

@@ -237,50 +237,6 @@ function updateWitnesses() {
     }
 }
 
-
-/**
- * Функция для загрузки деталей транзакции
- * @param {string} transactionId - ID транзакции
- */
-async function loadTransactionDetails(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-        
-        if (response.success && response.transaction) {
-            const transaction = response.transaction;
-            
-            // Отображаем основную информацию
-            document.getElementById('transactionId').textContent = transaction.id;
-            document.getElementById('totalAmountView').textContent = formatPKR(transaction.total_amount);
-            document.getElementById('paidAmount').textContent = formatPKR(transaction.paid_amount);
-            
-            // Используем payment_summary, если доступен, иначе вычисляем вручную
-            if (transaction.payment_summary) {
-                document.getElementById('remainingAmount').textContent = formatPKR(transaction.payment_summary.remaining_amount);
-            } else {
-                const remainingAmount = parseFloat(transaction.total_amount) - parseFloat(transaction.paid_amount);
-                document.getElementById('remainingAmount').textContent = formatPKR(remainingAmount);
-            }
-            
-            // Отображаем свидетелей
-            displayWitnesses(transaction);
-            
-            // Отображаем документы
-            displayTransactionDocuments(transaction);
-            
-            // Загружаем платежи
-            await loadTransactionPayments(transactionId);
-        } else {
-            console.error('Invalid transaction data format:', response);
-            showNotification('error', 'Failed to load transaction details');
-        }
-    } catch (error) {
-        console.error('Error loading transaction details:', error);
-        showNotification('error', 'Error loading transaction details');
-    }
-}
-
-
 /**
  * Функция для настройки обработчиков действий с платежами
  * @param {string} transactionId - ID транзакции

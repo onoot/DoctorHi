@@ -201,10 +201,11 @@ function openViewTransactionModal(transactionId) {
 async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-
-        if (response.success && response.transaction) {
-            const transaction = response.transaction;
-
+        
+        // Проверяем, что response содержит данные транзакции
+        if (response && response.id) {
+            const transaction = response;
+            
             // Получаем элементы
             const transactionIdEl = document.getElementById('transactionId');
             const propertyNameEl = document.getElementById('propertyName');
@@ -214,54 +215,58 @@ async function loadTransactionDetails(transactionId) {
             const createdAtEl = document.getElementById('createdAt');
             const totalAmountViewEl = document.getElementById('totalAmountView');
             const paidAmountEl = document.getElementById('paidAmount');
-
+            
             // Проверяем существование элементов
-            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl || !newOwnerEl ||
-                !statusEl || !createdAtEl || !totalAmountViewEl || !paidAmountEl) {
+            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl || 
+                !newOwnerEl || !statusEl || !createdAtEl || 
+                !totalAmountViewEl || !paidAmountEl) {
                 console.error('One or more transaction detail elements not found');
                 return;
             }
-
+            
             // Заполняем основную информацию о сделке
             transactionIdEl.textContent = transaction.id;
             propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
             previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
             newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
-
+            
             // Обновляем статус
-            statusEl.textContent = transaction.status;
-            statusEl.className = `status-badge ${transaction.status}`;
-
-            // Обновляем дату создания
-            if (createdAtEl) {
-                createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                });
-            }
-
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `status-badge ${getStatusClass(transaction.status)}`;
+            statusBadge.textContent = formatStatus(transaction.status);
+            statusEl.innerHTML = '';
+            statusEl.appendChild(statusBadge);
+            
+            // Обновляем дату
+            createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
             // Обновляем сумму
-            if (totalAmountViewEl) {
-                totalAmountViewEl.textContent = formatPKR(transaction.total_amount);
+            const newAmount = parseFloat(transaction.total_amount);
+            totalAmountViewEl.textContent = formatPKR(newAmount);
+            paidAmountEl.textContent = formatPKR(transaction.paid_amount);
+            
+            // Используем payment_summary, если доступен, иначе вычисляем вручную
+            if (transaction.payment_summary) {
+                document.getElementById('remainingAmount').textContent = formatPKR(transaction.payment_summary.remaining_amount);
+            } else {
+                const remainingAmount = newAmount - parseFloat(transaction.paid_amount);
+                document.getElementById('remainingAmount').textContent = formatPKR(remainingAmount);
             }
-
-            if (paidAmountEl) {
-                paidAmountEl.textContent = formatPKR(transaction.paid_amount);
-            }
-
-            // Обновляем оставшуюся сумму
-            const remainingAmount = parseFloat(transaction.total_amount) - parseFloat(transaction.paid_amount);
-            const remainingAmountEl = document.getElementById('remainingAmount');
-            if (remainingAmountEl) {
-                remainingAmountEl.textContent = formatPKR(remainingAmount);
-            }
-
-            // Отображаем свидетелей
+            
+            // ВАЖНО: Убедимся, что отображаем свидетелей
             displayWitnesses(transaction);
-
+            
             // Отображаем документы
             displayTransactionDocuments(transaction);
+            
+            // Загружаем платежи
+            await loadTransactionPayments(transactionId);
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -278,43 +283,80 @@ async function loadTransactionDetails(transactionId) {
  */
 function displayWitnesses(transaction) {
     try {
-        // Получаем элементы
+        console.log('[WITNESSES] Displaying witnesses for transaction:', transaction.id);
+        
+        // Проверяем, есть ли элементы для свидетелей в DOM
         const witness1Name = document.getElementById('witness1Name');
         const witness1CNIC = document.getElementById('witness1CNIC');
         const witness1Phone = document.getElementById('witness1Phone');
         const witness2Name = document.getElementById('witness2Name');
         const witness2CNIC = document.getElementById('witness2CNIC');
         const witness2Phone = document.getElementById('witness2Phone');
-
+        
+        // Если элементы не найдены, попробуем найти их в модальном окне
+        if (!witness1Name || !witness1CNIC || !witness1Phone ||
+            !witness2Name || !witness2CNIC || !witness2Phone) {
+            
+            console.log('[WITNESSES] Primary elements not found, searching in modal...');
+            
+            const modal = document.getElementById('witnessesModal');
+            if (modal) {
+                witness1Name = modal.querySelector('#witness1Name');
+                witness1CNIC = modal.querySelector('#witness1CNIC');
+                witness1Phone = modal.querySelector('#witness1Phone');
+                witness2Name = modal.querySelector('#witness2Name');
+                witness2CNIC = modal.querySelector('#witness2CNIC');
+                witness2Phone = modal.querySelector('#witness2Phone');
+            }
+        }
+        
         // Проверяем существование элементов
         if (!witness1Name || !witness1CNIC || !witness1Phone ||
             !witness2Name || !witness2CNIC || !witness2Phone) {
-            console.warn('Witness form elements not found. Skipping witness display.');
+            console.error('Witness form elements not found in DOM');
             return;
         }
-
-        // Заполняем форму свидетелей в модальном окне
-        if (transaction.witnesses && transaction.witnesses.witness1) {
-            witness1Name.value = transaction.witnesses.witness1.name || '';
-            witness1CNIC.value = transaction.witnesses.witness1.cnic || '';
-            witness1Phone.value = transaction.witnesses.witness1.phone || '';
-        } else {
-            witness1Name.value = '';
-            witness1CNIC.value = '';
-            witness1Phone.value = '';
+        
+        console.log('[WITNESSES] Found witness elements in DOM');
+        
+        // Проверяем структуру данных
+        let witnessesData = null;
+        
+        // Пытаемся найти данные о свидетелях в разных местах структуры
+        if (transaction.witnesses) {
+            witnessesData = transaction.witnesses;
+        } else if (transaction.witness) {
+            witnessesData = transaction.witness;
+        } else if (transaction.data && transaction.data.witnesses) {
+            witnessesData = transaction.data.witnesses;
         }
-
-        if (transaction.witnesses && transaction.witnesses.witness2) {
-            witness2Name.value = transaction.witnesses.witness2.name || '';
-            witness2CNIC.value = transaction.witnesses.witness2.cnic || '';
-            witness2Phone.value = transaction.witnesses.witness2.phone || '';
-        } else {
-            witness2Name.value = '';
-            witness2CNIC.value = '';
-            witness2Phone.value = '';
+        
+        // Если данные не найдены, создаем пустую структуру
+        if (!witnessesData) {
+            console.log('[WITNESSES] No witnesses data found, initializing empty structure');
+            witnessesData = {
+                witness1: { name: '', cnic: '', phone: '' },
+                witness2: { name: '', cnic: '', phone: '' }
+            };
         }
+        
+        // Убедимся, что структура данных корректна
+        if (!witnessesData.witness1) witnessesData.witness1 = { name: '', cnic: '', phone: '' };
+        if (!witnessesData.witness2) witnessesData.witness2 = { name: '', cnic: '', phone: '' };
+        
+        // Заполняем форму свидетелей
+        witness1Name.value = witnessesData.witness1.name || '';
+        witness1CNIC.value = witnessesData.witness1.cnic || '';
+        witness1Phone.value = witnessesData.witness1.phone || '';
+        
+        witness2Name.value = witnessesData.witness2.name || '';
+        witness2CNIC.value = witnessesData.witness2.cnic || '';
+        witness2Phone.value = witnessesData.witness2.phone || '';
+        
+        console.log('[WITNESSES] Witnesses displayed successfully');
     } catch (error) {
         console.error('Error displaying witnesses:', error);
+        showNotification('error', 'Error displaying witnesses information');
     }
 }
 

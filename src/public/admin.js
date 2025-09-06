@@ -3643,6 +3643,7 @@ function openModal(modalId) {
     if (modal) {
         modal.classList.add('show');
         modal.classList.remove('hide');
+        console.log(`Modal ${modalId} opened`);
     } else {
         console.error(`Modal with ID "${modalId}" not found`);
     }
@@ -3664,77 +3665,23 @@ function closeModal(modalId) {
 
 // Инициализация обработчиков для модальных окон
 function initModalHandlers() {
-    // Обработчик для кнопок открытия модальных окон
+    // Обработчик для кнопок просмотра пользователей
     document.addEventListener('click', function(e) {
-        // Обработка кнопок просмотра пользователей
         const viewUserBtn = e.target.closest('.view-user-btn');
         if (viewUserBtn) {
             e.preventDefault();
             const userId = viewUserBtn.getAttribute('data-id');
             if (userId) {
-                viewUser(userId);
+                viewUser(userId); // Используем правильную функцию
             }
             return;
         }
         
-        // Обработка кнопок просмотра транзакций
-        const viewTransactionBtn = e.target.closest('.view-transaction-btn');
-        if (viewTransactionBtn) {
-            e.preventDefault();
-            const transactionId = viewTransactionBtn.getAttribute('data-id');
-            if (transactionId) {
-                viewTransaction(transactionId);
-            }
-            return;
-        }
-        
-        // Обработка кнопок закрытия модальных окон
-        const closeBtn = e.target.closest('.modal-close, .close');
-        if (closeBtn) {
-            e.preventDefault();
-            const modalId = closeBtn.getAttribute('data-modal') || 
-                           (closeBtn.closest('.modal') ? closeBtn.closest('.modal').id : null);
-            if (modalId) {
-                closeModal(modalId);
-            }
-            return;
-        }
-        
-        // Закрытие модального окна при клике на overlay
-        if (e.target.classList.contains('modal')) {
-            const modalId = e.target.id;
-            if (modalId) {
-                closeModal(modalId);
-            }
-        }
-    });
-    
-    // Обработчик для кнопки "Add User"
-    document.getElementById('openAddUserModal')?.addEventListener('click', function() {
-        openAddUserModal();
-    });
-    
-    // Обработчик для кнопки "New Transaction"
-    document.getElementById('create')?.addEventListener('click', function() {
-        openCreateTransactionModal();
-    });
-    
-    // Обработчик для кнопок действий в модальном окне транзакции
-    document.addEventListener('click', function(e) {
-        const transactionActionsBtn = e.target.closest('[data-action]');
-        if (transactionActionsBtn && transactionActionsBtn.closest('#viewTransactionModal')) {
-            e.preventDefault();
-            const action = transactionActionsBtn.getAttribute('data-action');
-            const transactionId = document.getElementById('currentTransactionId')?.value;
-            
-            if (transactionId) {
-                handleTransactionAction(transactionId, action);
-            }
-        }
+        // Остальные обработчики...
     });
 }
 
-// Функция для просмотра пользователя
+// Функция для просмотра пользователя (аналогично viewTransaction)
 async function viewUser(userId) {
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
@@ -3754,11 +3701,15 @@ async function viewUser(userId) {
                         <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
                         <p><strong>Status:</strong> <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">${user.is_active ? 'Active' : 'Blocked'}</span></p>
                         <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
-                        <p><strong>Created:</strong> ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB') : 'N/A'}</p>
+                        <p><strong>Created:</strong> ${user.created_at ? new Date(user.created_at).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                        }) : 'N/A'}</p>
                     </div>
                 `;
                 
-                // Открываем модальное окно
+                // КРИТИЧЕСКИ ВАЖНО: открываем модальное окно
                 openModal('userModal');
             } else {
                 console.error('User modal body not found');

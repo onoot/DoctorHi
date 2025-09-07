@@ -151,3 +151,27 @@ document.getElementById('addPaymentForm').addEventListener('submit', async funct
         showNotification('error', error.message || 'Error adding payment');
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация обработчиков модальных окон
+    initModalHandlers();
+    
+    // Инициализация генератора учетных данных
+    initCredentialGenerator();
+    
+    // Добавляем обработчик для кнопки "New Transaction"
+    const createTransactionBtn = document.getElementById('createTransaction');
+    if (createTransactionBtn) {
+        createTransactionBtn.addEventListener('click', function() {
+            if (typeof openCreateTransactionModal === 'function') {
+                openCreateTransactionModal();
+            } else {
+                console.error('openCreateTransactionModal function is not defined');
+                showNotification('error', 'Transaction modal function not available');
+            }
+        });
+        console.log('[INIT] Create transaction button handler attached');
+    } else {
+        console.warn('[INIT] Create transaction button not found');
+    }
+});

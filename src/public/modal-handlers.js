@@ -65,6 +65,14 @@ async function openEditPaymentModal(transactionId, paymentId) {
 function openCreateTransactionModal() {
     console.log('[TRANSACTION] Opening create transaction modal');
     
+    // Проверяем существование модального окна
+    const modal = document.getElementById('createTransactionModal');
+    if (!modal) {
+        console.error('[TRANSACTION] Create transaction modal not found in DOM');
+        showNotification('error', 'Transaction modal not found');
+        return;
+    }
+    
     // Сбрасываем форму
     const form = document.getElementById('createTransactionForm');
     if (form) {
@@ -75,6 +83,9 @@ function openCreateTransactionModal() {
     document.querySelectorAll('.error-message').forEach(el => {
         el.textContent = '';
     });
+    
+    // Генерируем логин и пароль
+    generateCredentials();
     
     // Открываем модальное окно
     openModal('createTransactionModal');

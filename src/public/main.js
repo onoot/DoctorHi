@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Инициализация кнопки создания транзакции (если она существует)
-    const createTransactionBtn = document.getElementById('create');
+    const createTransactionBtn = document.getElementById('createTransaction');
     if (createTransactionBtn && typeof openCreateTransactionModal === 'function') {
         createTransactionBtn.addEventListener('click', openCreateTransactionModal);
         console.log('[APP] Create transaction button handler attached');

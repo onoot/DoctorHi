@@ -206,7 +206,7 @@ function initFileUploadHandlers() {
                     updateTransactionAmount(newAmount);
                     document.getElementById('amountEditSection').style.display = 'none';
                 } else {
-                    alert('Please enter a valid amount');
+                    showNotification('warning', 'Please enter a valid amount');
                 }
                 break;
             case 'cancel-amount':

@@ -74,12 +74,125 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// Функция показа уведомлений
-function showNotification(type, message) {
-    console.log(`[${type.toUpperCase()}] ${message}`);
+/**
+ * Функция для отображения уведомлений
+ * @param {string} type - Тип уведомления (error, warning, info, success)
+ * @param {string} message - Текст уведомления
+ * @param {number} [duration=5000] - Время отображения в миллисекундах
+ */
+function showNotification(type, message, duration = 5000) {
+    // Проверяем, существует ли контейнер для уведомлений
+    let notificationContainer = document.getElementById('notification-container');
     
-    // Здесь может быть реализация UI уведомлений
-    alert(`${type.toUpperCase()}: ${message}`);
+    // Если контейнер не существует, создаем его
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.position = 'fixed';
+        notificationContainer.style.top = '20px';
+        notificationContainer.style.right = '20px';
+        notificationContainer.style.zIndex = '9999';
+        notificationContainer.style.display = 'flex';
+        notificationContainer.style.flexDirection = 'column';
+        notificationContainer.style.gap = '10px';
+        notificationContainer.style.maxWidth = '400px';
+        document.body.appendChild(notificationContainer);
+    }
+    
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    // Стили по умолчанию
+    notification.style.padding = '15px 20px';
+    notification.style.borderRadius = 'var(--rounded-lg)';
+    notification.style.boxShadow = 'var(--shadow-md)';
+    notification.style.color = 'white';
+    notification.style.fontFamily = 'var(--font-sans)';
+    notification.style.fontSize = 'var(--font-size-sm)';
+    notification.style.lineHeight = '1.5';
+    notification.style.cursor = 'pointer';
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(-20px)';
+    notification.style.transition = 'all 0.3s ease';
+    notification.style.display = 'flex';
+    notification.style.alignItems = 'center';
+    notification.style.gap = '10px';
+    
+    // Добавляем иконку в зависимости от типа
+    let icon = '';
+    switch (type) {
+        case 'error':
+            icon = '<i class="fas fa-exclamation-circle" style="font-size: 1.2em;"></i>';
+            notification.style.background = 'var(--danger)';
+            break;
+        case 'warning':
+            icon = '<i class="fas fa-exclamation-triangle" style="font-size: 1.2em;"></i>';
+            notification.style.background = 'var(--warning)';
+            break;
+        case 'info':
+            icon = '<i class="fas fa-info-circle" style="font-size: 1.2em;"></i>';
+            notification.style.background = 'var(--info)';
+            break;
+        case 'success':
+            icon = '<i class="fas fa-check-circle" style="font-size: 1.2em;"></i>';
+            notification.style.background = 'var(--success)';
+            break;
+        default:
+            icon = '<i class="fas fa-bell" style="font-size: 1.2em;"></i>';
+            notification.style.background = 'var(--primary)';
+    }
+    
+    // Добавляем содержимое уведомления
+    notification.innerHTML = `
+        ${icon}
+        <span>${message}</span>
+        <button class="notification-close" style="margin-left: auto; background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;">
+            &times;
+        </button>
+    `;
+    
+    // Добавляем уведомление в контейнер
+    notificationContainer.appendChild(notification);
+    
+    // Принудительная перерисовка для анимации
+    void notification.offsetWidth;
+    
+    // Анимация появления
+    notification.style.opacity = '1';
+    notification.style.transform = 'translateY(0)';
+    
+    // Функция закрытия уведомления
+    const closeNotification = () => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        
+        setTimeout(() => {
+            notificationContainer.removeChild(notification);
+            if (notificationContainer.children.length === 0) {
+                document.body.removeChild(notificationContainer);
+            }
+        }, 300);
+    };
+    
+    // Обработчик закрытия по клику на крестик
+    const closeBtn = notification.querySelector('.notification-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeNotification();
+        });
+    }
+    
+    // Обработчик закрытия по клику на уведомление
+    notification.addEventListener('click', () => {
+        closeNotification();
+    });
+    
+    // Автоматическое закрытие через указанное время
+    setTimeout(() => {
+        closeNotification();
+    }, duration);
 }
 
 // Функция для форматирования PKR
@@ -127,6 +240,13 @@ function updateRemainingAmount() {
     }
 }
 
+// Автоматическая инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[NOTIFICATIONS] Notification system initialized');
+    
+    showNotification('info', 'Notification system is ready', 3000);
+});
+
 // Прикрепляем функции к глобальному объекту
 window.API_BASE_URL = API_BASE_URL;
 window.currentPage = currentPage;
@@ -136,5 +256,6 @@ window.showNotification = showNotification;
 window.formatPKR = formatPKR;
 window.parseNumber = parseNumber;
 window.updateRemainingAmount = updateRemainingAmount;
+window.showNotification = showNotification;
 
 console.log('[API UTILS] Initialized successfully');

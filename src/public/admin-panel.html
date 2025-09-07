@@ -154,22 +154,22 @@
                     </div>
                     <div class="modal-body">
                         <form id="editPaymentForm">
-                            <input type="hidden" id="paymentTransactionId">
-                            <input type="hidden" id="paymentId">
+                            <input type="hidden" id="editPaymentModal_transactionId">
+                            <input type="hidden" id="editPaymentModal_paymentId">
                             <div class="form-group">
-                                <label for="paymentAmount">Amount (PKR)</label>
+                                <label for="editPaymentModal_paymentAmount">Amount (PKR)</label>
                                 <div class="amount-input-container">
-                                    <input type="text" id="paymentAmount" name="amount"
+                                    <input type="text" id="editPaymentModal_paymentAmount" name="amount"
                                         class="form-control formatted-amount" required placeholder="0.00"
                                         inputmode="decimal">
-                                    <input type="hidden" id="rawPaymentAmount" name="raw_amount">
+                                    <input type="hidden" id="editPaymentModal_rawPaymentAmount" name="raw_amount">
                                 </div>
-                                <div id="usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;">
+                                <div id="editPaymentModal_usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="paymentMethod">Payment Method</label>
-                                <select id="paymentMethod" name="method" class="form-control" required>
+                                <label for="editPaymentModal_paymentMethod">Payment Method</label>
+                                <select id="editPaymentModal_paymentMethod" name="method" class="form-control" required>
                                     <option value="cash">Cash</option>
                                     <option value="bank_transfer">Bank Transfer</option>
                                     <option value="credit_card">Credit Card</option>
@@ -177,16 +177,16 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="paymentStatus">Status</label>
-                                <select id="paymentStatus" name="status" class="form-control" required>
+                                <label for="editPaymentModal_paymentStatus">Status</label>
+                                <select id="editPaymentModal_paymentStatus" name="status" class="form-control" required>
                                     <option value="pending">Pending</option>
                                     <option value="paid">Paid</option>
                                     <option value="cancelled">Cancelled</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="paymentNotes">Notes</label>
-                                <textarea id="paymentNotes" name="notes" class="form-control" rows="3"></textarea>
+                                <label for="editPaymentModal_paymentNotes">Notes</label>
+                                <textarea id="editPaymentModal_paymentNotes" name="notes" class="form-control" rows="3"></textarea>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
@@ -279,17 +279,17 @@
                                     <h4>Witness 1</h4>
                                     <div class="form-group">
                                         <label>Name *</label>
-                                        <input type="text" id="witness1Name" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness1Name" class="form-control"
                                             placeholder="Enter witness name">
                                     </div>
                                     <div class="form-group">
                                         <label>CNIC *</label>
-                                        <input type="text" id="witness1CNIC" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness1CNIC" class="form-control"
                                             placeholder="XXXXX-XXXXXXX-X">
                                     </div>
                                     <div class="form-group">
                                         <label>Phone</label>
-                                        <input type="text" id="witness1Phone" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness1Phone" class="form-control"
                                             placeholder="+XXXXXXXXXXXX">
                                     </div>
                                 </div>
@@ -298,17 +298,17 @@
                                     <h4>Witness 2</h4>
                                     <div class="form-group">
                                         <label>Name *</label>
-                                        <input type="text" id="witness2Name" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness2Name" class="form-control"
                                             placeholder="Enter witness name">
                                     </div>
                                     <div class="form-group">
                                         <label>CNIC *</label>
-                                        <input type="text" id="witness2CNIC" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness2CNIC" class="form-control"
                                             placeholder="XXXXX-XXXXXXX-X">
                                     </div>
                                     <div class="form-group">
                                         <label>Phone</label>
-                                        <input type="text" id="witness2Phone" class="form-control"
+                                        <input type="text" id="viewTransactionModal_witness2Phone" class="form-control"
                                             placeholder="+XXXXXXXXXXXX">
                                     </div>
                                 </div>
@@ -333,35 +333,35 @@
                     <div class="modal-body">
                         <form id="addUserForm">
                             <div class="form-group required">
-                                <label for="userName">Full Name</label>
-                                <input type="text" id="userName" class="form-control" required>
-                                <div class="error-message" id="userNameError"></div>
+                                <label for="addUserModal_userName">Full Name</label>
+                                <input type="text" id="addUserModal_userName" class="form-control" required>
+                                <div class="error-message" id="addUserModal_userNameError"></div>
                             </div>
 
                             <div class="form-group required">
-                                <label for="userCnic">CNIC</label>
-                                <input type="text" id="userCnic" class="form-control" required
+                                <label for="addUserModal_userCnic">CNIC</label>
+                                <input type="text" id="addUserModal_userCnic" class="form-control" required
                                     placeholder="12345-1234567-1">
-                                <div class="error-message" id="userCnicError"></div>
+                                <div class="error-message" id="addUserModal_userCnicError"></div>
                             </div>
 
                             <div class="form-group required">
-                                <label for="userPhone">Phone Number</label>
-                                <input type="tel" id="userPhone" class="form-control" required
+                                <label for="addUserModal_userPhone">Phone Number</label>
+                                <input type="tel" id="addUserModal_userPhone" class="form-control" required
                                     placeholder="+923001234567">
-                                <div class="error-message" id="userPhoneError"></div>
+                                <div class="error-message" id="addUserModal_userPhoneError"></div>
                             </div>
 
                             <div class="form-group required">
-                                <label for="userAddress">Address</label>
-                                <textarea id="userAddress" class="form-control" required rows="3"></textarea>
-                                <div class="error-message" id="userAddressError"></div>
+                                <label for="addUserModal_userAddress">Address</label>
+                                <textarea id="addUserModal_userAddress" class="form-control" required rows="3"></textarea>
+                                <div class="error-message" id="addUserModal_userAddressError"></div>
                             </div>
 
                             <div class="form-group">
-                                <label for="userLogin">Login (generated)</label>
+                                <label for="addUserModal_userLogin">Login (generated)</label>
                                 <div class="input-group">
-                                    <input type="text" id="userLogin" class="form-control" readonly>
+                                    <input type="text" id="addUserModal_userLogin" class="form-control" readonly>
                                     <button type="button" class="action-btn btn-edit regenerate-login-btn">
                                         <i class="fas fa-sync"></i> Regenerate
                                     </button>
@@ -369,9 +369,9 @@
                             </div>
 
                             <div class="form-group">
-                                <label for="userPassword">Password (generated)</label>
+                                <label for="addUserModal_userPassword">Password (generated)</label>
                                 <div class="input-group">
-                                    <input type="text" id="userPassword" class="form-control" readonly>
+                                    <input type="text" id="addUserModal_userPassword" class="form-control" readonly>
                                     <button type="button" class="action-btn btn-edit regenerate-password-btn">
                                         <i class="fas fa-sync"></i> Regenerate
                                     </button>
@@ -399,24 +399,24 @@
                     <div class="modal-body">
                         <form id="createTransactionForm">
                             <div class="form-group">
-                                <label for="propertyId">Property</label>
-                                <select id="propertyId" class="form-control" name="property_id" required>
+                                <label for="createTransactionModal_propertyId">Property</label>
+                                <select id="createTransactionModal_propertyId" class="form-control" name="property_id" required>
                                     <!-- Property options will be populated via JavaScript -->
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="newOwnerId">New Owner</label>
-                                <select id="newOwnerId" class="form-control" name="new_owner_id" required>
+                                <label for="createTransactionModal_newOwnerId">New Owner</label>
+                                <select id="createTransactionModal_newOwnerId" class="form-control" name="new_owner_id" required>
                                     <!-- User options will be populated via JavaScript -->
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="totalAmount">Total Amount (PKR)</label>
-                                <input type="text" id="totalAmount" name="total_amount" class="form-control" required
+                                <label for="createTransactionModal_totalAmount">Total Amount (PKR)</label>
+                                <input type="text" id="createTransactionModal_totalAmount" name="total_amount" class="form-control" required
                                     placeholder="0.00" inputmode="decimal">
                                 <div style="margin-top: 5px;">
                                     <p style="margin-bottom: 2px;">USD:</p>
-                                    <div id="toUSD" style="color: #0066cc; font-size: 0.95em;"></div>
+                                    <div id="createTransactionModal_toUSD" style="color: #0066cc; font-size: 0.95em;"></div>
                                 </div>
                             </div>
                             <!-- Witnesses Information -->
@@ -427,18 +427,18 @@
                                 <div class="witness-group">
                                     <h4>Witness 1</h4>
                                     <div class="form-group">
-                                        <label for="witness1Name">Name</label>
-                                        <input type="text" id="witness1Name" name="witness1Name" class="form-control"
+                                        <label for="createTransactionModal_witness1Name">Name</label>
+                                        <input type="text" id="createTransactionModal_witness1Name" name="witness1Name" class="form-control"
                                             required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="witness1CNIC">CNIC</label>
-                                        <input type="text" id="witness1CNIC" name="witness1CNIC" class="form-control"
+                                        <label for="createTransactionModal_witness1CNIC">CNIC</label>
+                                        <input type="text" id="createTransactionModal_witness1CNIC" name="witness1CNIC" class="form-control"
                                             placeholder="12345-1234567-1" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="witness1Phone">Phone</label>
-                                        <input type="tel" id="witness1Phone" name="witness1Phone" class="form-control"
+                                        <label for="createTransactionModal_witness1Phone">Phone</label>
+                                        <input type="tel" id="createTransactionModal_witness1Phone" name="witness1Phone" class="form-control"
                                             pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
                                     </div>
                                 </div>
@@ -447,18 +447,18 @@
                                 <div class="witness-group">
                                     <h4>Witness 2</h4>
                                     <div class="form-group">
-                                        <label for="witness2Name">Name</label>
-                                        <input type="text" id="witness2Name" name="witness2Name" class="form-control"
+                                        <label for="createTransactionModal_witness2Name">Name</label>
+                                        <input type="text" id="createTransactionModal_witness2Name" name="witness2Name" class="form-control"
                                             required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="witness2CNIC">CNIC</label>
-                                        <input type="text" id="witness2CNIC" name="witness2CNIC" class="form-control"
+                                        <label for="createTransactionModal_witness2CNIC">CNIC</label>
+                                        <input type="text" id="createTransactionModal_witness2CNIC" name="witness2CNIC" class="form-control"
                                             placeholder="12345-1234567-1" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="witness2Phone">Phone</label>
-                                        <input type="tel" id="witness2Phone" name="witness2Phone" class="form-control"
+                                        <label for="createTransactionModal_witness2Phone">Phone</label>
+                                        <input type="tel" id="createTransactionModal_witness2Phone" name="witness2Phone" class="form-control"
                                             pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
                                     </div>
                                 </div>
@@ -483,21 +483,21 @@
                     </div>
                     <div class="modal-body">
                         <form id="singleFileUploadForm">
-                            <input type="hidden" id="uploadTransactionId" name="transactionId">
-                            <input type="hidden" id="uploadCategory" name="category">
+                            <input type="hidden" id="uploadFileModal_transactionId" name="transactionId">
+                            <input type="hidden" id="uploadFileModal_category" name="category">
                             <div class="form-group">
-                                <label for="file">Select File</label>
+                                <label for="uploadFileModal_file">Select File</label>
                                 <div class="file-upload">
-                                    <input type="file" id="file" name="agreement"
+                                    <input type="file" id="uploadFileModal_file" name="agreement"
                                         accept="image/jpeg,image/png,application/pdf" required
                                         class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose File
                                     </button>
-                                    <div class="file-name-display" id="fileNameDisplay">No file chosen</div>
+                                    <div class="file-name-display" id="uploadFileModal_fileNameDisplay">No file chosen</div>
                                 </div>
-                                <div id="imagePreview" style="margin-top: 10px; max-width: 300px;">
-                                    <img id="previewImage" style="max-width: 100%; display: none;">
+                                <div id="uploadFileModal_imagePreview" style="margin-top: 10px; max-width: 300px;">
+                                    <img id="uploadFileModal_previewImage" style="max-width: 100%; display: none;">
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -518,17 +518,17 @@
                     </div>
                     <div class="modal-body">
                         <form id="multipleFileUploadForm">
-                            <input type="hidden" id="multiUploadTransactionId" name="transactionId">
+                            <input type="hidden" id="multipleUploadModal_transactionId" name="transactionId">
                             <div class="form-group">
-                                <label for="files">Select Files</label>
+                                <label for="multipleUploadModal_files">Select Files</label>
                                 <div class="file-upload">
-                                    <input type="file" id="files" name="proof_documents" multiple
+                                    <input type="file" id="multipleUploadModal_files" name="proof_documents" multiple
                                         accept="image/jpeg,image/png,application/pdf" required
                                         class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose Files
                                     </button>
-                                    <div class="file-name-display" id="multipleFileNameDisplay">No files chosen</div>
+                                    <div class="file-name-display" id="multipleUploadModal_fileNameDisplay">No files chosen</div>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -554,17 +554,17 @@
                         <div class="witness-group">
                             <h4>Witness 1</h4>
                             <div class="form-group">
-                                <label for="witness1Name">Name</label>
-                                <input type="text" id="witness1Name" name="witness1Name" class="form-control" required>
+                                <label for="transactionForm_witness1Name">Name</label>
+                                <input type="text" id="transactionForm_witness1Name" name="witness1Name" class="form-control" required>
                             </div>
                             <div class="form-group">
-                                <label for="witness1CNIC">CNIC</label>
-                                <input type="text" id="witness1CNIC" name="witness1CNIC" class="form-control"
+                                <label for="transactionForm_witness1CNIC">CNIC</label>
+                                <input type="text" id="transactionForm_witness1CNIC" name="witness1CNIC" class="form-control"
                                     placeholder="12345-1234567-1" required>
                             </div>
                             <div class="form-group">
-                                <label for="witness1Phone">Phone</label>
-                                <input type="tel" id="witness1Phone" name="witness1Phone" class="form-control"
+                                <label for="transactionForm_witness1Phone">Phone</label>
+                                <input type="tel" id="transactionForm_witness1Phone" name="witness1Phone" class="form-control"
                                     pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
                             </div>
                         </div>
@@ -573,17 +573,17 @@
                         <div class="witness-group">
                             <h4>Witness 2</h4>
                             <div class="form-group">
-                                <label for="witness2Name">Name</label>
-                                <input type="text" id="witness2Name" name="witness2Name" class="form-control" required>
+                                <label for="transactionForm_witness2Name">Name</label>
+                                <input type="text" id="transactionForm_witness2Name" name="witness2Name" class="form-control" required>
                             </div>
                             <div class="form-group">
-                                <label for="witness2CNIC">CNIC</label>
-                                <input type="text" id="witness2CNIC" name="witness2CNIC" class="form-control"
+                                <label for="transactionForm_witness2CNIC">CNIC</label>
+                                <input type="text" id="transactionForm_witness2CNIC" name="witness2CNIC" class="form-control"
                                     placeholder="12345-1234567-1" required>
                             </div>
                             <div class="form-group">
-                                <label for="witness2Phone">Phone</label>
-                                <input type="tel" id="witness2Phone" name="witness2Phone" class="form-control"
+                                <label for="transactionForm_witness2Phone">Phone</label>
+                                <input type="tel" id="transactionForm_witness2Phone" name="witness2Phone" class="form-control"
                                     pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
                             </div>
                         </div>
@@ -601,21 +601,21 @@
                     </div>
                     <div class="modal-body">
                         <form id="addPaymentForm">
-                            <input type="hidden" id="paymentTransactionId">
+                            <input type="hidden" id="addPaymentModal_transactionId">
                             <div class="form-group">
-                                <label for="paymentAmount">Amount (PKR)</label>
+                                <label for="addPaymentModal_paymentAmount">Amount (PKR)</label>
                                 <div class="amount-input-container">
-                                    <input type="text" id="paymentAmount" name="amount"
+                                    <input type="text" id="addPaymentModal_paymentAmount" name="amount"
                                         class="form-control formatted-amount" required placeholder="0.00"
                                         inputmode="decimal">
-                                    <input type="hidden" id="rawPaymentAmount" name="raw_amount">
+                                    <input type="hidden" id="addPaymentModal_rawPaymentAmount" name="raw_amount">
                                 </div>
-                                <div id="usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;">
+                                <div id="addPaymentModal_usdConversion" style="margin-top: 5px; color: #0066cc; font-size: 0.95em;">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="paymentMethod">Payment Method</label>
-                                <select id="paymentMethod" name="method" class="form-control" required>
+                                <label for="addPaymentModal_paymentMethod">Payment Method</label>
+                                <select id="addPaymentModal_paymentMethod" name="method" class="form-control" required>
                                     <option value="cash">Cash</option>
                                     <option value="bank_transfer">Bank Transfer</option>
                                     <option value="credit_card">Credit Card</option>
@@ -623,16 +623,16 @@
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="receiptFile">Receipt</label>
+                                <label for="addPaymentModal_receiptFile">Receipt</label>
                                 <div class="file-upload">
-                                    <input type="file" id="receiptFile" name="receipt" accept="image/*,.pdf"
+                                    <input type="file" id="addPaymentModal_receiptFile" name="receipt" accept="image/*,.pdf"
                                         class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose File
                                     </button>
-                                    <div class="file-name-display" id="receiptFileNameDisplay">No file chosen</div>
+                                    <div class="file-name-display" id="addPaymentModal_receiptFileNameDisplay">No file chosen</div>
                                 </div>
-                                <div id="receiptPreview" style="margin-top: 10px;"></div>
+                                <div id="addPaymentModal_receiptPreview" style="margin-top: 10px;"></div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
@@ -643,11 +643,13 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Правильный порядок загрузки скриптов -->
         <script src="./api-utils.js"></script>
         <script src="./utils.js"></script>
         <script src="./modal.js"></script>
-        <script src="./config.js"></script>
         <script src="./currency-converter.js"></script>
+        <script src="./config.js"></script>
         <script src="./search-handlers.js"></script>
         <script src="./action-handlers.js"></script>
         <script src="./user-handlers.js"></script>
@@ -664,7 +666,6 @@
         <script src="./file-upload.js"></script>
         <script src="./init-handlers.js"></script>
         <script src="./init.js"></script>
-
 </body>
 
 </html>

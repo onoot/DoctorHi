@@ -33,9 +33,6 @@ function openModal(modalId, isNested = false) {
         // Добавляем класс show для отображения
         modal.classList.add('show');
         
-        // Устанавливаем display: flex только если класс show добавлен
-        modal.style.display = 'flex';
-        
         // Принудительная перерисовка для анимации
         void modal.offsetWidth;
         
@@ -58,7 +55,6 @@ function openModal(modalId, isNested = false) {
         return false;
     }
 }
-
 /**
  * Универсальная функция для закрытия модальных окон
  * @param {string} modalId - ID модального окна

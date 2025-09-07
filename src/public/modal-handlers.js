@@ -119,7 +119,7 @@ function openViewTransactionModal(transactionId) {
  */
 function initModalHandlers() {
     // КРИТИЧЕСКИ ВАЖНЫЙ обработчик для кнопки "New Transaction"
-    const createBtn = document.getElementById('create');
+    const createBtn = document.getElementById('createTransaction');
     if (createBtn) {
         createBtn.addEventListener('click', openCreateTransactionModal);
         console.log('[MODALS] Create transaction button handler attached');
@@ -132,24 +132,70 @@ function initModalHandlers() {
     if (submitCreateBtn) {
         submitCreateBtn.addEventListener('click', async function() {
             const form = document.getElementById('createTransactionForm');
-            const formData = new FormData();
+            if (!form) {
+                console.error('[MODALS] Create transaction form not found');
+                return;
+            }
             
-            // Собираем данные формы
-            formData.append('property_id', document.getElementById('propertyId').value);
-            formData.append('total_amount', parseNumber(document.getElementById('totalAmount').value));
-            // Добавьте другие поля по необходимости
+            // Валидация формы
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            const errorMessages = {
+                propertyId: 'Please select a property',
+                totalAmount: 'Please enter a valid amount'
+            };
+            
+            requiredFields.forEach(field => {
+                if (!field.value) {
+                    isValid = false;
+                    const errorElement = document.getElementById(`${field.id}Error`);
+                    if (errorElement) {
+                        errorElement.textContent = errorMessages[field.id] || 'This field is required';
+                    }
+                } else {
+                    const errorElement = document.getElementById(`${field.id}Error`);
+                    if (errorElement) {
+                        errorElement.textContent = '';
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                showNotification('error', 'Please fill in all required fields');
+                return;
+            }
             
             try {
+                const formData = {
+                    property_id: document.getElementById('propertyId').value,
+                    new_owner_id: document.getElementById('newOwnerId').value,
+                    total_amount: parseNumber(document.getElementById('totalAmount').value),
+                    witnesses: {
+                        witness1: {
+                            name: document.getElementById('witness1Name').value,
+                            cnic: document.getElementById('witness1CNIC').value,
+                            phone: document.getElementById('witness1Phone').value
+                        },
+                        witness2: {
+                            name: document.getElementById('witness2Name').value,
+                            cnic: document.getElementById('witness2CNIC').value,
+                            phone: document.getElementById('witness2Phone').value
+                        }
+                    }
+                };
+                
                 const response = await apiRequest('/v1/admin/transactions', {
                     method: 'POST',
-                    body: JSON.stringify(Object.fromEntries(formData))
+                    body: JSON.stringify(formData)
                 });
                 
                 if (response.success) {
                     showNotification('success', 'Transaction created successfully');
                     closeModal('createTransactionModal');
                     // Перезагружаем список транзакций
-                    await loadTransactions();
+                    if (typeof loadTransactions === 'function') {
+                        await loadTransactions();
+                    }
                 } else {
                     throw new Error(response.message || 'Failed to create transaction');
                 }

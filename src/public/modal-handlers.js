@@ -3,19 +3,23 @@
 
 /**
  * Функция для открытия модального окна добавления платежа
+ * @param {string} transactionId - ID транзакции
  */
-function openAddPaymentModal() {
-    // Получаем ID текущей транзакции
-    const transactionIdElement = document.getElementById('currentTransactionId');
-    if (!transactionIdElement || !transactionIdElement.value) {
-        showNotification('error', 'Transaction ID not found');
-        return;
-    }
-    
-    const transactionId = transactionIdElement.value;
+function openAddPaymentModal(transactionId) {
+    console.log(`[PAYMENT] Opening add payment modal for transaction ${transactionId}`);
     
     // Устанавливаем ID транзакции
     document.getElementById('paymentTransactionId').value = transactionId;
+    
+    // Сбрасываем форму
+    const form = document.getElementById('addPaymentForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Обновляем отображение
+    document.getElementById('receiptFileNameDisplay').textContent = 'No file chosen';
+    document.getElementById('receiptPreview').innerHTML = '';
     
     // Открываем модальное окно
     openModal('addPaymentModal');
@@ -23,40 +27,57 @@ function openAddPaymentModal() {
 
 /**
  * Функция для открытия модального окна редактирования платежа
- * @param {string} paymentId - ID платежа
  * @param {string} transactionId - ID транзакции
+ * @param {string} paymentId - ID платежа
  */
-function openEditPaymentModal(paymentId, transactionId) {
-    // Получаем ID текущей транзакции
-    const transactionIdElement = document.getElementById('currentTransactionId');
-    if (!transactionIdElement || !transactionIdElement.value) {
-        showNotification('error', 'Transaction ID not found');
-        return;
+async function openEditPaymentModal(transactionId, paymentId) {
+    console.log(`[PAYMENT] Opening edit payment modal for transaction ${transactionId}, payment ${paymentId}`);
+    
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
+        if (response.success && response.payment) {
+            const payment = response.payment;
+            
+            // Заполняем форму
+            document.getElementById('paymentTransactionId').value = transactionId;
+            document.getElementById('paymentId').value = payment.id;
+            document.getElementById('paymentAmount').value = formatPKR(payment.amount);
+            document.getElementById('rawPaymentAmount').value = payment.amount;
+            document.getElementById('paymentMethod').value = payment.method;
+            document.getElementById('paymentStatus').value = payment.status;
+            document.getElementById('paymentNotes').value = payment.notes || '';
+            
+            // Обновляем конвертацию в USD
+            await updateUSD(payment.amount);
+            
+            // Открываем модальное окно
+            openModal('editPaymentModal');
+        }
+    } catch (error) {
+        console.error('[PAYMENT] Error loading payment details:', error);
+        showNotification('error', 'Error loading payment details');
+    }
+}
+
+/**
+ * Функция для открытия модального окна создания транзакции
+ */
+function openCreateTransactionModal() {
+    console.log('[TRANSACTION] Opening create transaction modal');
+    
+    // Сбрасываем форму
+    const form = document.getElementById('createTransactionForm');
+    if (form) {
+        form.reset();
     }
     
-    transactionId = transactionIdElement.value;
+    // Сбрасываем сообщения об ошибках
+    document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
+    });
     
-    // Загружаем данные платежа
-    apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`)
-        .then(response => {
-            if (response.success && response.payment) {
-                const payment = response.payment;
-                
-                // Заполняем форму
-                document.getElementById('paymentId').value = payment.id;
-                document.getElementById('paymentAmount').value = payment.amount;
-                document.getElementById('paymentMethod').value = payment.method;
-                document.getElementById('paymentStatus').value = payment.status;
-                document.getElementById('paymentNotes').value = payment.notes || '';
-                
-                // Открываем модальное окно
-                openModal('editPaymentModal');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading payment details:', error);
-            showNotification('error', 'Error loading payment details');
-        });
+    // Открываем модальное окно
+    openModal('createTransactionModal');
 }
 
 /**
@@ -86,6 +107,48 @@ function openViewTransactionModal(transactionId) {
  * Инициализация обработчиков модальных окон
  */
 function initModalHandlers() {
+    // КРИТИЧЕСКИ ВАЖНЫЙ обработчик для кнопки "New Transaction"
+    const createBtn = document.getElementById('create');
+    if (createBtn) {
+        createBtn.addEventListener('click', openCreateTransactionModal);
+        console.log('[MODALS] Create transaction button handler attached');
+    } else {
+        console.warn('[MODALS] Create transaction button not found');
+    }
+    
+    // Обработчик для отправки формы создания транзакции
+    const submitCreateBtn = document.getElementById('submitCreateTransaction');
+    if (submitCreateBtn) {
+        submitCreateBtn.addEventListener('click', async function() {
+            const form = document.getElementById('createTransactionForm');
+            const formData = new FormData();
+            
+            // Собираем данные формы
+            formData.append('property_id', document.getElementById('propertyId').value);
+            formData.append('total_amount', parseNumber(document.getElementById('totalAmount').value));
+            // Добавьте другие поля по необходимости
+            
+            try {
+                const response = await apiRequest('/v1/admin/transactions', {
+                    method: 'POST',
+                    body: JSON.stringify(Object.fromEntries(formData))
+                });
+                
+                if (response.success) {
+                    showNotification('success', 'Transaction created successfully');
+                    closeModal('createTransactionModal');
+                    // Перезагружаем список транзакций
+                    await loadTransactions();
+                } else {
+                    throw new Error(response.message || 'Failed to create transaction');
+                }
+            } catch (error) {
+                console.error('Error creating transaction:', error);
+                showNotification('error', 'Error creating transaction: ' + error.message);
+            }
+        });
+    }
+    
     // Обработчик для кнопок отмены
     document.querySelectorAll('.cancel-payment-btn, .cancel-transaction-btn, .cancel-user-btn').forEach(button => {
         button.addEventListener('click', () => {
@@ -97,10 +160,14 @@ function initModalHandlers() {
     });
 }
 
-// Экспортируем функции
-export { 
-    openAddPaymentModal, 
-    openEditPaymentModal, 
-    openViewTransactionModal,
-    initModalHandlers 
-};
+// Прикрепляем функции к глобальному объекту
+window.openAddPaymentModal = openAddPaymentModal;
+window.openEditPaymentModal = openEditPaymentModal;
+window.openCreateTransactionModal = openCreateTransactionModal;
+window.openViewTransactionModal = openViewTransactionModal;
+window.initModalHandlers = initModalHandlers;
+
+// Автоматическая инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    initModalHandlers();
+});

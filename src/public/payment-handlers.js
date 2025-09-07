@@ -2,69 +2,154 @@
 // Функции для работы с платежами
 
 /**
- * Функция для загрузки платежей транзакции
- * @param {string} transactionId - ID транзакции
+ * Отображение платежей в таблице с учетом чеков
+ * @param {Array} payments - Массив платежей
+ * @param {Array} receiptFiles - Массив файлов чеков
  */
-async function loadTransactionPayments(transactionId) {
+function displayPaymentsWithReceipts(payments, receiptFiles = []) {
+    const tableBody = document.getElementById('paymentsTableBody');
+    if (!tableBody) return;
+    
+    // Создаем маппинг чеков по временной метке для быстрого поиска
+    const receiptMap = new Map();
+    receiptFiles.forEach(receipt => {
+        // Используем timestamp как ключ для поиска
+        const timestamp = new Date(receipt.created_at).getTime();
+        receiptMap.set(timestamp, receipt);
+    });
+    
+    if (!payments || payments.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    payments.forEach(payment => {
+        const paymentDate = payment.payment_date ? 
+            new Date(payment.payment_date).toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: '2-digit', 
+                year: 'numeric'
+            }) : 'N/A';
+        
+        const amount = formatPKR(payment.amount);
+        const statusClass = getStatusClass(payment.status);
+        const statusText = formatStatus(payment.status);
+        
+        // Ищем чек, соответствующий платежу по дате
+        const paymentTimestamp = new Date(payment.created_at).getTime();
+        const matchingReceipt = receiptMap.get(paymentTimestamp);
+        
+        let receiptHtml = '<span class="no-receipt">No receipt</span>';
+        if (matchingReceipt) {
+            receiptHtml = `
+                <div class="receipt-preview">
+                    <img src="${API_BASE_URL}/v1/admin/files/${matchingReceipt.id}" 
+                         alt="Receipt" class="receipt-thumbnail">
+                    <div class="receipt-actions">
+                        <button class="action-btn btn-view" 
+                                onclick="window.open('${API_BASE_URL}/v1/admin/files/${matchingReceipt.id}', '_blank')">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button class="action-btn btn-delete" 
+                                onclick="deleteReceiptFile(${matchingReceipt.id}, ${payment.transaction_id}, 'receipt')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        html += `
+            <tr>
+                <td>${payment.id}</td>
+                <td>${amount}</td>
+                <td>${formatPaymentMethod(payment.payment_method)}</td>
+                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                <td>${new Date(payment.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</td>
+                <td>${receiptHtml}</td>
+                <td>
+                    <button class="action-btn btn-edit edit-payment-btn" 
+                            data-payment-id="${payment.id}">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="action-btn btn-delete delete-payment-btn" 
+                            data-payment-id="${payment.id}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableBody.innerHTML = html;
+    
+    // Инициализируем обработчики действий с платежами
+    setupPaymentActionHandlers(payment.transaction_id);
+}
+
+/**
+ * Удаление файла чека
+ * @param {string} fileId - ID файла
+ * @param {string} transactionId - ID транзакции
+ * @param {string} category - Категория файла
+ */
+async function deleteReceiptFile(fileId, transactionId, category) {
+    if (!confirm(`Вы уверены, что хотите удалить файл?`)) {
+        return;
+    }
+    
     try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        if (response.success && Array.isArray(response.payments)) {
-            const payments = response.payments;
-            const tableBody = document.getElementById('paymentsTableBody');
+        const response = await apiRequest(`/v1/admin/files/${fileId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.success) {
+            showNotification('success', 'File deleted successfully');
             
-            if (tableBody) {
-                if (payments.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
-                } else {
-                    let html = '';
-                    payments.forEach(payment => {
-                        const paymentDate = payment.payment_date ? 
-                            new Date(payment.payment_date).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: '2-digit', 
-                                year: 'numeric'
-                            }) : 'N/A';
-                        
-                        const amount = formatPKR(payment.amount);
-                        const statusClass = getStatusClass(payment.status);
-                        
-                        html += `
-                            <tr>
-                                <td>${payment.id}</td>
-                                <td>${paymentDate}</td>
-                                <td>${amount}</td>
-                                <td>${formatPaymentMethod(payment.method)}</td>
-                                <td class="${statusClass}">${formatStatus(payment.status)}</td>
-                                <td>
-                                    <button class="action-btn btn-edit edit-payment-btn" 
-                                            data-payment-id="${payment.id}">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="action-btn btn-approve confirm-payment-btn" 
-                                            data-payment-id="${payment.id}">
-                                        <i class="fas fa-check"></i> Confirm
-                                    </button>
-                                </td>
-                                <td>
-                                    ${payment.receipt ? `
-                                    <a href="${API_BASE_URL}/v1/admin/files/${payment.receipt_id}" target="_blank">
-                                        <i class="fas fa-file-invoice"></i> View
-                                    </a>` : 'No receipt'}
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    
-                    tableBody.innerHTML = html;
-                    
-                    // Инициализируем обработчики действий с платежами
-                    setupPaymentActionHandlers(transactionId);
-                }
-            }
+            // Перезагружаем детали транзакции для обновления данных
+            await loadTransactionDetails(transactionId);
+        } else {
+            throw new Error(response.message || 'Failed to delete file');
         }
     } catch (error) {
-        console.error('Error loading payments:', error);
-        showNotification('error', 'Error loading payments');
+        console.error('Error deleting file:', error);
+        showNotification('error', 'Error deleting file: ' + error.message);
+    }
+}
+
+/**
+ * Функция для удаления платежа
+ * @param {string} paymentId - ID платежа
+ * @param {string} transactionId - ID транзакции
+ */
+async function deletePayment(paymentId, transactionId) {
+    if (!confirm('Are you sure you want to delete this payment?')) {
+        return;
+    }
+    
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.success) {
+            showNotification('success', 'Payment deleted successfully');
+            // Перезагружаем платежи и обновляем сумму
+            await loadTransactionPayments(transactionId);
+            await updateAmountSummary(transactionId);
+        } else {
+            throw new Error(response.message || 'Failed to delete payment');
+        }
+    } catch (error) {
+        console.error('Error deleting payment:', error);
+        showNotification('error', 'Error deleting payment: ' + error.message);
     }
 }
 
@@ -74,7 +159,7 @@ async function loadTransactionPayments(transactionId) {
  */
 function setupPaymentActionHandlers(transactionId) {
     // Удаляем существующие обработчики, чтобы избежать дублирования
-    document.querySelectorAll('.edit-payment-btn, .confirm-payment-btn').forEach(btn => {
+    document.querySelectorAll('.edit-payment-btn, .delete-payment-btn').forEach(btn => {
         const clonedBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(clonedBtn, btn);
     });
@@ -87,42 +172,13 @@ function setupPaymentActionHandlers(transactionId) {
         });
     });
     
-    // Добавляем обработчики для подтверждения платежей
-    document.querySelectorAll('.confirm-payment-btn').forEach(button => {
+    // Добавляем обработчики для удаления платежей
+    document.querySelectorAll('.delete-payment-btn').forEach(button => {
         button.addEventListener('click', function() {
             const paymentId = this.getAttribute('data-payment-id');
-            confirmPayment(paymentId, transactionId);
+            deletePayment(paymentId, transactionId);
         });
     });
-}
-
-/**
- * Функция для подтверждения платежа
- * @param {string} paymentId - ID платежа
- * @param {string} transactionId - ID транзакции
- */
-async function confirmPayment(paymentId, transactionId) {
-    if (!confirm('Are you sure you want to confirm this payment?')) {
-        return;
-    }
-    
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
-            method: 'PUT',
-            body: JSON.stringify({ status: 'paid' })
-        });
-        
-        if (response.success) {
-            showNotification('success', 'Payment confirmed successfully');
-            await loadTransactionPayments(transactionId);
-            await updateAmountSummary(transactionId);
-        } else {
-            showNotification('error', 'Failed to confirm payment: ' + (response.message || 'Unknown error'));
-        }
-    } catch (error) {
-        console.error('Error confirming payment:', error);
-        showNotification('error', 'Error confirming payment: ' + error.message);
-    }
 }
 
 /**
@@ -201,20 +257,197 @@ function getStatusClass(status) {
  */
 function initPaymentHandlers() {
     // Обработчик для кнопки добавления платежа
-    document.querySelector('[data-action="add-payment"]')?.addEventListener('click', function() {
-        const transactionId = document.getElementById('currentTransactionId').value;
-        openAddPaymentModal(transactionId);
+    const addPaymentBtn = document.querySelector('[data-action="add-payment"]');
+    if (addPaymentBtn) {
+        addPaymentBtn.addEventListener('click', function() {
+            const transactionId = document.getElementById('currentTransactionId')?.value;
+            if (transactionId) {
+                openAddPaymentModal(transactionId);
+            } else {
+                showNotification('error', 'Transaction ID not found');
+            }
+        });
+    }
+    
+    // Обработчик для кнопки сохранения платежа
+    const savePaymentBtn = document.getElementById('savePayment');
+    if (savePaymentBtn) {
+        savePaymentBtn.addEventListener('click', async function() {
+            const transactionId = document.getElementById('paymentTransactionId')?.value;
+            const paymentId = document.getElementById('paymentId')?.value;
+            const amount = parseNumber(document.getElementById('paymentAmount')?.value);
+            const method = document.getElementById('paymentMethod')?.value;
+            const status = document.getElementById('paymentStatus')?.value;
+            const notes = document.getElementById('paymentNotes')?.value;
+            const receiptFile = document.getElementById('receiptFile')?.files[0];
+            
+            if (!transactionId) {
+                showNotification('error', 'Transaction ID not found');
+                return;
+            }
+            
+            if (amount <= 0) {
+                showNotification('error', 'Amount must be greater than 0');
+                return;
+            }
+            
+            try {
+                // Создаем объект платежа
+                const paymentData = {
+                    amount,
+                    payment_method: method,
+                    status,
+                    notes
+                };
+                
+                // Если есть ID платежа, обновляем существующий платеж
+                if (paymentId) {
+                    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(paymentData)
+                    });
+                    
+                    if (response.success) {
+                        showNotification('success', 'Payment updated successfully');
+                        
+                        // Если есть файл чека, загружаем его
+                        if (receiptFile) {
+                            const formData = new FormData();
+                            formData.append('file', receiptFile);
+                            formData.append('category', 'receipt');
+                            
+                            await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                                method: 'POST',
+                                credentials: 'include',
+                                body: formData
+                            });
+                        }
+                        
+                        closeModal('editPaymentModal');
+                        await loadTransactionDetails(transactionId);
+                    } else {
+                        throw new Error(response.message || 'Failed to update payment');
+                    }
+                } 
+                // Иначе создаем новый платеж
+                else {
+                    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                        method: 'POST',
+                        body: JSON.stringify(paymentData)
+                    });
+                    
+                    if (response.success && response.payment) {
+                        showNotification('success', 'Payment added successfully');
+                        
+                        // Если есть файл чека, загружаем его
+                        if (receiptFile) {
+                            const formData = new FormData();
+                            formData.append('file', receiptFile);
+                            formData.append('category', 'receipt');
+                            
+                            await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
+                                method: 'POST',
+                                credentials: 'include',
+                                body: formData
+                            });
+                        }
+                        
+                        closeModal('addPaymentModal');
+                        await loadTransactionDetails(transactionId);
+                    } else {
+                        throw new Error(response.message || 'Failed to create payment');
+                    }
+                }
+            } catch (error) {
+                console.error('Error processing payment:', error);
+                showNotification('error', 'Error processing payment: ' + error.message);
+            }
+        });
+    }
+    
+    // Обработчик для кнопки отмены в модальных окнах платежей
+    document.querySelectorAll('.cancel-payment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            closeModal('addPaymentModal');
+            closeModal('editPaymentModal');
+        });
     });
 }
 
-// Экспортируем функции
-export { 
-    loadTransactionPayments,
-    setupPaymentActionHandlers,
-    confirmPayment,
-    updateAmountSummary,
-    formatPaymentMethod,
-    formatStatus,
-    getStatusClass,
-    initPaymentHandlers
-};
+/**
+ * Функция для открытия модального окна добавления платежа
+ * @param {string} transactionId - ID транзакции
+ */
+function openAddPaymentModal(transactionId) {
+    console.log(`[PAYMENT] Opening add payment modal for transaction ${transactionId}`);
+    
+    // Устанавливаем ID транзакции
+    document.getElementById('paymentTransactionId').value = transactionId;
+    
+    // Сбрасываем форму
+    const form = document.getElementById('addPaymentForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Обновляем отображение
+    document.getElementById('receiptFileNameDisplay').textContent = 'No file chosen';
+    document.getElementById('receiptPreview').innerHTML = '';
+    
+    // Открываем модальное окно
+    openModal('addPaymentModal');
+}
+
+/**
+ * Функция для открытия модального окна редактирования платежа
+ * @param {string} transactionId - ID транзакции
+ * @param {string} paymentId - ID платежа
+ */
+async function openEditPaymentModal(transactionId, paymentId) {
+    console.log(`[PAYMENT] Opening edit payment modal for transaction ${transactionId}, payment ${paymentId}`);
+    
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
+        if (response.success && response.payment) {
+            const payment = response.payment;
+            
+            // Заполняем форму
+            document.getElementById('paymentTransactionId').value = transactionId;
+            document.getElementById('paymentId').value = payment.id;
+            document.getElementById('paymentAmount').value = formatPKR(payment.amount);
+            document.getElementById('rawPaymentAmount').value = payment.amount;
+            document.getElementById('paymentMethod').value = payment.payment_method;
+            document.getElementById('paymentStatus').value = payment.status;
+            document.getElementById('paymentNotes').value = payment.notes || '';
+            
+            // Обновляем конвертацию в USD
+            await updateUSD(payment.amount);
+            
+            // Открываем модальное окно
+            openModal('editPaymentModal');
+        }
+    } catch (error) {
+        console.error('[PAYMENT] Error loading payment details:', error);
+        showNotification('error', 'Error loading payment details');
+    }
+}
+
+// Прикрепляем функции к глобальному объекту
+window.displayPaymentsWithReceipts = displayPaymentsWithReceipts;
+window.deleteReceiptFile = deleteReceiptFile;
+window.deletePayment = deletePayment;
+window.setupPaymentActionHandlers = setupPaymentActionHandlers;
+window.updateAmountSummary = updateAmountSummary;
+window.formatPaymentMethod = formatPaymentMethod;
+window.formatStatus = formatStatus;
+window.getStatusClass = getStatusClass;
+window.initPaymentHandlers = initPaymentHandlers;
+window.openAddPaymentModal = openAddPaymentModal;
+window.openEditPaymentModal = openEditPaymentModal;
+
+// Автоматическая инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('paymentsTableBody')) {
+        initPaymentHandlers();
+    }
+});

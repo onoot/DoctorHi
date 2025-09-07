@@ -1196,6 +1196,17 @@ function openMultiplUploadModal() {
  * Инициализация обработчиков для транзакций
  */
 function initTransactionHandlers() {
+
+     // Обработчик для кнопки создания новой транзакции
+    const createTransactionBtn = document.getElementById('create');
+    if (createTransactionBtn) {
+        createTransactionBtn.addEventListener('click', function() {
+            openCreateTransactionModal();
+        });
+        console.log('[INIT] Create transaction button handler attached');
+    } else {
+        console.warn('[INIT] Create transaction button not found');
+    }
     // Обработчик для кнопки редактирования суммы
     const editAmountBtn = document.querySelector('.edit-amount-btn');
     if (editAmountBtn) {

@@ -1,44 +1,20 @@
 // main.js
 // Основной файл инициализации приложения
 
-// Импортируем конфигурацию
-import { API_BASE_URL, currentPage, itemsPerPage } from './config.js';
-// Импортируем утилиты
-import { formatPKR, parseNumber, updateUSD, updateRemainingAmount, formatUSD } from './utils.js';
-// Импортируем функции управления транзакциями
-import { initAmountInputHandlers, updateTransactionAmount, openImagePreview } from './transaction-management.js';
-
 /**
- * Универсальная функция для API запросов
- * @param {string} url - URL запроса
- * @param {Object} options - Опции запроса
- * @returns {Promise} - Результат запроса
+ * Функция для задержки выполнения (debounce)
+ * @param {Function} func - Функция для выполнения
+ * @param {number} delay - Задержка в миллисекундах
+ * @returns {Function} - Дебаунс-функция
  */
-async function apiRequest(url, options = {}) {
-    const requestOptions = {
-        method: options.method || 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            ...options.headers
-        },
-        credentials: 'include',
-        ...options
+function debounce(func, delay) {
+    let debounceTimer;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => func.apply(context, args), delay);
     };
-    
-    try {
-        const response = await fetch(API_BASE_URL + url, requestOptions);
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'API request failed');
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('API request error:', error);
-        throw error;
-    }
 }
 
 /**
@@ -73,13 +49,19 @@ function loadCurrentSection() {
     
     switch (activeSection.id) {
         case 'transactions':
-            loadTransactions();
+            if (typeof loadTransactions === 'function') {
+                loadTransactions();
+            }
             break;
         case 'users':
-            loadUsers('active');
+            if (typeof loadUsers === 'function') {
+                loadUsers('active');
+            }
             break;
         case 'users-archive':
-            loadUsers('archived');
+            if (typeof loadUsers === 'function') {
+                loadUsers('archived');
+            }
             break;
     }
 }
@@ -91,22 +73,34 @@ function initApp() {
     console.log('[APP] Initializing application...');
     
     // Инициализация базовых функций
-    initModalCloseHandlers();
+    if (typeof initModalCloseHandlers === 'function') {
+        initModalCloseHandlers();
+    }
     
     // Инициализация навигации
-    initNavigation();
+    if (typeof initNavigation === 'function') {
+        initNavigation();
+    }
     
     // Инициализация модальных окон пользователей
-    initUserModalHandlers();
+    if (typeof initUserModalHandlers === 'function') {
+        initUserModalHandlers();
+    }
     
     // Инициализация управления пользователями
-    initUserManagementHandlers();
+    if (typeof initUserManagementHandlers === 'function') {
+        initUserManagementHandlers();
+    }
     
     // Инициализация управления транзакциями
-    initTransactionHandlers();
+    if (typeof initTransactionHandlers === 'function') {
+        initTransactionHandlers();
+    }
     
     // Инициализация загрузки файлов
-    initFileUploadHandlers();
+    if (typeof initFileUploadHandlers === 'function') {
+        initFileUploadHandlers();
+    }
     
     // Инициализация обработчиков поиска
     initSearchHandlers();
@@ -115,10 +109,19 @@ function initApp() {
     initAuthHandlers();
     
     // Инициализация конвертера валют
-    attachCurrencyConverter();
+    if (typeof attachCurrencyConverter === 'function') {
+        attachCurrencyConverter();
+    }
     
     // Инициализация обработчиков ввода сумм
-    initAmountInputHandlers();
+    if (typeof initAmountInputHandlers === 'function') {
+        initAmountInputHandlers();
+    }
+    
+    // Инициализация обработчиков модальных окон
+    if (typeof initModalHandlers === 'function') {
+        initModalHandlers();
+    }
     
     console.log('[APP] Application initialized successfully');
 }
@@ -128,23 +131,30 @@ function initApp() {
  */
 function initSearchHandlers() {
     // Обработчик для поиска пользователей
-    document.querySelector('#users .search-input')?.addEventListener('input', debounce(function() {
-        currentPage = 1;
-        const activeSection = document.querySelector('.section.active')?.id;
-        if (activeSection === 'users') {
-            loadUsers('active');
-        } else if (activeSection === 'users-archive') {
-            loadUsers('archived');
-        }
-    }, 300));
+    const usersSearch = document.querySelector('#users .search-input');
+    if (usersSearch) {
+        usersSearch.addEventListener('input', debounce(function() {
+            window.currentPage = 1;
+            const activeSection = document.querySelector('.section.active')?.id;
+            if (activeSection === 'users' && typeof loadUsers === 'function') {
+                loadUsers('active');
+            } else if (activeSection === 'users-archive' && typeof loadUsers === 'function') {
+                loadUsers('archived');
+            }
+        }, 300));
+    }
     
     // Обработчик для поиска транзакций
-    document.querySelector('#transactions .search-input')?.addEventListener('input', debounce(function() {
-        currentPage = 1;
-        if (document.querySelector('.section.active')?.id === 'transactions') {
-            loadTransactions();
-        }
-    }, 300));
+    const transactionsSearch = document.querySelector('#transactions .search-input');
+    if (transactionsSearch) {
+        transactionsSearch.addEventListener('input', debounce(function() {
+            window.currentPage = 1;
+            if (document.querySelector('.section.active')?.id === 'transactions' && 
+                typeof loadTransactions === 'function') {
+                loadTransactions();
+            }
+        }, 300));
+    }
 }
 
 /**
@@ -152,10 +162,13 @@ function initSearchHandlers() {
  */
 function initAuthHandlers() {
     // Обработчик кнопки выхода
-    document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        logout();
-    });
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+    }
 }
 
 // Запуск приложения после полной загрузки DOM
@@ -166,7 +179,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // Закрытие модального окна при клике вне его содержимого
     document.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
-            closeModal(event.target.id);
+            const modalId = event.target.id;
+            if (modalId && typeof closeModal === 'function') {
+                closeModal(modalId);
+            }
         }
     });
+    
+    // Инициализация кнопки создания транзакции (если она существует)
+    const createTransactionBtn = document.getElementById('create');
+    if (createTransactionBtn && typeof openCreateTransactionModal === 'function') {
+        createTransactionBtn.addEventListener('click', openCreateTransactionModal);
+        console.log('[APP] Create transaction button handler attached');
+    }
+    
+    // Проверка наличия функции открытия просмотра транзакции
+    if (typeof openViewTransactionModal === 'function') {
+        window.openViewTransactionModal = openViewTransactionModal;
+    }
+    
+    // Проверка наличия функции открытия редактирования платежа
+    if (typeof openEditPaymentModal === 'function') {
+        window.openEditPaymentModal = openEditPaymentModal;
+    }
+    
+    // Проверка наличия функции открытия добавления платежа
+    if (typeof openAddPaymentModal === 'function') {
+        window.openAddPaymentModal = openAddPaymentModal;
+    }
 });
+
+// Прикрепляем необходимые функции к глобальному объекту
+window.debounce = debounce;
+window.logout = logout;
+window.loadCurrentSection = loadCurrentSection;
+window.initApp = initApp;
+window.initSearchHandlers = initSearchHandlers;
+window.initAuthHandlers = initAuthHandlers;

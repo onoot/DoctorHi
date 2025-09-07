@@ -323,54 +323,70 @@
                     </div>
                 </div>
             </div>
-            <!-- Модальное окно для добавления пользователя -->
-            <div id="addUserModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 class="modal-title">Add New User</h3>
-                        <button class="modal-close" data-modal="addUserModal">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="addUserForm">
-                            <div class="form-group">
-                                <label for="userName">Full Name*</label>
-                                <input type="text" id="userName" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="userCnic">CNIC*</label>
-                                <input type="text" id="userCnic" required placeholder="12345-1234567-1">
-                            </div>
-                            <div class="form-group">
-                                <label for="userPhone">Phone Number*</label>
-                                <input type="tel" id="userPhone" required placeholder="+923001234567">
-                            </div>
-                            <div class="form-group">
-                                <label for="userAddress">Address*</label>
-                                <textarea id="userAddress" required></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="userLogin">Login (generated)</label>
-                                <input type="text" id="userLogin">
-                                <button type="button" class="action-btn btn-edit regenerate-login-btn">
-                                    <i class="fas fa-sync"></i> Regenerate
-                                </button>
-                            </div>
-                            <div class="form-group">
-                                <label for="userPassword">Password (generated)</label>
-                                <input type="text" id="userPassword">
-                                <button type="button" class="action-btn btn-edit regenerate-password-btn">
-                                    <i class="fas fa-sync"></i> Regenerate
-                                </button>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="action-btn btn-delete cancel-user-btn">Cancel</button>
-                                <button type="submit" class="action-btn btn-edit create-user-btn">Create User</button>
-                            </div>
-                        </form>
+           <!-- Модальное окно для добавления пользователя -->
+<div id="addUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New User</h3>
+            <button class="modal-close" data-modal="addUserModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="addUserForm">
+                <div class="form-group required">
+                    <label for="userName">Full Name</label>
+                    <input type="text" id="userName" class="form-control" required>
+                    <div class="error-message" id="userNameError"></div>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="userCnic">CNIC</label>
+                    <input type="text" id="userCnic" class="form-control" required placeholder="12345-1234567-1">
+                    <div class="error-message" id="userCnicError"></div>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="userPhone">Phone Number</label>
+                    <input type="tel" id="userPhone" class="form-control" required placeholder="+923001234567">
+                    <div class="error-message" id="userPhoneError"></div>
+                </div>
+                
+                <div class="form-group required">
+                    <label for="userAddress">Address</label>
+                    <textarea id="userAddress" class="form-control" required rows="3"></textarea>
+                    <div class="error-message" id="userAddressError"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userLogin">Login (generated)</label>
+                    <div class="input-group">
+                        <input type="text" id="userLogin" class="form-control" readonly>
+                        <button type="button" class="action-btn btn-edit regenerate-login-btn">
+                            <i class="fas fa-sync"></i> Regenerate
+                        </button>
                     </div>
                 </div>
-            </div>
-
+                
+                <div class="form-group">
+                    <label for="userPassword">Password (generated)</label>
+                    <div class="input-group">
+                        <input type="text" id="userPassword" class="form-control" readonly>
+                        <button type="button" class="action-btn btn-edit regenerate-password-btn">
+                            <i class="fas fa-sync"></i> Regenerate
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="action-btn btn-delete cancel-user-btn">
+                <i class="fas fa-times"></i> Cancel
+            </button>
+            <button type="submit" class="action-btn btn-primary create-user-btn" form="addUserForm">
+                <i class="fas fa-user-plus"></i> Create User
+            </button>
+        </div>
+    </div>
+</div>
             <!-- Модальное окно для создания транзакции -->
             <div id="createTransactionModal" class="modal">
                 <div class="modal-content">

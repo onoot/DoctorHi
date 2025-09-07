@@ -6,6 +6,9 @@ const API_BASE_URL = `https://${window?.location?.host}/api`;
 let currentPage = 1;
 let itemsPerPage = 10;
 
+// Флаг для предотвращения множественных перенаправлений
+let isRedirecting = false;
+
 // Функция универсального API запроса
 async function apiRequest(url, options = {}) {
     console.log(`[API] Making request to: ${API_BASE_URL}${url}`);
@@ -64,12 +67,57 @@ async function apiRequest(url, options = {}) {
         
         if (!response.ok) {
             console.log('[API] Request failed:', data);
-            throw new Error(data.message || 'API request failed');
+            
+            // Обработка ошибки 401 Unauthorized
+            if (response.status === 401) {
+                console.log('[API] Unauthorized access - 401 status received');
+                
+                // Предотвращаем множественные перенаправления
+                if (!isRedirecting) {
+                    isRedirecting = true;
+                    
+                    // Удаляем токены доступа
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    
+                    // Удаляем возможные куки
+                    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    
+                    // Показываем уведомление перед перенаправлением
+                    showNotification('warning', 'Your session has expired. Please log in again.', 3000);
+                    
+                    // Перенаправляем на страницу входа
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1500);
+                    
+                    // Прерываем дальнейшую обработку
+                    throw new Error('Session expired. Redirecting to login page...');
+                }
+            }
+            
+            // Обработка других ошибок
+            throw new Error(data.message || `API request failed with status ${response.status}`);
         }
         
         return data;
     } catch (error) {
         console.error('[API] Request failed:', error);
+        
+        // Проверяем, не была ли уже выполнена перенаправление из-за 401
+        if (error.message === 'Session expired. Redirecting to login page...') {
+            // Не бросаем ошибку дальше, так как мы уже перенаправили пользователя
+            return;
+        }
+        
+        // Проверяем, не является ли ошибка сетевой проблемой
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            showNotification('error', 'Network error. Please check your connection.', 5000);
+        } else {
+            showNotification('error', error.message || 'An unexpected error occurred', 5000);
+        }
+        
         throw error;
     }
 }
@@ -240,11 +288,38 @@ function updateRemainingAmount() {
     }
 }
 
-// Автоматическая инициализация после загрузки DOM
+// Функция для проверки сессии при загрузке страницы
+function checkSession() {
+    // Проверяем, не пытаемся ли мы уже загрузить страницу входа
+    if (window.location.pathname.endsWith('/login.html')) {
+        return;
+    }
+    
+    // Проверяем наличие токена
+    const accessToken = localStorage.getItem('accessToken');
+    const refreshToken = localStorage.getItem('refreshToken');
+    
+    // Если токенов нет, перенаправляем на страницу входа
+    if (!accessToken && !refreshToken) {
+        console.log('[SESSION] No tokens found, redirecting to login');
+        window.location.href = '/login.html';
+    }
+}
+
+// Проверка сессии при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[NOTIFICATIONS] Notification system initialized');
     
-    showNotification('info', 'Notification system is ready', 3000);
+    // Проверяем сессию
+    checkSession();
+    
+    // Добавляем обработчик для проверки сессии при переходе между страницами
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (link && link.href && link.href !== window.location.href) {
+            checkSession();
+        }
+    });
 });
 
 // Прикрепляем функции к глобальному объекту
@@ -256,6 +331,6 @@ window.showNotification = showNotification;
 window.formatPKR = formatPKR;
 window.parseNumber = parseNumber;
 window.updateRemainingAmount = updateRemainingAmount;
-window.showNotification = showNotification;
+window.checkSession = checkSession;
 
 console.log('[API UTILS] Initialized successfully');

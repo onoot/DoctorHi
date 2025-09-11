@@ -268,7 +268,7 @@ async function apiRequest(url, options = {}) {
 // Проверка авторизации
 async function checkAuth() {
     try {
-        const response = await apiRequest('/v1/admin/validate', {
+        const response = await apiRequest('/admin/validate', {
             method: 'GET',
             noAuth: true
         });

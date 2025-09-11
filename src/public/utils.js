@@ -1,42 +1,46 @@
 // utils.js
 // Вспомогательные функции и утилиты
 
-/**
- * Функция для обновления конвертации в USD
- * @param {number} amountInPKR - Сумма в PKR
- */
-const updateUSD = async (amountInPKR) => {
-    try {
-        const response = await fetch('api/v1/admin/latest/PKR');
-        const data = await response.json();
-        let exchangeRate;
-        
-        if (data.success && data.USD) {
-            exchangeRate = data.USD;
-        } else {
-            // Fallback-курс, если API не отвечает
-            exchangeRate = 0.0036;
+// Удаляем дублирующееся объявление updateUSD
+if (typeof window.updateUSD === 'undefined') {
+    /**
+     * Функция для обновления конвертации в USD
+     * @param {number} amountInPKR - Сумма в PKR
+     */
+    window.updateUSD = async (amountInPKR) => {
+        try {
+            const response = await fetch(`${window.API_BASE_URL}/v1/admin/latest/PKR`);
+            const data = await response.json();
+            let exchangeRate;
+            
+            if (data.success && data.USD) {
+                exchangeRate = data.USD;
+            } else {
+                // Fallback-курс, если API не отвечает
+                exchangeRate = 0.0036;
+            }
+            
+            const usdAmount = amountInPKR * exchangeRate;
+            const usdConversion = document.getElementById('usdConversion');
+            
+            if (usdConversion) {
+                usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(usdAmount)}`;
+            }
+        } catch (error) {
+            console.error('Error fetching exchange rate:', error);
+            const usdConversion = document.getElementById('usdConversion');
+            if (usdConversion) {
+                usdConversion.innerHTML = 'Error fetching exchange rate';
+            }
         }
-        
-        const usdAmount = amountInPKR * exchangeRate;
-        const usdConversion = document.getElementById('usdConversion');
-        
-        if (usdConversion) {
-            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(usdAmount)}`;
-        }
-    } catch (error) {
-        console.error('Error fetching exchange rate:', error);
-        const usdConversion = document.getElementById('usdConversion');
-        if (usdConversion) {
-            usdConversion.innerHTML = 'Error fetching exchange rate';
-        }
-    }
+    };
 }
+
 /**
  * Обновление оставшейся суммы
  */
@@ -122,7 +126,6 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
-
 
 /**
  * Функция для получения иконки по типу файла
@@ -217,7 +220,9 @@ function initPaymentFormFields() {
             rawValue = newRawValue;
             
             // Обновляем конвертацию в USD
-            updateUSD(rawValue);
+            if (typeof window.updateUSD === 'function') {
+                window.updateUSD(rawValue);
+            }
             
             // Обновляем скрытое поле
             rawPaymentAmount.value = rawValue;
@@ -250,10 +255,13 @@ function initPaymentFormFields() {
     });
 }
 
-window.initPaymentFormFields = initPaymentFormFields
-window.getFileIcon = getFileIcon
-window.debounce = debounce
-window.validatePhone = validatePhone
-window.validateCNIC = validateCNIC
-window.formatNumberInput = formatNumberInput
-window.updateRemainingAmount = updateRemainingAmount
+// Прикрепляем функции к глобальному объекту
+window.initPaymentFormFields = initPaymentFormFields;
+window.getFileIcon = getFileIcon;
+window.debounce = debounce;
+window.validatePhone = validatePhone;
+window.validateCNIC = validateCNIC;
+window.formatNumberInput = formatNumberInput;
+window.updateRemainingAmount = updateRemainingAmount;
+
+console.log('[UTILS] Initialized successfully');

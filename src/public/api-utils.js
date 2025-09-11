@@ -208,7 +208,6 @@ async function apiRequest(url, options = {}) {
             }
         }
         
-        // Исправление ошибки "Response body is already used"
         // Читаем тело ответа только один раз
         if (response.status !== 204 && contentLength !== '0' && 
             (contentType?.includes('application/json') || contentType?.includes('text'))) {
@@ -216,26 +215,12 @@ async function apiRequest(url, options = {}) {
                 // Пытаемся прочитать как JSON
                 data = await response.json();
             } catch (jsonError) {
-                try {
-                    // Если JSON не удался, пытаемся прочитать как текст
-                    // ВАЖНО: используем response.text() только один раз
-                    const text = await response.text();
-                    console.log('[API] Response text:', text);
-                    
-                    try {
-                        // Пытаемся распарсить текст как JSON
-                        data = JSON.parse(text);
-                    } catch {
-                        // Если не удалось распарсить как JSON, возвращаем объект с сообщением
-                        data = { message: text || 'Unknown error' };
-                    }
-                } catch (textError) {
-                    console.error('[API] Failed to read response text:', textError);
-                    data = { message: 'Unknown error' };
-                }
+                // Если JSON не удался, возвращаем ошибку без попытки чтения текста
+                console.error('[API] Failed to parse response as JSON:', jsonError);
+                data = { message: 'Failed to parse response', error: jsonError.message };
             }
         } else {
-            // Для ответов без тела
+            // Для ответов без тела или с нулевой длиной
             data = { success: response.ok };
         }
         
@@ -259,6 +244,8 @@ async function apiRequest(url, options = {}) {
                 if (typeof window.showNotification === 'function') {
                     window.showNotification('error', 'Network error. Please check your connection.', 5000);
                 }
+                // Не перенаправляем на логин при сетевых ошибках
+                return { success: false, message: 'Network error' };
             } else {
                 if (typeof window.showNotification === 'function') {
                     window.showNotification('error', error.message || 'An unexpected error occurred', 5000);
@@ -273,27 +260,59 @@ async function apiRequest(url, options = {}) {
 // Проверка авторизации
 async function checkAuth() {
     try {
-        const response = await apiRequest('/v1/admin/validate', {
+        // Используем более надежный URL для проверки авторизации
+        const response = await fetch(`${window.API_BASE_URL}/admin/validate`, {
             method: 'GET',
-            noAuth: true
+            credentials: 'include',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
         });
         
-        if (!response.success) {
-            // Только если ошибка связана с авторизацией, перенаправляем на логин
-            if (response.message && (response.message.includes('Unauthorized') || 
-                response.message.includes('token') || 
-                response.message.includes('auth'))) {
-                window.location.href = '/login.html';
-                return false;
+        console.log('[AUTH] Auth check response status:', response.status);
+        
+        // Если статус 401, перенаправляем на логин
+        if (response.status === 401) {
+            console.log('[AUTH] Unauthorized access - redirecting to login');
+            window.location.href = '/login.html';
+            return false;
+        }
+        
+        // Пытаемся прочитать ответ как JSON
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // Если не удалось распарсить JSON, проверяем статус
+            if (response.ok) {
+                return true;
+            } else {
+                throw new Error('Failed to parse auth response');
             }
         }
-        return true;
-    } catch (error) {
-        console.error('Auth check error:', error);
-        // Проверяем, является ли ошибка сетевой проблемой
-        if (error.message && !error.message.includes('Failed to fetch')) {
+        
+        // Если ответ успешный и содержит success: true
+        if (data && data.success === true) {
+            return true;
+        } else {
+            // Если ответ не содержит success: true, перенаправляем на логин
+            console.log('[AUTH] Invalid auth response - redirecting to login');
             window.location.href = '/login.html';
+            return false;
         }
+    } catch (error) {
+        console.error('[AUTH] Auth check error:', error);
+        
+        // При сетевых ошибках не перенаправляем на логин
+        if (error.message && error.message.includes('Failed to fetch')) {
+            console.log('[AUTH] Network error - not redirecting to login');
+            return true; // Предполагаем, что пользователь авторизован, если это сетевая ошибка
+        }
+        
+        // При других ошибках перенаправляем на логин
+        console.log('[AUTH] Other error - redirecting to login');
+        window.location.href = '/login.html';
         return false;
     }
 }
@@ -317,7 +336,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.error('Initialization error:', error);
         // Не перенаправляем на логин при сетевых ошибках
-        if (!error.message.includes('Failed to fetch')) {
+        if (!error.message || !error.message.includes('Failed to fetch')) {
             window.location.href = '/login.html';
         }
     }

@@ -252,7 +252,6 @@ function initPaymentFormFields() {
 }
 
 window.initPaymentFormFields = initPaymentFormFields
-window.updateUSD = updateUSD
 window.getFileIcon = getFileIcon
 window.debounce = debounce
 window.validatePhone = validatePhone

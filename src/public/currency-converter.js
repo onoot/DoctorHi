@@ -1,15 +1,102 @@
 // currency-converter.js
 // Функции для конвертации валют
 
+// Кэширование курса обмена
+let exchangeRateCache = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
+let lastFetchTime = 0;
+
+/**
+ * Функция для получения курса обмена PKR к USD
+ * @returns {Promise<number>} - Курс обмена
+ */
+async function getExchangeRatePKRtoUSD() {
+    try {
+        const response = await fetch('api/v1/admin/latest/PKR');
+        const data = await response.json();
+        
+        // Проверяем структуру ответа
+        if (data.success && typeof data.USD === 'number') {
+            return data.USD;
+        }
+        throw new Error('Invalid API response structure');
+    } catch (error) {
+        console.error('Ошибка получения курса:', error);
+        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        return 0.0036; // Fallback курс
+    }
+}
+
+/**
+ * Получает кэшированный курс обмена или запрашивает новый
+ * @returns {Promise<number>} - Курс обмена
+ */
+async function getCachedExchangeRate() {
+    const now = Date.now();
+    if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
+        return exchangeRateCache;
+    }
+    exchangeRateCache = await getExchangeRatePKRtoUSD();
+    lastFetchTime = now;
+    return exchangeRateCache;
+}
+
+/**
+ * Функция обновления конвертации в USD
+ * @param {number} amountInPKR - Сумма в PKR
+ */
+async function updateUSD(amountInPKR) {
+    try {
+        const exchangeRate = await getCachedExchangeRate();
+        const usdAmount = amountInPKR * exchangeRate;
+        
+        // Ищем все возможные элементы для отображения конвертации
+        const usdElements = [
+            document.getElementById('usdConversion'),
+            document.getElementById('toUSD'),
+            document.getElementById('editPaymentModal_usdConversion'),
+            document.getElementById('createTransactionModal_toUSD'),
+            document.getElementById('addPaymentModal_usdConversion')
+        ].filter(el => el !== null);
+        
+        // Обновляем все найденные элементы
+        usdElements.forEach(usdConversion => {
+            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(usdAmount)}`;
+        });
+    } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+        
+        // Обновляем все возможные элементы с сообщением об ошибке
+        [
+            document.getElementById('usdConversion'),
+            document.getElementById('toUSD'),
+            document.getElementById('editPaymentModal_usdConversion'),
+            document.getElementById('createTransactionModal_toUSD'),
+            document.getElementById('addPaymentModal_usdConversion')
+        ].filter(el => el !== null).forEach(usdConversion => {
+            usdConversion.innerHTML = `<span style="color: #dc3545">Conversion error</span>
+                <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                    Check your internet connection
+                </span>`;
+        });
+    }
+}
+
 /**
  * Функция для инициализации конвертера валют
  */
 function attachCurrencyConverter() {
-    const totalAmountInput = document.getElementById('totalAmount');
-    const usdOutput = document.getElementById('toUSD');
+    // Проверяем, существуют ли элементы на текущей странице
+    const totalAmountInput = document.getElementById('totalAmount') || 
+                            document.getElementById('createTransactionModal_totalAmount');
     
-    if (!totalAmountInput || !usdOutput) {
-        console.error('Элементы #totalAmount или #toUSD не найдены!');
+    if (!totalAmountInput) {
+        console.log('[CURRENCY] Total amount input not found on current page');
         return;
     }
     
@@ -36,9 +123,6 @@ function attachCurrencyConverter() {
             
             // Обновляем конвертацию в USD
             updateUSD(rawValue);
-            
-            // Форматируем отображаемое значение
-            this.value = formatPKR(rawValue);
         }
     });
     
@@ -59,28 +143,46 @@ function attachCurrencyConverter() {
         // Форматируем с разделителями тысяч
         this.value = formatPKR(rawValue);
     });
+    
+    // Инициализируем с текущим значением
+    if (totalAmountInput.value) {
+        rawValue = parseNumber(totalAmountInput.value);
+        totalAmountInput.value = formatPKR(rawValue);
+    } else {
+        totalAmountInput.value = '0.00';
+        rawValue = 0;
+    }
+    
+    // Обновляем конвертацию
+    updateUSD(rawValue);
 }
 
 /**
  * Инициализация конвертера валют
  */
 function initCurrencyConverter() {
-    // Инициализируем конвертер для поля ввода суммы транзакции
-    attachCurrencyConverter();
-    
-    // Инициализируем конвертер для поля ввода суммы платежа
-    initPaymentAmountConverter();
+    // Инициализируем конвертер только если мы на странице транзакций
+    if (document.querySelector('#transactions.active')) {
+        attachCurrencyConverter();
+        initPaymentAmountConverter();
+    }
 }
 
 /**
  * Инициализация конвертера для поля ввода суммы платежа
  */
 function initPaymentAmountConverter() {
-    const paymentAmount = document.getElementById('paymentAmount');
-    const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+    // Проверяем, существуют ли элементы на текущей странице
+    const paymentAmount = document.getElementById('paymentAmount') || 
+                         document.getElementById('editPaymentModal_paymentAmount') ||
+                         document.getElementById('addPaymentModal_paymentAmount');
+    
+    const rawPaymentAmount = document.getElementById('rawPaymentAmount') || 
+                            document.getElementById('editPaymentModal_rawPaymentAmount') ||
+                            document.getElementById('addPaymentModal_rawPaymentAmount');
     
     if (!paymentAmount || !rawPaymentAmount) {
-        console.error('Элементы #paymentAmount или #rawPaymentAmount не найдены!');
+        console.log('[CURRENCY] Payment amount elements not found on current page');
         return;
     }
     
@@ -138,4 +240,26 @@ function initPaymentAmountConverter() {
     newPaymentAmount.addEventListener('focus', function() {
         this.value = rawValue.toString();
     });
+    
+    // Инициализируем с текущим значением
+    if (newPaymentAmount.value) {
+        rawValue = parseNumber(newPaymentAmount.value);
+        newPaymentAmount.value = formatPKR(rawValue);
+        rawPaymentAmount.value = rawValue;
+    } else {
+        newPaymentAmount.value = '0.00';
+        rawValue = 0;
+        rawPaymentAmount.value = '0';
+    }
+    
+    // Обновляем конвертацию
+    updateUSD(rawValue);
 }
+
+// Прикрепляем функции к глобальному объекту
+window.updateUSD = updateUSD;
+window.attachCurrencyConverter = attachCurrencyConverter;
+window.initCurrencyConverter = initCurrencyConverter;
+window.initPaymentAmountConverter = initPaymentAmountConverter;
+
+console.log('[CURRENCY CONVERTER] Initialized successfully');

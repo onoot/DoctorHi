@@ -175,134 +175,50 @@ function openViewTransactionModal(transactionId) {
     }
 }
 
-/**
- * Инициализация обработчиков модальных окон
- */
+// Универсальная функция для открытия модальных окон
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('show');
+        modal.classList.remove('hide');
+        return true;
+    }
+    console.error(`Modal with ID "${modalId}" not found`);
+    return false;
+}
+
+// Универсальная функция для закрытия модальных окон
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hide');
+        modal.classList.remove('show');
+        
+        // Удаляем класс hide после завершения анимации
+        setTimeout(() => {
+            modal.classList.remove('hide');
+        }, 300);
+    }
+}
+
+// Инициализация обработчиков для модальных окон
 function initModalHandlers() {
-    console.log('[MODALS] Initializing modal handlers');
-    
-    // КРИТИЧЕСКИ ВАЖНЫЙ обработчик для кнопки "New Transaction"
-    const createBtn = document.getElementById('createTransaction');
-    if (createBtn) {
-        createBtn.addEventListener('click', function() {
-            if (typeof openCreateTransactionModal === 'function') {
-                openCreateTransactionModal();
-            } else {
-                console.error('openCreateTransactionModal function is not defined');
-                if (typeof showNotification === 'function') {
-                    showNotification('error', 'Transaction modal function not available');
-                }
-            }
-        });
-        console.log('[MODALS] Create transaction button handler attached');
-    } else {
-        console.warn('[MODALS] Create transaction button not found');
-    }
-    
-    // Обработчик для отправки формы создания транзакции
-    const submitCreateBtn = document.getElementById('submitCreateTransaction');
-    if (submitCreateBtn) {
-        submitCreateBtn.addEventListener('click', async function() {
-            const form = document.getElementById('createTransactionForm');
-            if (!form) {
-                console.error('[MODALS] Create transaction form not found');
-                return;
-            }
-            
-            // Валидация формы
-            let isValid = true;
-            const requiredFields = form.querySelectorAll('[required]');
-            const errorMessages = {
-                propertyId: 'Please select a property',
-                newOwnerId: 'Please select a new owner',
-                totalAmount: 'Please enter a valid amount',
-                witness1Name: 'Witness 1 name is required',
-                witness1CNIC: 'Witness 1 CNIC is required',
-                witness2Name: 'Witness 2 name is required',
-                witness2CNIC: 'Witness 2 CNIC is required'
-            };
-            
-            requiredFields.forEach(field => {
-                if (!field.value) {
-                    isValid = false;
-                    const errorElement = document.getElementById(`${field.id}Error`);
-                    if (errorElement) {
-                        errorElement.textContent = errorMessages[field.id] || 'This field is required';
-                    }
-                } else {
-                    const errorElement = document.getElementById(`${field.id}Error`);
-                    if (errorElement) {
-                        errorElement.textContent = '';
-                    }
-                }
-            });
-            
-            if (!isValid) {
-                if (typeof showNotification === 'function') {
-                    showNotification('error', 'Please fill in all required fields');
-                }
-                return;
-            }
-            
-            try {
-                const formData = {
-                    property_id: document.getElementById('propertyId').value,
-                    new_owner_id: document.getElementById('newOwnerId').value,
-                    total_amount: window.parseNumber ? window.parseNumber(document.getElementById('totalAmount').value) : parseFloat(document.getElementById('totalAmount').value),
-                    witnesses: {
-                        witness1: {
-                            name: document.getElementById('witness1Name').value,
-                            cnic: document.getElementById('witness1CNIC').value,
-                            phone: document.getElementById('witness1Phone').value
-                        },
-                        witness2: {
-                            name: document.getElementById('witness2Name').value,
-                            cnic: document.getElementById('witness2CNIC').value,
-                            phone: document.getElementById('witness2Phone').value
-                        }
-                    }
-                };
-                
-                const response = await window.apiRequest('/v1/admin/transactions', {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                });
-                
-                if (response.success) {
-                    if (typeof showNotification === 'function') {
-                        showNotification('success', 'Transaction created successfully');
-                    }
-                    if (typeof closeModal === 'function') {
-                        closeModal('createTransactionModal');
-                    }
-                    // Перезагружаем список транзакций
-                    if (typeof loadTransactions === 'function') {
-                        await loadTransactions();
-                    }
-                } else {
-                    throw new Error(response.message || 'Failed to create transaction');
-                }
-            } catch (error) {
-                console.error('Error creating transaction:', error);
-                if (typeof showNotification === 'function') {
-                    showNotification('error', 'Error creating transaction: ' + error.message);
-                }
-            }
-        });
-    }
-    
-    // Обработчик для кнопок отмены
-    document.querySelectorAll('.cancel-payment-btn, .cancel-transaction-btn, .cancel-user-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            if (typeof closeModal === 'function') {
-                closeModal('addPaymentModal');
-                closeModal('editPaymentModal');
-                closeModal('createTransactionModal');
-                closeModal('addUserModal');
-            }
+    // Обработчик для кнопок закрытия модальных окон
+    document.querySelectorAll('.modal-close, .close').forEach(button => {
+        button.addEventListener('click', function() {
+            const modalId = this.getAttribute('data-modal');
+            closeModal(modalId);
         });
     });
+
+    // Закрытие модального окна при клике на overlay
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target.id);
+        }
+    });
     
+    // Другие обработчики модальных окон
     console.log('[MODALS] Modal handlers initialized');
 }
 
@@ -312,3 +228,5 @@ window.openEditPaymentModal = openEditPaymentModal;
 window.openCreateTransactionModal = openCreateTransactionModal;
 window.openViewTransactionModal = openViewTransactionModal;
 window.initModalHandlers = initModalHandlers;
+window.closeModal = closeModal;
+window.openModal = openModal;

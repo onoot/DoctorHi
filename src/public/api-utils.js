@@ -273,31 +273,88 @@ function showNotification(type, message, duration = 5000) {
 }
 
 // Функция проверки аутентификации
-function checkAuth() {
-    // Проверяем, не находимся ли мы уже на странице входа
-    if (isLoginPage) {
-        return;
+// function checkAuth() {
+//     // Проверяем, не находимся ли мы уже на странице входа
+//     if (isLoginPage) {
+//         return;
+//     }
+    
+//     // Проверяем наличие токена в куках
+//     function getCookie(name) {
+//         const value = `; ${document.cookie}`;
+//         const parts = value.split(`; ${name}=`);
+//         if (parts.length === 2) return parts.pop().split(';').shift();
+//         return null;
+//     }
+    
+//     const authToken = getCookie('auth_token');
+//     const csrfToken = getCookie('_csrf');
+    
+//     // Если токенов нет и мы не на странице входа, перенаправляем
+//     if (!authToken || !csrfToken) {
+//         console.log('[AUTH] No authentication tokens found, redirecting to login');
+//         if (!isRedirecting) {
+//             isRedirecting = true;
+//             window.location.href = '/login.html';
+//         }
+//     }
+// }
+// Проверка авторизации
+async function checkAuth() {
+    try {
+        const response = await apiRequest('/api/auth/admin/validate', {
+            method: 'GET',
+            noAuth: true
+        });
+        
+        if (!response.success) {
+            // Только если ошибка связана с авторизацией, перенаправляем на логин
+            if (response.message && (response.message.includes('Unauthorized') || 
+                response.message.includes('token') || 
+                response.message.includes('auth'))) {
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+        return true;
+    } catch (error) {
+        console.error('Auth check error:', error);
+        // Проверяем, является ли ошибка сетевой проблемой
+        if (error.message && !error.message.includes('Failed to fetch')) {
+            window.location.href = '/login.html';
+        }
+        return false;
     }
-    
-    // Проверяем наличие токена в куках
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-    
-    const authToken = getCookie('auth_token');
-    const csrfToken = getCookie('_csrf');
-    
-    // Если токенов нет и мы не на странице входа, перенаправляем
-    if (!authToken || !csrfToken) {
-        console.log('[AUTH] No authentication tokens found, redirecting to login');
-        if (!isRedirecting) {
-            isRedirecting = true;
+}
+
+// Инициализация приложения
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Проверяем авторизацию только один раз
+        const isAuthenticated = await checkAuth();
+        
+        if (isAuthenticated) {
+            // Инициализируем приложение только если авторизация успешна
+            initApp();
+        }
+    } catch (error) {
+        console.error('Initialization error:', error);
+        // Не перенаправляем на логин при сетевых ошибках
+        if (!error.message.includes('Failed to fetch')) {
             window.location.href = '/login.html';
         }
     }
+});
+
+function initApp() {
+    // Инициализация всех компонентов приложения
+    initModalHandlers();
+    initNavigation();
+    initSearchHandlers();
+    initTransactionHandlers();
+    initUserHandlers();
+    
+    console.log('[APP] Application initialized successfully');
 }
 
 // Проверка аутентификации при загрузке DOM

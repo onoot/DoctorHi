@@ -6,6 +6,12 @@ let exchangeRateCache = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let lastFetchTime = 0;
 
+ const formatPKR = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    };
 
 /**
  * Парсинг числа с учетом разделителей

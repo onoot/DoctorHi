@@ -6,6 +6,8 @@ let exchangeRateCache = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let lastFetchTime = 0;
 
+const parseNumber = window.parseNumber
+
 /**
  * Функция для получения курса обмена PKR к USD
  * @returns {Promise<number>} - Курс обмена

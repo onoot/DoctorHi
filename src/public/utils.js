@@ -2,6 +2,42 @@
 // Вспомогательные функции и утилиты
 
 /**
+ * Функция для обновления конвертации в USD
+ * @param {number} amountInPKR - Сумма в PKR
+ */
+const updateUSD = async (amountInPKR) => {
+    try {
+        const response = await fetch('api/v1/admin/latest/PKR');
+        const data = await response.json();
+        let exchangeRate;
+        
+        if (data.success && data.USD) {
+            exchangeRate = data.USD;
+        } else {
+            // Fallback-курс, если API не отвечает
+            exchangeRate = 0.0036;
+        }
+        
+        const usdAmount = amountInPKR * exchangeRate;
+        const usdConversion = document.getElementById('usdConversion');
+        
+        if (usdConversion) {
+            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(usdAmount)}`;
+        }
+    } catch (error) {
+        console.error('Error fetching exchange rate:', error);
+        const usdConversion = document.getElementById('usdConversion');
+        if (usdConversion) {
+            usdConversion.innerHTML = 'Error fetching exchange rate';
+        }
+    }
+}
+/**
  * Обновление оставшейся суммы
  */
 function updateRemainingAmount() {
@@ -106,43 +142,6 @@ function getFileIcon(fileType) {
     if (fileType.includes('audio')) return 'fa-file-audio';
     
     return 'fa-file';
-}
-
-/**
- * Функция для обновления конвертации в USD
- * @param {number} amountInPKR - Сумма в PKR
- */
-const updateUSD = async (amountInPKR) => {
-    try {
-        const response = await fetch('api/v1/admin/latest/PKR');
-        const data = await response.json();
-        let exchangeRate;
-        
-        if (data.success && data.USD) {
-            exchangeRate = data.USD;
-        } else {
-            // Fallback-курс, если API не отвечает
-            exchangeRate = 0.0036;
-        }
-        
-        const usdAmount = amountInPKR * exchangeRate;
-        const usdConversion = document.getElementById('usdConversion');
-        
-        if (usdConversion) {
-            usdConversion.innerHTML = `≈ ${new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(usdAmount)}`;
-        }
-    } catch (error) {
-        console.error('Error fetching exchange rate:', error);
-        const usdConversion = document.getElementById('usdConversion');
-        if (usdConversion) {
-            usdConversion.innerHTML = 'Error fetching exchange rate';
-        }
-    }
 }
 
 /**

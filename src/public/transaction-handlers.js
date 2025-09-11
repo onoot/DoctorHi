@@ -593,11 +593,9 @@ function openAddPaymentModal() {
 }
 
 // Прикрепляем функции к глобальному объекту
-window.updateTransactionAmount = updateTransactionAmount;
 window.displayWitnesses = displayWitnesses;
 window.displayTransactionDocuments = displayTransactionDocuments;
 window.updateWitnesses = updateWitnesses;
-window.loadTransactionDetails = loadTransactionDetails;
 window.loadTransactionPayments = loadTransactionPayments;
 window.updateTransactionStatus = updateTransactionStatus;
 window.initTransactionHandlers = initTransactionHandlers;

@@ -44,14 +44,33 @@ function parseNumber(value) {
  */
 async function getExchangeRatePKRtoUSD() {
     try {
-        // Используем правильный URL с API_BASE_URL
-        const response = await fetch(`${window.API_BASE_URL}/v1/admin/latest/PKR`);
+        // Используем правильный URL с учетом структуры API
+        const url = `${window.API_BASE_URL}/v1/admin/latest/PKR`;
+        console.log('[CURRENCY] Fetching exchange rate from:', url);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+        
+        console.log(`[CURRENCY] Exchange rate response status: ${response.status}`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch exchange rate, status: ${response.status}`);
+        }
+        
         const data = await response.json();
         
         // Проверяем структуру ответа
         if (data.success && typeof data.USD === 'number') {
+            console.log('[CURRENCY] Exchange rate:', data.USD);
             return data.USD;
         }
+        
         throw new Error('Invalid API response structure');
     } catch (error) {
         console.error('Ошибка получения курса:', error);
@@ -72,15 +91,18 @@ async function getExchangeRatePKRtoUSD() {
 async function getCachedExchangeRate() {
     const now = Date.now();
     if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
+        console.log('[CURRENCY] Using cached exchange rate:', exchangeRateCache);
         return exchangeRateCache;
     }
+    
     try {
         exchangeRateCache = await getExchangeRatePKRtoUSD();
         lastFetchTime = now;
+        console.log('[CURRENCY] Fetched new exchange rate:', exchangeRateCache);
         return exchangeRateCache;
     } catch (error) {
-        // Если не удалось получить курс, возвращаем fallback
         console.error('Error getting exchange rate:', error);
+        // Если не удалось получить курс, возвращаем fallback
         return 0.0036;
     }
 }
@@ -128,10 +150,16 @@ async function updateUSD(amountInPKR) {
                 currency: 'USD',
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(usdAmount)}`;
+            }).format(usdAmount)}<span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
+                (1 PKR = ${exchangeRate.toFixed(6)} USD)
+            </span>`;
         });
     } catch (error) {
         console.error('Error fetching exchange rate:', error);
+        
+        // Используем fallback курс
+        const exchangeRate = 0.0036;
+        const usdAmount = amountInPKR * exchangeRate;
         
         // Обновляем все возможные элементы с сообщением об ошибке
         [
@@ -143,7 +171,7 @@ async function updateUSD(amountInPKR) {
         ].filter(el => el !== null).forEach(usdConversion => {
             usdConversion.innerHTML = `<span style="color: #dc3545">Conversion error</span>
                 <span style="font-size: 0.8em; display: block; opacity: 0.7; margin-top: 3px">
-                    Check your internet connection
+                    Using fallback rate: 1 PKR = ${exchangeRate.toFixed(6)} USD
                 </span>`;
         });
     }

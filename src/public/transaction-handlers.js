@@ -131,7 +131,7 @@ function displayTransactionDocuments(transaction) {
                 
                 // Добавляем кнопку удаления
                 const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
+                deleteBtn.className = 'action-btn btn-delete';
                 deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -167,7 +167,7 @@ function displayTransactionDocuments(transaction) {
                     
                     // Добавляем кнопку удаления
                     const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'action-btn btn-delete'; // Добавлен основной класс action-btn
+                    deleteBtn.className = 'action-btn btn-delete';
                     deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
                     deleteBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -707,6 +707,46 @@ async function loadTransactionPayments(transactionId) {
         }
         showNotification('error', 'Error loading payments: ' + error.message);
     }
+}
+
+// Вспомогательные функции, если они еще не определены
+if (typeof formatPKR === 'undefined') {
+    /**
+     * Форматирование денег с разделителями тысяч
+     * @param {number} amount - Сумма
+     * @returns {string} - Отформатированная строка
+     */
+    function formatPKR(amount) {
+        try {
+            return new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        } catch (e) {
+            console.error('Error formatting PKR:', e);
+            return amount.toFixed(2);
+        }
+    }
+    window.formatPKR = formatPKR;
+}
+
+if (typeof openModal === 'undefined') {
+    /**
+     * Универсальная функция для открытия модальных окон
+     * @param {string} modalId - ID модального окна
+     * @returns {boolean} - Успешно ли открылось модальное окно
+     */
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('show');
+            modal.classList.remove('hide');
+            return true;
+        }
+        console.error(`Modal with ID "${modalId}" not found`);
+        return false;
+    }
+    window.openModal = openModal;
 }
 
 // Прикрепляем функции к глобальному объекту

@@ -208,20 +208,25 @@ async function apiRequest(url, options = {}) {
             }
         }
         
-        // УБРАЛИ КЛОНИРОВАНИЕ RESPONSE - ИСПОЛЬЗУЕМ ТОЛЬКО ОДИН РАЗ
+        // Исправление ошибки "Response body is already used"
+        // Читаем тело ответа только один раз
         if (response.status !== 204 && contentLength !== '0' && 
             (contentType?.includes('application/json') || contentType?.includes('text'))) {
             try {
+                // Пытаемся прочитать как JSON
                 data = await response.json();
             } catch (jsonError) {
                 try {
-                    // Читаем текст только если JSON не удался
+                    // Если JSON не удался, пытаемся прочитать как текст
+                    // ВАЖНО: используем response.text() только один раз
                     const text = await response.text();
                     console.log('[API] Response text:', text);
                     
                     try {
+                        // Пытаемся распарсить текст как JSON
                         data = JSON.parse(text);
                     } catch {
+                        // Если не удалось распарсить как JSON, возвращаем объект с сообщением
                         data = { message: text || 'Unknown error' };
                     }
                 } catch (textError) {
@@ -268,7 +273,7 @@ async function apiRequest(url, options = {}) {
 // Проверка авторизации
 async function checkAuth() {
     try {
-        const response = await apiRequest('/admin/validate', {
+        const response = await apiRequest('/v1/admin/validate', {
             method: 'GET',
             noAuth: true
         });

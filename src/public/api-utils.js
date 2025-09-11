@@ -171,67 +171,81 @@ async function apiRequest(url, options = {}) {
         const response = await fetch(window.API_BASE_URL + url, requestOptions);
         console.log(`[API] Response status: ${response.status}`);
         
-        let data = null;
+        // Проверяем, не является ли ответ успешным
+        if (!response.ok) {
+            console.log('[API] Response not ok, status:', response.status);
+            
+            // Обработка ошибки 401 Unauthorized
+            if (response.status === 401) {
+                console.log('[API] Unauthorized access - 401 status received');
+                
+                // Предотвращаем множественные перенаправления
+                if (!isRedirecting) {
+                    isRedirecting = true;
+                    
+                    // Удаляем токены доступа
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    
+                    // Удаляем куки
+                    document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    document.cookie = "_csrf=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    
+                    // Показываем уведомление
+                    if (typeof window.showNotification === 'function') {
+                        window.showNotification('error', 'Your session has expired. Please log in again.');
+                    }
+                    
+                    // Перенаправляем на страницу входа
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 1500);
+                    
+                    // Прерываем дальнейшую обработку
+                    throw new Error('Session expired. Redirecting to login page...');
+                }
+            }
+            
+            // Пытаемся получить данные об ошибке
+            let errorData;
+            try {
+                errorData = await response.json();
+            } catch (jsonError) {
+                try {
+                    const text = await response.text();
+                    errorData = { message: text || 'Unknown error' };
+                } catch (textError) {
+                    errorData = { message: 'Unknown error' };
+                }
+            }
+            
+            console.log('[API] Request failed:', errorData);
+            throw new Error(errorData.message || `API request failed with status ${response.status}`);
+        }
         
         // Проверяем, содержит ли ответ данные
         const contentLength = response.headers.get('content-length');
         const contentType = response.headers.get('content-type');
         
-        // Обработка ошибки 401 Unauthorized
-        if (response.status === 401) {
-            console.log('[API] Unauthorized access - 401 status received');
-            
-            // Предотвращаем множественные перенаправления
-            if (!isRedirecting) {
-                isRedirecting = true;
-                
-                // Удаляем токены доступа
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                
-                // Удаляем куки
-                document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                document.cookie = "_csrf=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-                
-                // Показываем уведомление
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification('error', 'Your session has expired. Please log in again.');
-                }
-                
-                // Перенаправляем на страницу входа
-                setTimeout(() => {
-                    window.location.href = '/login.html';
-                }, 1500);
-                
-                // Прерываем дальнейшую обработку
-                throw new Error('Session expired. Redirecting to login page...');
-            }
-        }
+        let data = null;
         
-        // Читаем тело ответа только один раз
+        // Читаем тело ответа только если есть данные
         if (response.status !== 204 && contentLength !== '0' && 
             (contentType?.includes('application/json') || contentType?.includes('text'))) {
             try {
                 // Пытаемся прочитать как JSON
                 data = await response.json();
             } catch (jsonError) {
-                // Если JSON не удался, возвращаем ошибку без попытки чтения текста
+                // Если JSON не удался, возвращаем ошибку
                 console.error('[API] Failed to parse response as JSON:', jsonError);
                 data = { message: 'Failed to parse response', error: jsonError.message };
             }
         } else {
-            // Для ответов без тела или с нулевой длиной
-            data = { success: response.ok };
+            // Для ответов без тела
+            data = { success: true };
         }
         
         console.log('[API] Response ', data);
-        
-        if (!response.ok) {
-            console.log('[API] Request failed:', data);
-            
-            // Обработка других ошибок
-            throw new Error(data.message || `API request failed with status ${response.status}`);
-        }
         
         return data;
     } catch (error) {
@@ -245,7 +259,7 @@ async function apiRequest(url, options = {}) {
                     window.showNotification('error', 'Network error. Please check your connection.', 5000);
                 }
                 // Не перенаправляем на логин при сетевых ошибках
-                return { success: false, message: 'Network error' };
+                throw new Error('Network error');
             } else {
                 if (typeof window.showNotification === 'function') {
                     window.showNotification('error', error.message || 'An unexpected error occurred', 5000);
@@ -260,8 +274,8 @@ async function apiRequest(url, options = {}) {
 // Проверка авторизации
 async function checkAuth() {
     try {
-        // Используем правильный URL для проверки авторизации
-        const authUrl = '/auth/admin/validate';
+        // Используем правильный URL для проверки авторизации (v1/admin/validate)
+        const authUrl = '/v1/admin/validate';
         const response = await fetch(`${window.API_BASE_URL}${authUrl}`, {
             method: 'GET',
             credentials: 'include',
@@ -285,6 +299,7 @@ async function checkAuth() {
         try {
             data = await response.json();
         } catch (e) {
+            console.error('[AUTH] Failed to parse auth response:', e);
             // Если не удалось распарсить JSON, проверяем статус
             if (response.ok) {
                 return true;
@@ -294,7 +309,7 @@ async function checkAuth() {
         }
         
         // Если ответ успешный и содержит valid: true
-        if (data && data.valid === true) {
+        if (data && (data.valid === true || data.success === true)) {
             return true;
         } else {
             // Если ответ не содержит valid: true, перенаправляем на логин
@@ -306,7 +321,7 @@ async function checkAuth() {
         console.error('[AUTH] Auth check error:', error);
         
         // При сетевых ошибках не перенаправляем на логин
-        if (error.message && error.message.includes('Failed to fetch')) {
+        if (error.message && error.message.includes('Network error')) {
             console.log('[AUTH] Network error - not redirecting to login');
             return true; // Предполагаем, что пользователь авторизован, если это сетевая ошибка
         }
@@ -337,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     } catch (error) {
         console.error('Initialization error:', error);
         // Не перенаправляем на логин при сетевых ошибках
-        if (!error.message || !error.message.includes('Failed to fetch')) {
+        if (!error.message || !error.message.includes('Network error')) {
             window.location.href = '/login.html';
         }
     }

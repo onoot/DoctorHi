@@ -44,7 +44,7 @@ function parseNumber(value) {
  */
 async function getExchangeRatePKRtoUSD() {
     try {
-        // Используем правильный URL для получения курса
+        // Используем правильный URL с API_BASE_URL
         const response = await fetch(`${window.API_BASE_URL}/v1/admin/latest/PKR`);
         const data = await response.json();
         
@@ -55,9 +55,12 @@ async function getExchangeRatePKRtoUSD() {
         throw new Error('Invalid API response structure');
     } catch (error) {
         console.error('Ошибка получения курса:', error);
+        
+        // Показываем уведомление только если функция доступна
         if (typeof window.showNotification === 'function') {
             window.showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
         }
+        
         return 0.0036; // Fallback курс
     }
 }
@@ -71,9 +74,15 @@ async function getCachedExchangeRate() {
     if (exchangeRateCache && (now - lastFetchTime) < CACHE_DURATION) {
         return exchangeRateCache;
     }
-    exchangeRateCache = await getExchangeRatePKRtoUSD();
-    lastFetchTime = now;
-    return exchangeRateCache;
+    try {
+        exchangeRateCache = await getExchangeRatePKRtoUSD();
+        lastFetchTime = now;
+        return exchangeRateCache;
+    } catch (error) {
+        // Если не удалось получить курс, возвращаем fallback
+        console.error('Error getting exchange rate:', error);
+        return 0.0036;
+    }
 }
 
 /**
@@ -82,6 +91,24 @@ async function getCachedExchangeRate() {
  */
 async function updateUSD(amountInPKR) {
     try {
+        // Проверяем, что сумма корректна
+        if (isNaN(amountInPKR) || amountInPKR <= 0) {
+            // Ищем все возможные элементы для отображения конвертации
+            const usdElements = [
+                document.getElementById('usdConversion'),
+                document.getElementById('toUSD'),
+                document.getElementById('editPaymentModal_usdConversion'),
+                document.getElementById('createTransactionModal_toUSD'),
+                document.getElementById('addPaymentModal_usdConversion')
+            ].filter(el => el !== null);
+            
+            // Очищаем все найденные элементы
+            usdElements.forEach(usdConversion => {
+                usdConversion.innerHTML = '';
+            });
+            return;
+        }
+        
         const exchangeRate = await getCachedExchangeRate();
         const usdAmount = amountInPKR * exchangeRate;
         

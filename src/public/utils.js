@@ -22,21 +22,6 @@ function updateRemainingAmount() {
 }
 
 /**
- * Парсинг числа с учетом разделителей
- * @param {string} value - Строка с числом
- * @returns {number} - Парсированное число
- */
-function parseNumber(value) {
-    if (!value) return 0;
-    
-    // Удаляем все символы, кроме цифр и десятичного разделителя
-    const cleanValue = value.replace(/[^0-9.]/g, '');
-    
-    // Парсим как число
-    return parseFloat(cleanValue) || 0;
-}
-
-/**
  * Форматирование числа для отображения
  * @param {number} value - Число для форматирования
  * @returns {string} - Отформатированная строка
@@ -184,7 +169,7 @@ function initPaymentFormFields() {
     };
     
     // Функция парсинга числа
-    const parseNumber = (value) => {
+    const parseNumbers = (value) => {
         const cleanValue = value.replace(/[^\d.]/g, '');
         if (!cleanValue) return 0;
         
@@ -226,7 +211,7 @@ function initPaymentFormFields() {
         this.value = cleanValue;
         
         // Парсим значение
-        const newRawValue = parseNumber(cleanValue);
+        const newRawValue = parseNumbers(cleanValue);
         
         // Сохраняем сырое значение ТОЛЬКО если оно изменилось
         if (newRawValue !== rawValue) {
@@ -273,5 +258,4 @@ window.debounce = debounce
 window.validatePhone = validatePhone
 window.validateCNIC = validateCNIC
 window.formatNumberInput = formatNumberInput
-window.parseNumber = parseNumber
 window.updateRemainingAmount = updateRemainingAmount

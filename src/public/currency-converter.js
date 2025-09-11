@@ -6,7 +6,21 @@ let exchangeRateCache = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let lastFetchTime = 0;
 
-const parseNumber = window.parseNumber
+
+/**
+ * Парсинг числа с учетом разделителей
+ * @param {string} value - Строка с числом
+ * @returns {number} - Парсированное число
+ */
+function parseNumber(value) {
+    if (!value) return 0;
+    
+    // Удаляем все символы, кроме цифр и десятичного разделителя
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+    
+    // Парсим как число
+    return parseFloat(cleanValue) || 0;
+}
 
 /**
  * Функция для получения курса обмена PKR к USD

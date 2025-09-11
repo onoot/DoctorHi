@@ -1,3 +1,4 @@
+// authController.mjs
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import pool from '../config/database.mjs';
@@ -44,7 +45,7 @@ const authController = {
       console.log('Cookies set, sending response');
       res.json({ 
         user: userWithoutPassword,
-        client_token:token 
+        client_token: token 
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -75,18 +76,13 @@ const authController = {
           message: 'User not found or blocked' 
         });
       }
-      const transaction = await pool.query(
-        `SELECT id, property_id, status FROM transactions WHERE new_owner_id = ?`,
-        [user?.id]
-      )
-
+      
       // Remove sensitive data
       const { password, ...userWithoutPassword } = user;
 
       res.json({ 
         isAuthenticated: true, 
-        user: userWithoutPassword,
-        transaction: transaction[0],
+        user: userWithoutPassword
       });
     } catch (error) {
       console.error('Check auth error:', error);
@@ -170,6 +166,39 @@ const authController = {
     }
   },
 
+  async validateAdmin(req, res) {
+    try {
+      const token = req.cookies.auth_token;
+      if (!token) {
+        return res.status(401).json({ valid: false });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Проверка администратора в таблице auth_users
+      const [admins] = await pool.query(
+        'SELECT id, email, role FROM auth_users WHERE id = ? AND role = ?',
+        [decoded.id, 'admin']
+      );
+
+      const admin = admins[0];
+      if (!admin) {
+        return res.status(401).json({ valid: false });
+      }
+
+      res.json({
+        valid: true,
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role
+        }
+      });
+    } catch (error) {
+      res.status(401).json({ valid: false });
+    }
+  },
+
   async changeAdminPassword(req, res) {
     try {
       const errors = validationResult(req);
@@ -207,43 +236,10 @@ const authController = {
     }
   },
 
-  async validateAdmin(req, res) {
-    try {
-      const token = req.cookies.auth_token;
-      if (!token) {
-        return res.status(401).json({ valid: false });
-      }
-
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Проверка администратора в таблице auth_users
-      const [admins] = await pool.query(
-        'SELECT id, email, role FROM auth_users WHERE id = ? AND role = ?',
-        [decoded.id, 'admin']
-      );
-
-      const admin = admins[0];
-      if (!admin) {
-        return res.status(401).json({ valid: false });
-      }
-
-      res.json({
-        valid: true,
-        user: {
-          id: admin.id,
-          email: admin.email,
-          role: admin.role
-        }
-      });
-    } catch (error) {
-      res.status(401).json({ valid: false });
-    }
-  },
-
   async logout(req, res) {
     res.clearCookie('auth_token');
     res.json({ message: 'Logged out successfully' });
   }
 };
 
-export default authController; 
+export default authController;

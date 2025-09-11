@@ -44,6 +44,7 @@ function parseNumber(value) {
  */
 async function getExchangeRatePKRtoUSD() {
     try {
+        // Используем правильный URL для получения курса
         const response = await fetch(`${window.API_BASE_URL}/v1/admin/latest/PKR`);
         const data = await response.json();
         

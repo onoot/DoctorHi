@@ -260,8 +260,9 @@ async function apiRequest(url, options = {}) {
 // Проверка авторизации
 async function checkAuth() {
     try {
-        // Используем более надежный URL для проверки авторизации
-        const response = await fetch(`${window.API_BASE_URL}/admin/validate`, {
+        // Используем правильный URL для проверки авторизации
+        const authUrl = '/auth/admin/validate';
+        const response = await fetch(`${window.API_BASE_URL}${authUrl}`, {
             method: 'GET',
             credentials: 'include',
             headers: {
@@ -292,11 +293,11 @@ async function checkAuth() {
             }
         }
         
-        // Если ответ успешный и содержит success: true
-        if (data && data.success === true) {
+        // Если ответ успешный и содержит valid: true
+        if (data && data.valid === true) {
             return true;
         } else {
-            // Если ответ не содержит success: true, перенаправляем на логин
+            // Если ответ не содержит valid: true, перенаправляем на логин
             console.log('[AUTH] Invalid auth response - redirecting to login');
             window.location.href = '/login.html';
             return false;

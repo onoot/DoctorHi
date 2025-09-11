@@ -20,7 +20,7 @@ router.post('/admin/login', [
 ], authController.adminLogin);
 
 // Token validation
-router.get('v1/admin/validate', validateToken, authController.validateAdminToken);
+router.get('/admin/validate', validateToken, authController.validateAdminToken);
 
 // Admin password change route
 router.post('/admin/change-password', validateToken, [

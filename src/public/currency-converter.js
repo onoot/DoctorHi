@@ -6,12 +6,22 @@ let exchangeRateCache = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 минут
 let lastFetchTime = 0;
 
- const formatPKR = (amount) => {
+/**
+ * Форматирование денег с разделителями тысяч
+ * @param {number} amount - Сумма
+ * @returns {string} - Отформатированная строка
+ */
+function formatPKR(amount) {
+    try {
         return new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
-    };
+    } catch (e) {
+        console.error('Error formatting PKR:', e);
+        return amount.toFixed(2);
+    }
+}
 
 /**
  * Парсинг числа с учетом разделителей
@@ -34,7 +44,7 @@ function parseNumber(value) {
  */
 async function getExchangeRatePKRtoUSD() {
     try {
-        const response = await fetch('api/v1/admin/latest/PKR');
+        const response = await fetch(`${window.API_BASE_URL}/v1/admin/latest/PKR`);
         const data = await response.json();
         
         // Проверяем структуру ответа
@@ -44,7 +54,9 @@ async function getExchangeRatePKRtoUSD() {
         throw new Error('Invalid API response structure');
     } catch (error) {
         console.error('Ошибка получения курса:', error);
-        showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('error', 'Failed to retrieve the course. An approximate value is used.');
+        }
         return 0.0036; // Fallback курс
     }
 }

@@ -2,23 +2,19 @@
 // Этот файл ДОЛЖЕН быть загружен ПЕРВЫМ!
 
 // Глобальные конфигурационные переменные
-const API_BASE_URL = `https://${window?.location?.host}/api`;
-let currentPage = 1;
-let itemsPerPage = 10;
-
-// Проверка и установка глобальных переменных
-if (typeof API_BASE_URL === 'undefined') {
+if (typeof window.API_BASE_URL === 'undefined') {
     const protocol = window.location.protocol;
     const host = window.location.host;
     window.API_BASE_URL = `${protocol}//${host}/api`;
 }
 
-if (typeof currentPage === 'undefined') {
-    currentPage = 1;
+// Инициализируем переменные только если они еще не определены
+if (typeof window.currentPage === 'undefined') {
+    window.currentPage = 1;
 }
 
-if (typeof itemsPerPage === 'undefined') {
-    itemsPerPage = 10;
+if (typeof window.itemsPerPage === 'undefined') {
+    window.itemsPerPage = 10;
 }
 
 // Флаг для предотвращения множественных перенаправлений
@@ -212,20 +208,17 @@ async function apiRequest(url, options = {}) {
             }
         }
         
+        // УБРАЛИ КЛОНИРОВАНИЕ RESPONSE - ИСПОЛЬЗУЕМ ТОЛЬКО ОДИН РАЗ
         if (response.status !== 204 && contentLength !== '0' && 
             (contentType?.includes('application/json') || contentType?.includes('text'))) {
             try {
-                // Клонируем ответ для возможности многократного чтения
-                const responseClone = response.clone();
                 data = await response.json();
             } catch (jsonError) {
                 try {
-                    // Используем клонированный ответ для чтения текста
-                    const responseClone = response.clone();
-                    const text = await responseClone.text();
+                    // Читаем текст только если JSON не удался
+                    const text = await response.text();
                     console.log('[API] Response text:', text);
                     
-                    // Пытаемся распарсить как JSON, если это возможно
                     try {
                         data = JSON.parse(text);
                     } catch {
@@ -272,23 +265,6 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// ЕДИНСТВЕННАЯ РЕАЛИЗАЦИЯ updateUSD
-function updateUSD(amount) {
-    // Ваш код конвертации
-    const usdConversionElement = document.getElementById('usdConversion') || 
-                                document.getElementById('toUSD') ||
-                                document.getElementById('addPaymentModal_usdConversion') ||
-                                document.getElementById('createTransactionModal_toUSD');
-    
-    if (!usdConversionElement) return;
-    
-    // Пример конвертации (замените на ваш API)
-    const exchangeRate = 0.0036; // 1 PKR = 0.0036 USD
-    const usdAmount = (amount * exchangeRate).toFixed(2);
-    
-    usdConversionElement.innerHTML = `<strong>USD:</strong> $${usdAmount}`;
-}
-
 // Проверка авторизации
 async function checkAuth() {
     try {
@@ -320,7 +296,13 @@ async function checkAuth() {
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', async function() {
     try {
-        // Проверяем авторизацию только один раз
+        // Проверяем, не находимся ли мы на странице входа
+        if (isLoginPage) {
+            console.log('[APP] On login page, skipping initialization');
+            return;
+        }
+        
+        // Проверяем авторизацию
         const isAuthenticated = await checkAuth();
         
         if (isAuthenticated) {
@@ -348,14 +330,6 @@ function initApp() {
     
     if (typeof initSearchHandlers === 'function') {
         initSearchHandlers();
-    }
-    
-    if (typeof initTransactionHandlers === 'function') {
-        initTransactionHandlers();
-    }
-    
-    if (typeof initUserHandlers === 'function') {
-        initUserHandlers();
     }
     
     // Загрузка данных только после полной инициализации
@@ -401,12 +375,10 @@ function updateRemainingAmount() {
 }
 
 // Прикрепляем функции к глобальному объекту
-window.API_BASE_URL = API_BASE_URL;
-window.currentPage = currentPage;
-window.itemsPerPage = itemsPerPage;
-window.apiRequest = apiRequest;
 window.showNotification = showNotification;
+window.apiRequest = apiRequest;
 window.updateRemainingAmount = updateRemainingAmount;
-window.updateUSD = updateUSD; // ЕДИНСТВЕННАЯ ССЫЛКА НА ФУНКЦИЮ
+window.checkAuth = checkAuth;
+window.initApp = initApp;
 
 console.log('[API UTILS] Initialized successfully');

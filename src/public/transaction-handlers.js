@@ -592,6 +592,123 @@ function openAddPaymentModal() {
     openModal('addPaymentModal');
 }
 
+/**
+ * Функция для загрузки платежей транзакции
+ * @param {string} transactionId - ID транзакции
+ */
+async function loadTransactionPayments(transactionId) {
+    try {
+        // Загружаем платежи
+        const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
+        
+        // Проверяем, что ответ содержит платежи
+        if (paymentsResponse && Array.isArray(paymentsResponse.payments)) {
+            const payments = paymentsResponse.payments;
+            const tbody = document.getElementById('paymentsTableBody');
+            
+            if (!tbody) {
+                console.error('Payments table body not found');
+                return;
+            }
+            
+            tbody.innerHTML = '';
+            
+            if (payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
+                return;
+            }
+            
+            // Загружаем документы, чтобы найти чеки
+            const filesResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
+            
+            // Создаем объект для быстрого поиска чеков по payment_id
+            const receiptMap = {};
+            if (filesResponse && filesResponse.documents) {
+                filesResponse.documents.forEach(file => {
+                    if (file.category === 'receipt' && file.payment_id) {
+                        receiptMap[file.payment_id] = file;
+                    }
+                });
+            }
+            
+            // Заполняем таблицу платежей
+            payments.forEach(payment => {
+                const row = document.createElement('tr');
+                
+                // Форматируем дату
+                const paymentDate = payment.payment_date ? 
+                    new Date(payment.payment_date).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    }) : 'N/A';
+                
+                // Создаем ячейку для превью чека
+                let receiptPreview = '';
+                if (payment.receipt || receiptMap[payment.id]) {
+                    const receipt = payment.receipt || receiptMap[payment.id];
+                    const receiptPath = receipt.path || receipt.file_path;
+                    const receiptUrl = `${API_BASE_URL}/v1/admin/transactions/files/${receiptPath}`;
+                    
+                    receiptPreview = `
+                        <div class="receipt-preview">
+                            <i class="fas fa-file-alt receipt-icon"></i>
+                            <div class="receipt-actions">
+                                <a href="${receiptUrl}" target="_blank" class="view-receipt">View</a>
+                                <a href="${receiptUrl}" download class="download-receipt">Download</a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    receiptPreview = '<span class="no-receipt">No receipt</span>';
+                }
+                
+                row.innerHTML = `
+                    <td>${payment.id}</td>
+                    <td>${paymentDate}</td>
+                    <td>${formatPKR(payment.amount)}</td>
+                    <td>${formatPaymentMethod(payment.payment_method)}</td>
+                    <td><span class="status-badge ${getStatusClass(payment.status)}">${formatStatus(payment.status)}</span></td>
+                    <td>
+                        <div class="payment-actions">
+                            <button class="action-btn btn-edit edit-payment-btn" data-payment-id="${payment.id}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            ${payment.status === 'pending' ? 
+                                `<button class="action-btn btn-approve confirm-payment-btn" data-payment-id="${payment.id}">
+                                    <i class="fas fa-check"></i> Confirm
+                                </button>` : ''}
+                            ${payment.status !== 'cancelled' ? 
+                                `<button class="action-btn btn-delete cancel-payment-btn" data-payment-id="${payment.id}">
+                                    <i class="fas fa-times"></i> Cancel
+                                </button>` : ''}
+                        </div>
+                    </td>
+                    <td class="receipt-cell">${receiptPreview}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Настраиваем обработчики действий с платежами
+            setupPaymentActionHandlers(transactionId);
+        } else {
+            const tbody = document.getElementById('paymentsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
+            }
+            showNotification('error', 'Failed to load payments');
+        }
+    } catch (error) {
+        console.error('Error loading transaction payments:', error);
+        const tbody = document.getElementById('paymentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading payments</td></tr>';
+        }
+        showNotification('error', 'Error loading payments: ' + error.message);
+    }
+}
+
 // Прикрепляем функции к глобальному объекту
 window.displayWitnesses = displayWitnesses;
 window.displayTransactionDocuments = displayTransactionDocuments;
@@ -611,3 +728,5 @@ document.addEventListener('DOMContentLoaded', function() {
         initTransactionHandlers();
     }
 });
+
+console.log('[TRANSACTION HANDLERS] Initialized successfully');

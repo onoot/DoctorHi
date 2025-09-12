@@ -246,12 +246,16 @@ async function loadTransactionDetails(transactionId) {
         // Проверяем, что response содержит данные транзакции
         if (response && response.id) {
             const transaction = response;
+            
+            // ЗАДАЧА 1 и 2: Сохраняем properties в локальное хранилище
             if (response.properties) {
                 localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
             }
+
             // Получаем элементы
             const transactionIdEl = document.getElementById('transactionId');
-            const propertyNameEl = document.getElementById('propertyName');
+            const propertyNameTextEl = document.getElementById('propertyName'); // Для отображения
+            const propertyNameSelectEl = document.getElementById('propertySelect'); // Для выбора (новый элемент)
             const previousOwnerEl = document.getElementById('previousOwner');
             const newOwnerEl = document.getElementById('newOwner');
             const statusEl = document.getElementById('transactionStatus');
@@ -261,7 +265,7 @@ async function loadTransactionDetails(transactionId) {
             const remainingAmountEl = document.getElementById('remainingAmount');
 
             // Проверяем существование элементов
-            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl ||
+            if (!transactionIdEl || !propertyNameTextEl || !previousOwnerEl ||
                 !newOwnerEl || !statusEl || !createdAtEl ||
                 !totalAmountViewEl || !paidAmountEl || !remainingAmountEl) {
                 console.error('One or more transaction detail elements not found');
@@ -270,7 +274,7 @@ async function loadTransactionDetails(transactionId) {
 
             // Заполняем основную информацию о сделке
             transactionIdEl.textContent = transaction.id;
-            propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
+            propertyNameTextEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
             previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
             newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
 
@@ -308,24 +312,57 @@ async function loadTransactionDetails(transactionId) {
             // ВАЖНО: Отображаем платежи, используя данные из основного запроса и информацию о чеках
             displayPaymentsWithReceipts(transaction.payments, transaction.files?.receipt);
 
-
-            // Устанавливаем выбранное свойство в выпадающем списке
-            const propertyNameSelect = document.getElementById('propertyName');
-            if (propertyNameSelect && transaction.property_id) {
-                propertyNameSelect.value = transaction.property_id;
-            }
-
-            // Добавляем обработчик изменения выбора свойства
-            if (propertyNameSelect) {
-                propertyNameSelect.onchange = function () {
-                    const selectedPropertyId = this.value;
-                    if (selectedPropertyId) {
-                        // Здесь можно добавить логику обновления транзакции
-                        console.log('Selected property:', selectedPropertyId);
-                        // Например: updateTransactionProperty(transactionId, selectedPropertyId);
+            // ЗАДАЧА 3: Заполняем и показываем выпадающий список свойств, если он существует
+            if (propertyNameSelectEl) {
+                // Очищаем текущие опции
+                propertyNameSelectEl.innerHTML = '<option value="">Select Property</option>';
+                
+                // Получаем properties из локального хранилища
+                const propertiesData = localStorage.getItem('transactionProperties');
+                if (propertiesData) {
+                    try {
+                        const properties = JSON.parse(propertiesData);
+                        
+                        // Проходим по всем типам properties (например, Parking)
+                        Object.keys(properties).forEach(category => {
+                            // Создаем группу опций для категории
+                            const optgroup = document.createElement('optgroup');
+                            optgroup.label = category;
+                            
+                            // Добавляем каждое свойство в группу
+                            properties[category].forEach(property => {
+                                const option = document.createElement('option');
+                                option.value = property.id;
+                                option.textContent = `${property.name} (${property.id})`;
+                                optgroup.appendChild(option);
+                            });
+                            
+                            propertyNameSelectEl.appendChild(optgroup);
+                        });
+                        
+                        // Устанавливаем выбранное значение
+                        if (transaction.property_id) {
+                            propertyNameSelectEl.value = transaction.property_id;
+                        }
+                        
+                        // Добавляем обработчик изменения выбора свойства
+                        propertyNameSelectEl.onchange = async function () {
+                            const selectedPropertyId = this.value;
+                            if (selectedPropertyId) {
+                                console.log('Selected property:', selectedPropertyId);
+                                
+                                // Здесь можно добавить логику обновления транзакции
+                                // Например: 
+                                // await updateTransactionProperty(transactionId, selectedPropertyId);
+                                // propertyNameTextEl.textContent = getPropertyById(selectedPropertyId)?.name || selectedPropertyId;
+                            }
+                        };
+                    } catch (e) {
+                        console.error('Error parsing properties from localStorage', e);
                     }
-                };
+                }
             }
+
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');

@@ -330,6 +330,7 @@ const transactionController = {
         transactions: enrichedTransactions,
         total,
         page: parseInt(page),
+        properties,
         totalPages: Math.ceil(total / limit)
       });
     } catch (error) {

@@ -206,6 +206,43 @@ function populatePropertiesDropdown() {
     }
 }
 
+
+/**
+ * Заполняет выпадающий список свойств в модальном окне просмотра транзакции
+ */
+function populateViewTransactionProperties() {
+    const propertySelect = document.getElementById('viewTransactionPropertySelect');
+    if (!propertySelect) return;
+    
+    // Очищаем текущие опции
+    propertySelect.innerHTML = '<option value="">Select Property</option>';
+    
+    // Получаем properties из localStorage
+    const propertiesData = localStorage.getItem('transactionProperties');
+    if (propertiesData) {
+        try {
+            const properties = JSON.parse(propertiesData);
+            
+            // Проходим по всем категориям свойств
+            Object.keys(properties).forEach(category => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                
+                properties[category].forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property.id;
+                    option.textContent = `${property.name} (${property.id})`;
+                    optgroup.appendChild(option);
+                });
+                
+                propertySelect.appendChild(optgroup);
+            });
+        } catch (e) {
+            console.error('Error parsing properties:', e);
+        }
+    }
+}
+
 /**
  * Функция для открытия модального окна просмотра транзакции
  * @param {string} transactionId - ID транзакции
@@ -215,26 +252,25 @@ function openViewTransactionModal(transactionId) {
         showNotification('error', 'Transaction ID is required');
         return;
     }
-
+    
     // Устанавливаем ID транзакции в скрытое поле
     const currentTransactionIdElement = document.getElementById('currentTransactionId');
     if (currentTransactionIdElement) {
         currentTransactionIdElement.value = transactionId;
     }
     currentTransactionId = transactionId;
-
+    
     // Открываем модальное окно
     openModal('viewTransactionModal');
-
+    
     // Загружаем данные транзакции и файлы
     loadTransactionDetails(transactionId);
     loadTransactionFiles(transactionId);
     loadTransactionPayments(transactionId);
-
-    // ЗАПОЛНЯЕМ ВЫПАДАЮЩИЙ СПИСОК СВОЙСТВ (Задача 3)
-    setTimeout(populatePropertiesDropdown, 300);
+    
+    // ЗАПОЛНЯЕМ ВЫПАДАЮЩИЙ СПИСОК СВОЙСТВ (ЗАДАЧА 3)
+    setTimeout(populateViewTransactionProperties, 300);
 }
-
 /**
  * Функция для загрузки деталей транзакции
  * @param {string} transactionId - ID транзакции
@@ -359,9 +395,6 @@ async function loadTransactionDetails(transactionId) {
                         if (selectedProperty && propertyNameTextEl) {
                             propertyNameTextEl.textContent = selectedProperty.name;
                         }
-
-                        // TODO: отправить запрос на сервер для обновления property_id у транзакции
-                        // await updateTransactionProperty(transactionId, selectedPropertyId);
                     } else {
                         propertyNameTextEl.textContent = 'N/A';
                     }
@@ -1446,6 +1479,8 @@ function populateCreateTransactionModal() {
         }
     }
 }
+
+
 
 // Прикрепляем функции к глобальному объекту window
 window.loadTransactions = loadTransactions;

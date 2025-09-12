@@ -38,6 +38,78 @@ function openAddPaymentModal(transactionId) {
 }
 
 /**
+ * Функция для открытия модального окна редактирования платежа
+ * @param {string} transactionId - ID транзакции
+ * @param {string} paymentId - ID платежа
+ */
+async function openEditPaymentModal(transactionId, paymentId) {
+    console.log(`[PAYMENT] Opening edit payment modal for transaction ${transactionId}, payment ${paymentId}`);
+    
+    try {
+        const response = await window.apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
+        if (response.success && response.payment) {
+            const payment = response.payment;
+            
+            // Устанавливаем ID транзакции
+            const paymentTransactionId = document.getElementById('paymentTransactionId');
+            if (paymentTransactionId) {
+                paymentTransactionId.value = transactionId;
+            }
+            
+            // Устанавливаем ID платежа
+            const paymentIdInput = document.getElementById('paymentId');
+            if (paymentIdInput) {
+                paymentIdInput.value = payment.id;
+            }
+            
+            // Устанавливаем сумму
+            const paymentAmount = document.getElementById('paymentAmount');
+            const rawPaymentAmount = document.getElementById('rawPaymentAmount');
+            if (paymentAmount && window.formatPKR) {
+                paymentAmount.value = window.formatPKR(payment.amount);
+            }
+            if (rawPaymentAmount) {
+                rawPaymentAmount.value = payment.amount;
+            }
+            
+            // Устанавливаем метод оплаты
+            const paymentMethod = document.getElementById('paymentMethod');
+            if (paymentMethod) {
+                paymentMethod.value = payment.payment_method || payment.method;
+            }
+            
+            // Устанавливаем статус
+            const paymentStatus = document.getElementById('paymentStatus');
+            if (paymentStatus) {
+                paymentStatus.value = payment.status;
+            }
+            
+            // Устанавливаем примечания
+            const paymentNotes = document.getElementById('paymentNotes');
+            if (paymentNotes) {
+                paymentNotes.value = payment.notes || '';
+            }
+            
+            // Обновляем конвертацию в USD
+            if (typeof updateUSD === 'function') {
+                await updateUSD(payment.amount);
+            }
+            
+            // Открываем модальное окно
+            if (typeof openModal === 'function') {
+                openModal('editPaymentModal');
+            }
+        }
+    } catch (error) {
+        console.error('[PAYMENT] Error loading payment details:', error);
+        if (typeof showNotification === 'function') {
+            showNotification('error', 'Error loading payment details');
+        }
+    }
+}
+
+
+/**
  * Модифицированная функция для открытия модального окна создания транзакции
  */
 function openCreateTransactionModal() {
@@ -77,46 +149,6 @@ function openCreateTransactionModal() {
         openModal('createTransactionModal');
     }
 }
-
-
-/**
- * Функция для открытия модального окна создания транзакции
- */
-function openCreateTransactionModal() {
-    console.log('[TRANSACTION] Opening create transaction modal');
-    
-    // Проверяем существование модального окна
-    const modal = document.getElementById('createTransactionModal');
-    if (!modal) {
-        console.error('[TRANSACTION] Create transaction modal not found in DOM');
-        if (typeof showNotification === 'function') {
-            showNotification('error', 'Transaction modal not found');
-        }
-        return;
-    }
-    
-    // Сбрасываем форму
-    const form = document.getElementById('createTransactionForm');
-    if (form) {
-        form.reset();
-    }
-    
-    // Сбрасываем сообщения об ошибках
-    document.querySelectorAll('.error-message').forEach(el => {
-        el.textContent = '';
-    });
-    
-    // Генерируем логин и пароль
-    if (typeof generateCredentials === 'function') {
-        generateCredentials();
-    }
-    
-    // Открываем модальное окно
-    if (typeof openModal === 'function') {
-        openModal('createTransactionModal');
-    }
-}
-
 /**
  * Функция для открытия модального окна просмотра транзакции
  * @param {string} transactionId - ID транзакции

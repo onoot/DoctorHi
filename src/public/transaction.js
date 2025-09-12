@@ -169,6 +169,44 @@ function attachTransactionActionHandlers() {
 }
 
 /**
+ * Заполняет выпадающий список свойств (properties)
+ */
+function populatePropertiesDropdown() {
+    const propertyNameSelect = document.getElementById('propertyName');
+    if (!propertyNameSelect) return;
+
+    // Очищаем текущие опции
+    propertyNameSelect.innerHTML = '<option value="">Select Property</option>';
+
+    // Получаем properties из локального хранилища
+    const propertiesData = localStorage.getItem('transactionProperties');
+    if (propertiesData) {
+        try {
+            const properties = JSON.parse(propertiesData);
+
+            // Проходим по всем типам properties (например, Parking)
+            Object.keys(properties).forEach(category => {
+                // Создаем группу опций для категории
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+
+                // Добавляем каждое свойство в группу
+                properties[category].forEach(property => {
+                    const option = document.createElement('option');
+                    option.value = property.id;
+                    option.textContent = `${property.name} (${property.id})`;
+                    optgroup.appendChild(option);
+                });
+
+                propertyNameSelect.appendChild(optgroup);
+            });
+        } catch (e) {
+            console.error('Error parsing properties data:', e);
+        }
+    }
+}
+
+/**
  * Функция для открытия модального окна просмотра транзакции
  * @param {string} transactionId - ID транзакции
  */
@@ -182,8 +220,8 @@ function openViewTransactionModal(transactionId) {
     const currentTransactionIdElement = document.getElementById('currentTransactionId');
     if (currentTransactionIdElement) {
         currentTransactionIdElement.value = transactionId;
-        currentTransactionId = transactionId;
     }
+    currentTransactionId = transactionId;
 
     // Открываем модальное окно
     openModal('viewTransactionModal');
@@ -192,6 +230,9 @@ function openViewTransactionModal(transactionId) {
     loadTransactionDetails(transactionId);
     loadTransactionFiles(transactionId);
     loadTransactionPayments(transactionId);
+
+    // ЗАПОЛНЯЕМ ВЫПАДАЮЩИЙ СПИСОК СВОЙСТВ (Задача 3)
+    setTimeout(populatePropertiesDropdown, 300);
 }
 
 /**
@@ -205,7 +246,9 @@ async function loadTransactionDetails(transactionId) {
         // Проверяем, что response содержит данные транзакции
         if (response && response.id) {
             const transaction = response;
-
+            if (response.properties) {
+                localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
+            }
             // Получаем элементы
             const transactionIdEl = document.getElementById('transactionId');
             const propertyNameEl = document.getElementById('propertyName');
@@ -264,6 +307,25 @@ async function loadTransactionDetails(transactionId) {
 
             // ВАЖНО: Отображаем платежи, используя данные из основного запроса и информацию о чеках
             displayPaymentsWithReceipts(transaction.payments, transaction.files?.receipt);
+
+
+            // Устанавливаем выбранное свойство в выпадающем списке
+            const propertyNameSelect = document.getElementById('propertyName');
+            if (propertyNameSelect && transaction.property_id) {
+                propertyNameSelect.value = transaction.property_id;
+            }
+
+            // Добавляем обработчик изменения выбора свойства
+            if (propertyNameSelect) {
+                propertyNameSelect.onchange = function () {
+                    const selectedPropertyId = this.value;
+                    if (selectedPropertyId) {
+                        // Здесь можно добавить логику обновления транзакции
+                        console.log('Selected property:', selectedPropertyId);
+                        // Например: updateTransactionProperty(transactionId, selectedPropertyId);
+                    }
+                };
+            }
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -1197,10 +1259,10 @@ function openMultiplUploadModal() {
  */
 function initTransactionHandlers() {
 
-     // Обработчик для кнопки создания новой транзакции
+    // Обработчик для кнопки создания новой транзакции
     const createTransactionBtn = document.getElementById('create');
     if (createTransactionBtn) {
-        createTransactionBtn.addEventListener('click', function() {
+        createTransactionBtn.addEventListener('click', function () {
             openCreateTransactionModal();
         });
         console.log('[INIT] Create transaction button handler attached');

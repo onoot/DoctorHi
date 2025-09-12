@@ -109,7 +109,73 @@ async function openEditPaymentModal(transactionId, paymentId) {
 }
 
 /**
- * Функция для открытия модального окна создания транзакции
+ * Заполняет выпадающие списки в модальном окне создания транзакции
+ */
+function populateCreateTransactionModal() {
+    // Получаем элементы выпадающих списков
+    const propertySelect = document.getElementById('createTransactionModal_propertyId');
+    const ownerSelect = document.getElementById('createTransactionModal_newOwnerId');
+    
+    if (!propertySelect && !ownerSelect) return;
+    
+    // Заполняем список свойств (properties)
+    if (propertySelect) {
+        propertySelect.innerHTML = '<option value="">Select Property</option>';
+        
+        const propertiesData = localStorage.getItem('transactionProperties');
+        if (propertiesData) {
+            try {
+                const properties = JSON.parse(propertiesData);
+                
+                // Проходим по всем категориям свойств
+                Object.keys(properties).forEach(category => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category;
+                    
+                    properties[category].forEach(property => {
+                        const option = document.createElement('option');
+                        option.value = property.id;
+                        option.textContent = `${property.name} (${property.id})`;
+                        optgroup.appendChild(option);
+                    });
+                    
+                    propertySelect.appendChild(optgroup);
+                });
+            } catch (e) {
+                console.error('Error parsing properties:', e);
+            }
+        }
+    }
+    
+    // Заполняем список пользователей (owners)
+    if (ownerSelect) {
+        ownerSelect.innerHTML = '<option value="">Select New Owner</option>';
+        
+        const usersData = localStorage.getItem('users');
+        if (usersData) {
+            try {
+                const users = JSON.parse(usersData);
+                
+                // Фильтруем только активных пользователей с ролью "user"
+                const activeUsers = users.filter(user => 
+                    user.role === 'user' && user.status === 'active'
+                );
+                
+                activeUsers.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.cnic})`;
+                    ownerSelect.appendChild(option);
+                });
+            } catch (e) {
+                console.error('Error parsing users:', e);
+            }
+        }
+    }
+}
+
+/**
+ * Модифицированная функция для открытия модального окна создания транзакции
  */
 function openCreateTransactionModal() {
     console.log('[TRANSACTION] Opening create transaction modal');
@@ -139,6 +205,9 @@ function openCreateTransactionModal() {
     if (typeof generateCredentials === 'function') {
         generateCredentials();
     }
+    
+    // ЗАПОЛНЯЕМ ВЫПАДАЮЩИЕ СПИСКИ ПЕРЕД ОТКРЫТИЕМ
+    populateCreateTransactionModal();
     
     // Открываем модальное окно
     if (typeof openModal === 'function') {

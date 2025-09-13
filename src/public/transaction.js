@@ -1,7 +1,9 @@
 // transaction.js
 // Функции для работы с транзакциями
 
-// Глобальные переменные
+// transaction.js
+// ТОЛЬКО работа с транзакциями, API, сохранение в localStorage, обновление интерфейса
+
 let transactionLoadInProgress = false;
 let currentTransactionId = null;
 
@@ -16,43 +18,38 @@ async function loadTransactions(page = 1, limit = 10) {
         const tbody = document.getElementById('transactionsTableBody');
         const searchInput = document.querySelector('#transactions .search-input');
 
-        // Проверяем, что элементы существуют
         if (!section || !tbody) {
             console.warn('Transaction section or table body not found. Skipping transaction load.');
             return;
         }
 
-        // Показываем прелоадер
         showTransactionLoader(tbody);
 
-        // Получаем параметры поиска
         const searchTerm = searchInput ? searchInput.value.trim() : '';
         const searchParams = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
 
-        // Отмечаем, что загрузка началась
         transactionLoadInProgress = true;
 
-        // Загружаем данные
         const response = await apiRequest(`/v1/admin/transactions?page=${page}&limit=${limit}${searchParams}`);
 
-        // Отмечаем, что загрузка завершилась
         transactionLoadInProgress = false;
 
-        if (response.success && response.transactions) {
-            // Очищаем таблицу
+        if (response.success && response.transactions !== undefined) {
+            // === 🔥 КРИТИЧЕСКИЙ ШАГ: Сохраняем properties из ответа в localStorage ===
+            if (response.properties && typeof response.properties === 'object') {
+                localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
+                console.log('[PROPERTIES] Saved to localStorage from loadTransactions:', response.properties);
+            }
+
             tbody.innerHTML = '';
 
-            // Проверяем, есть ли транзакции
             if (response.transactions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found</td></tr>';
                 return;
             }
 
-            // Заполняем таблицу данными
             response.transactions.forEach(transaction => {
                 const row = document.createElement('tr');
-
-                // Форматируем дату
                 const createdAt = transaction.created_at ?
                     new Date(transaction.created_at).toLocaleDateString('en-GB', {
                         day: '2-digit',
@@ -60,7 +57,6 @@ async function loadTransactions(page = 1, limit = 10) {
                         year: 'numeric'
                     }) : 'N/A';
 
-                // Создаем кнопки действий
                 const actions = `
                     <div class="actions-cell">
                         <div class="actions-column">
@@ -77,7 +73,6 @@ async function loadTransactions(page = 1, limit = 10) {
                     </div>
                 `;
 
-                // Заполняем строку таблицы
                 row.innerHTML = `
                     <td>${transaction.id}</td>
                     <td>${transaction.property_name || transaction.property_id || 'N/A'}</td>
@@ -87,11 +82,9 @@ async function loadTransactions(page = 1, limit = 10) {
                     <td><span class="status-badge ${transaction.status}">${transaction.status}</span></td>
                     <td>${actions}</td>
                 `;
-
                 tbody.appendChild(row);
             });
 
-            // Привязываем обработчики действий
             attachTransactionActionHandlers();
         } else {
             console.error('Invalid transactions data format:', response);
@@ -100,72 +93,171 @@ async function loadTransactions(page = 1, limit = 10) {
         }
     } catch (error) {
         console.error('Error loading transactions:', error);
-
         const tbody = document.getElementById('transactionsTableBody');
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading transactions</td></tr>';
         }
-
         showNotification('error', 'Error loading transactions');
-
-        // Отмечаем, что загрузка завершилась
         transactionLoadInProgress = false;
     }
 }
 
 /**
- * Показывает прелоадер во время загрузки транзакций
- * @param {HTMLElement} tbody - Тело таблицы
+ * Показывает прелоадер
  */
 function showTransactionLoader(tbody) {
     if (!tbody) return;
-
-    // Очищаем таблицу
-    tbody.innerHTML = '';
-
-    // Создаем прелоадер
-    const loaderRow = document.createElement('tr');
-    loaderRow.innerHTML = `
-       <td colspan="7" class="text-center">
-    <div class="spinner-container">
-        <i class="fas fa-spinner fa-spin"></i>
-    </div>
-</td>
+    tbody.innerHTML = `
+        <td colspan="7" class="text-center">
+            <div class="spinner-container">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+        </td>
     `;
-
-    tbody.appendChild(loaderRow);
 }
 
 /**
- * Привязка обработчиков действий для транзакций
+ * Привязка обработчиков действий
  */
 function attachTransactionActionHandlers() {
-    // Обработчик для кнопок просмотра транзакции
     document.querySelectorAll('.view-transaction-btn').forEach(button => {
-        button.addEventListener('click', function (e) {
+        button.addEventListener('click', e => {
             e.preventDefault();
-            const transactionId = this.getAttribute('data-id');
-            openViewTransactionModal(transactionId);
+            openViewTransactionModal(button.getAttribute('data-id'));
         });
     });
-
-    // Обработчик для кнопок одобрения транзакции
+    
     document.querySelectorAll('.btn-approve').forEach(button => {
-        button.addEventListener('click', function (e) {
+        button.addEventListener('click', e => {
             e.preventDefault();
-            const transactionId = this.getAttribute('data-id');
-            updateTransactionStatus(transactionId, 'approved');
+            updateTransactionStatus(button.getAttribute('data-id'), 'approved');
         });
     });
-
-    // Обработчик для кнопок отклонения транзакции
+    
     document.querySelectorAll('.btn-reject').forEach(button => {
-        button.addEventListener('click', function (e) {
+        button.addEventListener('click', e => {
             e.preventDefault();
-            const transactionId = this.getAttribute('data-id');
-            updateTransactionStatus(transactionId, 'rejected');
+            updateTransactionStatus(button.getAttribute('data-id'), 'rejected');
         });
     });
+}
+
+/**
+ * Открываем модальное окно просмотра транзакции
+ */
+function openViewTransactionModal(transactionId) {
+    if (!transactionId) {
+        showNotification('error', 'Transaction ID is required');
+        return;
+    }
+    
+    const currentTransactionIdElement = document.getElementById('currentTransactionId');
+    if (currentTransactionIdElement) {
+        currentTransactionIdElement.value = transactionId;
+        currentTransactionId = transactionId;
+    }
+    
+    openModal('viewTransactionModal');
+    
+    // 🔥 ЗАГРУЖАЕМ ДАННЫЕ ТРАНЗАКЦИИ — ЭТО НАША ОСНОВНАЯ ЛОГИКА
+    loadTransactionDetails(transactionId);
+    loadTransactionFiles(transactionId);
+    loadTransactionPayments(transactionId);
+}
+
+/**
+ * Загружает детали транзакции и сохраняет properties в localStorage
+ */
+async function loadTransactionDetails(transactionId) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
+        
+        if (response && response.id) {
+            const transaction = response;
+            
+            // 🔥 ЗАДАЧА 1 и 2: Сохраняем properties в localStorage — КЛЮЧЕВОЙ ШАГ
+            if (response.properties) {
+                localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
+            }
+            
+            // 🔥 ЗАГРУЖАЕМ ПОЛЬЗОВАТЕЛЕЙ — ЕСЛИ ИХ НЕТ В localStorage — ЗАГРУЖАЕМ ИЗ API
+            if (!localStorage.getItem('users')) {
+                loadUsers(); // Это будет вызвано только один раз при первом открытии транзакции
+            }
+            
+            // Заполняем поля
+            const transactionIdEl = document.getElementById('transactionId');
+            const propertyNameEl = document.getElementById('propertyName');
+            const previousOwnerEl = document.getElementById('previousOwner');
+            const newOwnerEl = document.getElementById('newOwner');
+            const statusEl = document.getElementById('transactionStatus');
+            const createdAtEl = document.getElementById('createdAt');
+            const totalAmountViewEl = document.getElementById('totalAmountView');
+            const paidAmountEl = document.getElementById('paidAmount');
+            const remainingAmountEl = document.getElementById('remainingAmount');
+            
+            if (!transactionIdEl || !propertyNameEl || !previousOwnerEl || !newOwnerEl ||
+                !statusEl || !createdAtEl || !totalAmountViewEl || !paidAmountEl || !remainingAmountEl) {
+                console.error('One or more transaction detail elements not found');
+                return;
+            }
+            
+            transactionIdEl.textContent = transaction.id;
+            propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
+            previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
+            newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
+            
+            const statusBadge = document.createElement('span');
+            statusBadge.className = `status-badge ${getStatusClass(transaction.status)}`;
+            statusBadge.textContent = formatStatus(transaction.status);
+            statusEl.innerHTML = '';
+            statusEl.appendChild(statusBadge);
+            
+            createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            const newAmount = parseFloat(transaction.total_amount);
+            totalAmountViewEl.textContent = formatPKR(newAmount);
+            paidAmountEl.textContent = formatPKR(transaction.paid_amount);
+            
+            const remainingAmount = newAmount - parseFloat(transaction.paid_amount);
+            remainingAmountEl.textContent = formatPKR(remainingAmount);
+            
+            displayWitnesses(transaction);
+            displayTransactionDocuments(transaction);
+            displayPaymentsWithReceipts(transaction.payments, transaction.files?.receipt);
+        } else {
+            console.error('Invalid transaction data format:', response);
+            showNotification('error', 'Failed to load transaction details');
+        }
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+        showNotification('error', 'Error loading transaction details');
+    }
+}
+
+/**
+ * Загружает пользователей из API и сохраняет в localStorage
+ */
+async function loadUsers() {
+    try {
+        const response = await apiRequest('/v1/admin/users');
+        if (response.success && Array.isArray(response.users)) {
+            localStorage.setItem('users', JSON.stringify(response.users));
+            console.log('[USERS] Loaded and saved to localStorage:', response.users.length, 'users');
+        } else {
+            console.warn('[USERS] Invalid users data received:', response);
+            localStorage.setItem('users', JSON.stringify([]));
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+        localStorage.setItem('users', JSON.stringify([]));
+    }
 }
 
 /**
@@ -243,173 +335,6 @@ function populateViewTransactionProperties() {
     }
 }
 
-/**
- * Функция для открытия модального окна просмотра транзакции
- * @param {string} transactionId - ID транзакции
- */
-function openViewTransactionModal(transactionId) {
-    if (!transactionId) {
-        showNotification('error', 'Transaction ID is required');
-        return;
-    }
-    
-    // Устанавливаем ID транзакции в скрытое поле
-    const currentTransactionIdElement = document.getElementById('currentTransactionId');
-    if (currentTransactionIdElement) {
-        currentTransactionIdElement.value = transactionId;
-    }
-    currentTransactionId = transactionId;
-    
-    // Открываем модальное окно
-    openModal('viewTransactionModal');
-    
-    // Загружаем данные транзакции и файлы
-    loadTransactionDetails(transactionId);
-    loadTransactionFiles(transactionId);
-    loadTransactionPayments(transactionId);
-    
-    // ЗАПОЛНЯЕМ ВЫПАДАЮЩИЙ СПИСОК СВОЙСТВ (ЗАДАЧА 3)
-    setTimeout(populateViewTransactionProperties, 300);
-}
-/**
- * Функция для загрузки деталей транзакции
- * @param {string} transactionId - ID транзакции
- */
-async function loadTransactionDetails(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-
-        // Проверяем, что response содержит данные транзакции
-        if (response && response.id) {
-            const transaction = response;
-
-            // ЗАДАЧА 1 и 2: Сохраняем properties в локальное хранилище
-            if (response.properties) {
-                localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
-            }
-
-            // Получаем элементы
-            const transactionIdEl = document.getElementById('transactionId');
-            const propertyNameTextEl = document.getElementById('propertyName'); // Отображение имени
-            const propertySelectEl = document.getElementById('propertySelect'); // Выбор из списка
-            const previousOwnerEl = document.getElementById('previousOwner');
-            const newOwnerEl = document.getElementById('newOwner');
-            const statusEl = document.getElementById('transactionStatus');
-            const createdAtEl = document.getElementById('createdAt');
-            const totalAmountViewEl = document.getElementById('totalAmountView');
-            const paidAmountEl = document.getElementById('paidAmount');
-            const remainingAmountEl = document.getElementById('remainingAmount');
-
-            // Проверка на существование элементов
-            if (!transactionIdEl || !propertyNameTextEl || !previousOwnerEl ||
-                !newOwnerEl || !statusEl || !createdAtEl ||
-                !totalAmountViewEl || !paidAmountEl || !remainingAmountEl) {
-                console.error('One or more transaction detail elements not found');
-                return;
-            }
-
-            // Заполняем основную информацию
-            transactionIdEl.textContent = transaction.id;
-            propertyNameTextEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
-            previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
-            newOwnerEl.textContent = transaction.new_owner_name || 'N/A';
-
-            // Статус
-            const statusBadge = document.createElement('span');
-            statusBadge.className = `status-badge ${getStatusClass(transaction.status)}`;
-            statusBadge.textContent = formatStatus(transaction.status);
-            statusEl.innerHTML = '';
-            statusEl.appendChild(statusBadge);
-
-            // Дата
-            createdAtEl.textContent = new Date(transaction.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-
-            // Суммы
-            const totalAmount = parseFloat(transaction.total_amount);
-            totalAmountViewEl.textContent = formatPKR(totalAmount);
-            paidAmountEl.textContent = formatPKR(transaction.paid_amount);
-            const remainingAmount = totalAmount - parseFloat(transaction.paid_amount);
-            remainingAmountEl.textContent = formatPKR(remainingAmount);
-
-            // Отображаем свидетелей и документы
-            displayWitnesses(transaction);
-            displayTransactionDocuments(transaction);
-            displayPaymentsWithReceipts(transaction.payments, transaction.files?.receipt);
-
-            // === ЗАДАЧА 3: Заполняем выпадающий список свойств ===
-            if (propertySelectEl) {
-                // Очищаем предыдущие опции
-                propertySelectEl.innerHTML = '<option value="">Select Property</option>';
-
-                // Получаем properties из localStorage
-                const propertiesData = localStorage.getItem('transactionProperties');
-                if (propertiesData) {
-                    try {
-                        const properties = JSON.parse(propertiesData);
-
-                        // Проходим по категориям (например, Parking)
-                        Object.keys(properties).forEach(category => {
-                            const optgroup = document.createElement('optgroup');
-                            optgroup.label = category;
-
-                            properties[category].forEach(property => {
-                                const option = document.createElement('option');
-                                option.value = property.id;
-                                option.textContent = `${property.name} (${property.id})`;
-                                optgroup.appendChild(option);
-                            });
-
-                            propertySelectEl.appendChild(optgroup);
-                        });
-
-                        // Устанавливаем текущее значение
-                        if (transaction.property_id) {
-                            propertySelectEl.value = transaction.property_id;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing properties from localStorage:', e);
-                    }
-                }
-
-                // Обработчик изменения выбора
-                propertySelectEl.onchange = async function () {
-                    const selectedPropertyId = this.value;
-                    if (selectedPropertyId) {
-                        console.log('Selected property ID:', selectedPropertyId);
-
-                        // Находим объект выбранного свойства
-                        let selectedProperty = null;
-                        const properties = JSON.parse(localStorage.getItem('transactionProperties') || '{}');
-                        for (const category in properties) {
-                            selectedProperty = properties[category].find(p => p.id === selectedPropertyId);
-                            if (selectedProperty) break;
-                        }
-
-                        // Обновляем отображаемое имя
-                        if (selectedProperty && propertyNameTextEl) {
-                            propertyNameTextEl.textContent = selectedProperty.name;
-                        }
-                    } else {
-                        propertyNameTextEl.textContent = 'N/A';
-                    }
-                };
-            }
-
-        } else {
-            console.error('Invalid transaction data format:', response);
-            showNotification('error', 'Failed to load transaction details');
-        }
-    } catch (error) {
-        console.error('Error loading transaction details:', error);
-        showNotification('error', 'Error loading transaction details');
-    }
-}
 
 /**
  * Отображение платежей в таблице с учетом чеков
@@ -1413,73 +1338,16 @@ function initTransactionHandlers() {
     });
 }
 
-
-/**
- * Заполняет выпадающие списки в модальном окне создания транзакции
- */
-function populateCreateTransactionModal() {
-    // Получаем элементы выпадающих списков
-    const propertySelect = document.getElementById('createTransactionModal_propertyId');
-    const ownerSelect = document.getElementById('createTransactionModal_newOwnerId');
-    
-    if (!propertySelect && !ownerSelect) return;
-    
-    // Заполняем список свойств (properties)
-    if (propertySelect) {
-        propertySelect.innerHTML = '<option value="">Select Property</option>';
-        
-        const propertiesData = localStorage.getItem('transactionProperties');
-        if (propertiesData) {
-            try {
-                const properties = JSON.parse(propertiesData);
-                
-                // Проходим по всем категориям свойств
-                Object.keys(properties).forEach(category => {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = category;
-                    
-                    properties[category].forEach(property => {
-                        const option = document.createElement('option');
-                        option.value = property.id;
-                        option.textContent = `${property.name} (${property.id})`;
-                        optgroup.appendChild(option);
-                    });
-                    
-                    propertySelect.appendChild(optgroup);
-                });
-            } catch (e) {
-                console.error('Error parsing properties:', e);
-            }
+// Автоматическая инициализация
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('transactions') || document.getElementById('viewTransactionModal')) {
+        initTransactionHandlers();
+        const transactionsSection = document.getElementById('transactions');
+        if (transactionsSection && transactionsSection.classList.contains('active')) {
+            loadTransactions();
         }
     }
-    
-    // Заполняем список пользователей (owners)
-    if (ownerSelect) {
-        ownerSelect.innerHTML = '<option value="">Select New Owner</option>';
-        
-        const usersData = localStorage.getItem('users');
-        if (usersData) {
-            try {
-                const users = JSON.parse(usersData);
-                
-                // Фильтруем только активных пользователей с ролью "user"
-                const activeUsers = users.filter(user => 
-                    user.role === 'user' && user.status === 'active'
-                );
-                
-                activeUsers.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = `${user.name} (${user.cnic})`;
-                    ownerSelect.appendChild(option);
-                });
-            } catch (e) {
-                console.error('Error parsing users:', e);
-            }
-        }
-    }
-}
-
+});
 
 
 // Прикрепляем функции к глобальному объекту window

@@ -7,26 +7,11 @@ function openModal(modalId) {
     
     const modal = document.getElementById(modalId);
     if (modal) {
-        // Удаляем класс hide, если он есть
         modal.classList.remove('hide');
-        
-        // Добавляем класс show для отображения
         modal.classList.add('show');
-        
-        console.log(`[SUCCESS] Modal ${modalId} opened successfully`);
-        
-        // Дополнительная проверка для отладки
-        if (!modal.classList.contains('show')) {
-            console.error(`[ERROR] Failed to add 'show' class to modal ${modalId}`);
-            return false;
-        }
-        
-        // Устанавливаем display: flex только если класс show добавлен
         modal.style.display = 'flex';
-        
-        // Принудительная перерисовка для анимации
-        void modal.offsetWidth;
-        
+        void modal.offsetWidth; // Принудительная перерисовка
+        console.log(`[SUCCESS] Modal ${modalId} opened successfully`);
         return true;
     } else {
         console.error(`[ERROR] Modal with ID "${modalId}" not found`);
@@ -40,8 +25,6 @@ function closeModal(modalId) {
     if (modal) {
         modal.classList.add('hide');
         modal.classList.remove('show');
-        
-        // Устанавливаем таймер для полного скрытия после анимации
         setTimeout(() => {
             if (modal.classList.contains('hide')) {
                 modal.style.display = 'none';
@@ -61,7 +44,6 @@ async function viewUser(userId) {
             const modalBody = document.getElementById('userModalBody');
             
             if (modalBody) {
-                // Форматируем дату создания
                 const createdAt = user.created_at ? 
                     new Date(user.created_at).toLocaleDateString('en-GB', {
                         day: '2-digit',
@@ -69,7 +51,6 @@ async function viewUser(userId) {
                         year: 'numeric'
                     }) : 'N/A';
                 
-                // Заполняем содержимое модального окна
                 modalBody.innerHTML = `
                     <div class="user-details">
                         <p><strong>ID:</strong> ${user.id}</p>
@@ -88,15 +69,7 @@ async function viewUser(userId) {
                     </div>
                 `;
                 
-                // Открываем модальное окно
-                console.log('[USER MODAL] Calling openModal with ID: userModal');
-                const modalOpened = openModal('userModal');
-                if (!modalOpened) {
-                    console.error('[USER MODAL] Failed to open user modal after loading data');
-                    showNotification('error', 'Error opening user details');
-                } else {
-                    console.log('[USER MODAL] User modal opened successfully');
-                }
+                openModal('userModal');
             } else {
                 console.error('[USER MODAL] User modal body not found');
                 showNotification('error', 'Error displaying user details');
@@ -118,11 +91,11 @@ function openAddUserModal() {
     openModal('addUserModal');
 }
 
-// Функция для генерации логина
+// Функция для генерации логина на основе имени
 function regenerateLogin() {
     console.log('[USER MODAL] Regenerating login');
-    const nameInput = document.getElementById('userName');
-    const fullName = nameInput ? nameInput.value || '' : '';
+    const nameInput = document.getElementById('addUserModal_userName');
+    const fullName = nameInput ? nameInput.value.trim() : '';
     let login = '';
     
     if (fullName) {
@@ -133,10 +106,14 @@ function regenerateLogin() {
             } else {
                 login = nameParts[0] + '.' + nameParts[nameParts.length - 1];
             }
-            login += Math.floor(100 + Math.random() * 900);
+            login += Math.floor(100 + Math.random() * 900); // Добавляем 3 случайных цифры
         }
     }
-    document.getElementById('userLogin').value = login;
+    
+    const loginInput = document.getElementById('addUserModal_userLogin');
+    if (loginInput) {
+        loginInput.value = login;
+    }
 }
 
 // Функция для генерации пароля
@@ -147,10 +124,14 @@ function regeneratePassword() {
     for (let i = 0; i < 12; i++) {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    document.getElementById('userPassword').value = password;
+    
+    const passwordInput = document.getElementById('addUserModal_userPassword');
+    if (passwordInput) {
+        passwordInput.value = password;
+    }
 }
 
-// Функция для генерации учетных данных
+// Функция для генерации учетных данных (логин + пароль)
 function generateLoginCredentials() {
     console.log('[USER MODAL] Generating login credentials');
     regenerateLogin();
@@ -171,7 +152,7 @@ function initUserModalHandlers() {
         });
     }
     
-    // Обработчик для кнопок просмотра пользователей
+    // Обработчик кнопок просмотра пользователей
     document.addEventListener('click', function(e) {
         const viewUserBtn = e.target.closest('.view-user-btn');
         if (viewUserBtn) {
@@ -181,11 +162,10 @@ function initUserModalHandlers() {
             if (userId) {
                 viewUser(userId);
             }
-            return;
         }
     });
     
-    // Обработчики для генерации логина и пароля
+    // Обработчики генерации логина и пароля
     const regenerateLoginBtn = document.querySelector('.regenerate-login-btn');
     if (regenerateLoginBtn) {
         regenerateLoginBtn.addEventListener('click', regenerateLogin);
@@ -205,7 +185,7 @@ function initUserModalHandlers() {
         });
     });
     
-    // Закрытие модального окна при клике вне его содержимого
+    // Закрытие по клику на overlay
     document.addEventListener('click', function(event) {
         if (event.target.classList.contains('modal')) {
             const modalId = event.target.id;
@@ -214,7 +194,7 @@ function initUserModalHandlers() {
         }
     });
     
-    // Закрытие модальных окон по клавише Esc
+    // Закрытие по клавише Esc
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             document.querySelectorAll('.modal.show').forEach(modal => {
@@ -227,7 +207,6 @@ function initUserModalHandlers() {
 }
 
 // Прикрепляем функции к глобальному объекту window
-// Это позволяет другим скриптам обращаться к этим функциям
 window.openModal = openModal;
 window.closeModal = closeModal;
 window.viewUser = viewUser;
@@ -239,7 +218,6 @@ window.initUserModalHandlers = initUserModalHandlers;
 
 // Автоматическая инициализация после загрузки DOM
 document.addEventListener('DOMContentLoaded', function() {
-    // Проверяем существование необходимых элементов
     if (document.getElementById('userModal') || document.getElementById('addUserModal')) {
         initUserModalHandlers();
     }

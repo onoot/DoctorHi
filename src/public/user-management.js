@@ -121,6 +121,7 @@ async function archiveUser(userId) {
     }
 }
 
+
 /**
  * Восстановление пользователя из архива
  * @param {string} userId - ID пользователя
@@ -159,19 +160,19 @@ async function restoreUser(userId) {
  * Создание нового пользователя
  */
 async function createUser() {
-    const name = document.getElementById('userName').value;
-    const cnic = document.getElementById('userCnic').value;
-    const phone = document.getElementById('userPhone').value;
-    const address = document.getElementById('userAddress').value;
-    const login = document.getElementById('userLogin').value;
-    const password = document.getElementById('userPassword').value;
-    
-    // Валидация
-    if (!name || !cnic || !phone || !address) {
-        showNotification('error', 'Please fill all required fields');
+    const name = document.getElementById('addUserModal_userName')?.value?.trim();
+    const cnic = document.getElementById('addUserModal_userCnic')?.value?.trim();
+    const phone = document.getElementById('addUserModal_userPhone')?.value?.trim();
+    const address = document.getElementById('addUserModal_userAddress')?.value?.trim();
+    const login = document.getElementById('addUserModal_userLogin')?.value?.trim();
+    const password = document.getElementById('addUserModal_userPassword')?.value?.trim();
+
+    // ПРОВЕРКА ТОЛЬКО НА ПУСТОТУ ПОСЛЕ TRIM — БЕЗ РЕГУЛЯРОК И ПРОЧЕГО
+    if (!name || !cnic || !phone || !address || !login || !password) {
+        showNotification('error', 'All fields are required');
         return;
     }
-    
+
     try {
         const response = await apiRequest('/v1/admin/users', {
             method: 'POST',
@@ -184,7 +185,7 @@ async function createUser() {
                 password
             })
         });
-        
+
         if (response.success) {
             showNotification('success', 'User created successfully');
             closeModal('addUserModal');
@@ -202,7 +203,7 @@ async function createUser() {
  * Инициализация обработчиков управления пользователями
  */
 function initUserManagementHandlers() {
-    // Обработчик формы добавления пользователя
+    // Обработчик формы добавления пользователя — теперь работает с правильной формой
     document.getElementById('addUserForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         createUser();
@@ -213,35 +214,29 @@ function initUserManagementHandlers() {
         closeModal('addUserModal');
     });
     
-    // Обработчик кнопки отмены в модальном окне транзакции
+    // Обработчики других кнопок отмены (оставляем как есть — они работают)
     document.querySelector('.cancel-transaction-btn')?.addEventListener('click', function() {
         closeModal('createTransactionModal');
     });
     
-    // Обработчик кнопки отмены в модальном окне загрузки файла
     document.querySelector('.cancel-upload-btn')?.addEventListener('click', function() {
         closeModal('uploadFileModal');
     });
     
-    // Обработчик кнопки отмены в модальном окне множественной загрузки
     document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
         closeModal('multipleUploadModal');
     });
     
-    // Обработчик кнопки отмены в модальном окне добавления платежа
     document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
         closeModal('addPaymentModal');
     });
     
-    // Обработчик кнопки отмены в модальном окне редактирования платежа
     document.querySelectorAll('.cancel-payment-btn').forEach(button => {
         button.addEventListener('click', function() {
             closeModal('editPaymentModal');
         });
     });
 }
-// user-management.js
-// Функции для управления пользователями
 
 /**
  * Функция для отрисовки таблицы пользователей

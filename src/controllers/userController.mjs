@@ -14,15 +14,7 @@ export const create = async (req, res) => {
 
     const { name, login, password, cnic, phone, address } = req.body;
 
-    // Check CNIC format
-    const cnicRegex = /^\d{5}-\d{7}-\d$/;
-    if (!cnicRegex.test(cnic)) {
-      return res.status(400).json({ 
-        message: 'CNIC must be in format XXXXX-XXXXXXX-X' 
-      });
-    }
-
-    // Check if user exists
+    // Проверка существования пользователя
     const existingUserByEmail = await User.findByEmail(login);
     if (existingUserByEmail) {
       return res.status(400).json({ 
@@ -37,10 +29,10 @@ export const create = async (req, res) => {
       });
     }
 
-    // Hash password
+    // Хеширование пароля
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Создание пользователя
     const userId = await User.create({
       name: name.trim(),
       email: login.trim(),
@@ -57,7 +49,6 @@ export const create = async (req, res) => {
   } catch (error) {
     console.error('Error creating user:', error);
     
-    // Add more informative error message
     if (error.code === 'ER_DATA_TOO_LONG') {
       return res.status(400).json({ 
         message: 'One of the fields exceeds the maximum length',

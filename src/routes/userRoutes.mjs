@@ -30,7 +30,8 @@ router.post('/', adminAuth, [
   body('name').notEmpty().withMessage('Enter name'),
   body('login').notEmpty().withMessage('Enter login'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('cnic').notEmpty().withMessage('Enter CNIC')
+  body('cnic').notEmpty().withMessage('Enter CNIC'),
+  body('phone').notEmpty().withMessage('Enter phone number') // Только обязательность
 ], create);
 
 router.get('/', adminAuth, getAll);
@@ -39,7 +40,7 @@ router.get('/:id', adminAuth, getById);
 router.put('/:id', adminAuth, [
   body('name').optional().notEmpty().withMessage('Enter name'),
   body('login').optional().notEmpty().withMessage('Enter login'),
-  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('password').optional().isLength({ min: 4 }).withMessage('Password must be at least 6 characters'),
   body('cnic').optional().notEmpty().withMessage('Enter CNIC'),
   body('status').optional().isIn(['active', 'blocked', 'archived']).withMessage('Invalid status')
 ], update);

@@ -18,10 +18,6 @@ function initAllHandlers() {
         initUserModalHandlers();
     }
     
-    if (typeof initUserManagementHandlers === 'function') {
-        initUserManagementHandlers();
-    }
-    
     if (typeof initTransactionHandlers === 'function') {
         initTransactionHandlers();
     }

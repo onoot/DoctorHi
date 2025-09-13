@@ -7,70 +7,33 @@
  */
 async function loadUsers(status = 'active') {
     console.log(`[USER MANAGEMENT] Loading ${status} users`);
-    
+
     try {
         const searchInput = document.querySelector(`#${status === 'active' ? 'users' : 'users-archive'} .search-input`);
         const searchTerm = searchInput ? searchInput.value.trim() : '';
-        
+
         const params = new URLSearchParams();
         if (searchTerm) params.append('search', searchTerm);
-        
+
         const response = await apiRequest(`/v1/admin/users?status=${status}${params.toString() ? `&${params.toString()}` : ''}`);
         if (response.success && Array.isArray(response.users)) {
-            const users = response.users;
-            const tableBody = status === 'active' ? 
-                document.getElementById('usersTableBody') : 
-                document.getElementById('archivedUsersTableBody');
             
+            // Сохраняем ВСЕХ пользователей (все статусы), а не только активных
+            localStorage.setItem('users', JSON.stringify(response.users));
+            console.log('[USERS] Saved all users to localStorage:', response.users.length);
+            
+            const users = response.users;
+            const tableBody = status === 'active' ?
+                document.getElementById('usersTableBody') :
+                document.getElementById('archivedUsersTableBody');
+
             if (tableBody) {
-                if (users.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center">No ${status} users found</td></tr>`;
-                    return;
-                }
-                
-                let html = '';
-                users.forEach(user => {
-                    const createdAt = user.created_at ? 
-                        new Date(user.created_at).toLocaleDateString('en-GB', {
-                            day: '2-digit',
-                            month: '2-digit', 
-                            year: 'numeric'
-                        }) : 'N/A';
-                    
-                    const statusBadge = user.is_active ? 
-                        '<span class="status-badge active">Active</span>' : 
-                        '<span class="status-badge blocked">Blocked</span>';
-                    
-                    html += `
-                        <tr>
-                            <td>${user.id}</td>
-                            <td>${user.name || 'N/A'}</td>
-                            <td>${user.cnic || 'N/A'}</td>
-                            <td>${user.login || 'N/A'}</td>
-                            <td>${user.properties ? user.properties.length : 0}</td>
-                            <td>${statusBadge}</td>
-                            <td>
-                                <button class="action-btn btn-view view-user-btn" data-id="${user.id}">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                ${status === 'active' ? `
-                                <button class="action-btn btn-delete archive-user-btn" data-id="${user.id}">
-                                    <i class="fas fa-archive"></i> Archive
-                                </button>` : `
-                                <button class="action-btn btn-approve restore-user-btn" data-id="${user.id}">
-                                    <i class="fas fa-undo"></i> Restore
-                                </button>`}
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tableBody.innerHTML = html;
+                renderUsersTable(users, tableBody); 
             }
         } else {
             console.error('[USER MANAGEMENT] Invalid users data format:', response);
-            const tableBody = status === 'active' ? 
-                document.getElementById('usersTableBody') : 
+            const tableBody = status === 'active' ?
+                document.getElementById('usersTableBody') :
                 document.getElementById('archivedUsersTableBody');
             if (tableBody) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading users</td></tr>';
@@ -78,8 +41,8 @@ async function loadUsers(status = 'active') {
         }
     } catch (error) {
         console.error('[USER MANAGEMENT] Error loading users:', error);
-        const tableBody = status === 'active' ? 
-            document.getElementById('usersTableBody') : 
+        const tableBody = status === 'active' ?
+            document.getElementById('usersTableBody') :
             document.getElementById('archivedUsersTableBody');
         if (tableBody) {
             tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Error loading users</td></tr>';
@@ -93,14 +56,14 @@ async function loadUsers(status = 'active') {
  */
 async function archiveUser(userId) {
     console.log(`[USER MANAGEMENT] Attempting to archive user with ID: ${userId}`);
-    
+
     if (!confirm('Are you sure you want to archive this user?')) {
         console.log('[USER MANAGEMENT] Archive action cancelled by user');
         return;
     }
-    
+
     try {
-        const response = await apiRequest(`/v1/admin/users/${userId}/archive`, {method: 'POST'});
+        const response = await apiRequest(`/v1/admin/users/${userId}/archive`, { method: 'POST' });
         if (response.success) {
             console.log('[USER MANAGEMENT] User archived successfully');
             showNotification('success', 'User archived successfully');
@@ -128,14 +91,14 @@ async function archiveUser(userId) {
  */
 async function restoreUser(userId) {
     console.log(`[USER MANAGEMENT] Attempting to restore user with ID: ${userId}`);
-    
+
     if (!confirm('Are you sure you want to restore this user from archive?')) {
         console.log('[USER MANAGEMENT] Restore action cancelled by user');
         return;
     }
-    
+
     try {
-        const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, {method: 'POST'});
+        const response = await apiRequest(`/v1/admin/users/${userId}/unarchive`, { method: 'POST' });
         if (response.success) {
             console.log('[USER MANAGEMENT] User restored successfully');
             showNotification('success', 'User restored successfully');
@@ -205,13 +168,13 @@ async function createUser() {
 function initUserManagementHandlers() {
     const createBtn = document.querySelector('.create-user-btn');
     if (createBtn) {
-        createBtn.addEventListener('click', function() {
-            createUser(); 
+        createBtn.addEventListener('click', function () {
+            createUser();
         });
     }
 
     // Обработчик кнопки отмены
-    document.querySelector('.cancel-user-btn')?.addEventListener('click', function() {
+    document.querySelector('.cancel-user-btn')?.addEventListener('click', function () {
         closeModal('addUserModal');
     });
 
@@ -221,21 +184,21 @@ function initUserManagementHandlers() {
 
     // Обработчики закрытия модальных окон (оставляем как есть)
     document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const modalId = this.getAttribute('data-modal');
             closeModal(modalId);
         });
     });
 
     // Закрытие по клику на overlay
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (event.target.classList.contains('modal')) {
             closeModal(event.target.id);
         }
     });
 
     // Закрытие по Esc
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             document.querySelectorAll('.modal.show').forEach(modal => {
                 closeModal(modal.id);
@@ -268,7 +231,7 @@ function renderUsersTable(users, tbody) {
             <td>${user.id}</td>
             <td>${user.name}</td>
             <td>${user.cnic}</td>
-            <td>${user.login}</td>
+            <td>${user.email}</td>
             <td>${user.properties_count || 0}</td>
             <td><span class="status-badge ${user.status}">${user.status}</span></td>
             <td class="actions-cell"></td>
@@ -281,9 +244,6 @@ function renderUsersTable(users, tbody) {
             actionsHTML = `
                 <div class="actions-footer">
                     <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
-                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
-                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </button>
                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
                         <i class="fas fa-undo"></i> Restore
                     </button>
@@ -292,12 +252,9 @@ function renderUsersTable(users, tbody) {
             actionsHTML = `
                 <div class="actions-column">
                     <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
-                    <button class="action-btn btn-edit" data-id="${user.id}" data-action="toggle-status">
-                        <i class="fas fa-sync-alt"></i> ${user.status === 'active' ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button class="action-btn btn-delete" data-id="${user.id}" data-action="archive">
-                        <i class="fas fa-archive"></i> Archive
-                    </button>
+                    <button class="action-btn btn-delete archive-user-btn" data-id="${user.id}">
+    <i class="fas fa-archive"></i> Archive
+</button>
                 </div>`;
         }
 
@@ -305,7 +262,6 @@ function renderUsersTable(users, tbody) {
         tbody.appendChild(row);
     });
 
-    // Привязываем обработчики
     document.querySelectorAll('.btn-view').forEach(button => {
         button.addEventListener('click', (e) => viewUser(e.target.closest('[data-id]').dataset.id));
     });
@@ -314,11 +270,12 @@ function renderUsersTable(users, tbody) {
         button.addEventListener('click', (e) => toggleUserStatus(e.target.closest('[data-id]').dataset.id));
     });
 
-    document.querySelectorAll('.btn-delete[data-action="archive"]').forEach(button => {
+    // ✅ ИСПРАВЛЕНО: теперь работает!
+    document.querySelectorAll('.archive-user-btn').forEach(button => {
         button.addEventListener('click', (e) => archiveUser(e.target.closest('[data-id]').dataset.id));
     });
 
-    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
+    document.querySelectorAll('.restore-user-btn').forEach(button => {
         button.addEventListener('click', (e) => restoreUser(e.target.closest('[data-id]').dataset.id));
     });
 }
@@ -335,7 +292,7 @@ async function toggleUserStatus(userId) {
             showNotification('error', 'User element not found');
             return;
         }
-        
+
         // Определяем текущий статус
         let newStatus;
         if (userElement.closest('.status-badge')?.classList.contains('active')) {
@@ -367,3 +324,9 @@ async function toggleUserStatus(userId) {
         showNotification('error', 'Error updating user status');
     }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('users') || document.getElementById('addUserModal')) {
+        initUserManagementHandlers();
+    }
+});

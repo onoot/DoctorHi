@@ -29,8 +29,9 @@
                             class="fas fa-exchange-alt"></i> <span class="nav-text">Transactions</span></a></li>
                 <li class="nav-item"><a href="#users" class="nav-link" data-section="users"><i class="fas fa-users"></i>
                         <span class="nav-text">Users</span></a></li>
-                <li class="nav-item"><a class="nav-link" href="#users-archive"><i class="fas fa-archive"></i> <span
-                            class="nav-text">Users (Archive)</span></a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#users-archive">
+                        <i class="fas fa-archive"></i> <span class="nav-text">Users (Archive)</span></a></li>
             </ul>
         </div>
 
@@ -330,7 +331,6 @@
                     </div>
                 </div>
             </div>
-           <!-- Модальное окно для добавления пользователя -->
 <div id="addUserModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -354,15 +354,13 @@
 
                 <div class="form-group required">
                     <label for="addUserModal_userPhone">Phone Number</label>
-                    <input type="tel" id="addUserModal_userPhone" class="form-control"
-                        placeholder="+923001234567">
+                    <input type="tel" id="addUserModal_userPhone" class="form-control" placeholder="+923001234567">
                     <div class="error-message" id="addUserModal_userPhoneError"></div>
                 </div>
 
                 <div class="form-group required">
                     <label for="addUserModal_userAddress">Address</label>
-                    <textarea id="addUserModal_userAddress" class="form-control" required
-                        rows="3"></textarea>
+                    <textarea id="addUserModal_userAddress" class="form-control" required rows="3"></textarea>
                     <div class="error-message" id="addUserModal_userAddressError"></div>
                 </div>
 
@@ -396,8 +394,9 @@
             </button>
         </div>
     </div>
-</div>
-            <!-- Модальное окно для создания транзакции -->
+</div> 
+
+<!-- Модальное окно для создания транзакции -->
             <div id="createTransactionModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -450,7 +449,7 @@
                                     <div class="form-group">
                                         <label for="createTransactionModal_witness1Phone">Phone</label>
                                         <input type="tel" id="createTransactionModal_witness1Phone" name="witness1Phone"
-                                            class="form-control" pattern="[+]\d{1,3}-\d{10}"
+                                            class="form-control"
                                             placeholder="+92-1234567890">
                                     </div>
                                 </div>
@@ -471,7 +470,7 @@
                                     <div class="form-group">
                                         <label for="createTransactionModal_witness2Phone">Phone</label>
                                         <input type="tel" id="createTransactionModal_witness2Phone" name="witness2Phone"
-                                            class="form-control" pattern="[+]\d{1,3}-\d{10}"
+                                            class="form-control" 
                                             placeholder="+92-1234567890">
                                     </div>
                                 </div>
@@ -479,7 +478,7 @@
                             <div class="modal-footer">
                                 <button type="button"
                                     class="action-btn btn-delete cancel-transaction-btn">Cancel</button>
-                                <button type="submit" class="action-btn btn-edit create-transaction-btn">Create
+                                <button type="button" class="action-btn btn-edit create-transaction-btn">Create
                                     Transaction</button>
                             </div>
                         </form>
@@ -581,7 +580,8 @@
                             <div class="form-group">
                                 <label for="transactionForm_witness1Phone">Phone</label>
                                 <input type="tel" id="transactionForm_witness1Phone" name="witness1Phone"
-                                    class="form-control" pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
+                                    class="form-control" 
+                                    placeholder="+92-1234567890">
                             </div>
                         </div>
 
@@ -601,7 +601,8 @@
                             <div class="form-group">
                                 <label for="transactionForm_witness2Phone">Phone</label>
                                 <input type="tel" id="transactionForm_witness2Phone" name="witness2Phone"
-                                    class="form-control" pattern="[+]\d{1,3}-\d{10}" placeholder="+92-1234567890">
+                                    class="form-control" 
+                                    placeholder="+92-1234567890">
                             </div>
                         </div>
                     </div>

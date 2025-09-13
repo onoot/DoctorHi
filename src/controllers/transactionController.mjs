@@ -270,7 +270,7 @@ const transactionController = {
         };
       });
 
-      res.json({
+      res.json({success: true, 
         transactions: enrichedTransactions,
         total,
         page: parseInt(page),
@@ -325,7 +325,7 @@ const transactionController = {
         };
       });
 
-      res.json({
+      res.json({success: true, 
         success: true,
         transactions: enrichedTransactions,
         total,
@@ -525,7 +525,7 @@ const transactionController = {
         }
       }
 
-      res.json({ success: true, message: 'Transaction updated successfully' });
+      res.json({success: true, message: 'Transaction updated successfully' });
     } catch (error) {
       console.error('Error updating transaction:', error);
       console.error('Request details:', {
@@ -644,7 +644,7 @@ async uploadFiles(req, res) {
       }
     }
     
-    res.json({
+    res.json({success: true, 
       message: 'Files uploaded successfully',
       files: savedFiles
     });
@@ -707,7 +707,7 @@ async uploadFiles(req, res) {
         [fileId]
       );
 
-      res.json({ message: 'File deleted successfully' });
+      res.json({success: true,  message: 'File deleted successfully' });
     } catch (error) {
       console.error('Error deleting file:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -908,7 +908,7 @@ async uploadFiles(req, res) {
         property_type: property.type
       }));
 
-      res.json({
+      res.json({success: true, 
         transactions: enrichedTransactions,
         total,
         page: parseInt(page),
@@ -957,7 +957,7 @@ async uploadFiles(req, res) {
         return res.status(404).json({ message: 'Failed to update transaction' });
       }
 
-      res.json({ message: 'Transaction status updated successfully' });
+      res.json({success: true,  message: 'Transaction status updated successfully' });
     } catch (error) {
       console.error('Error updating transaction:', error);
       res.status(500).json({ message: 'Internal server error' });
@@ -1102,7 +1102,7 @@ async createPayment(req, res) {
         return res.status(404).json({ message: 'Транзакция не найдена' });
       }
 
-      res.json({
+      res.json({success: true, 
         payments,
         total_amount: transaction[0].total_amount,
         paid_amount: transaction[0].paid_amount,
@@ -1194,7 +1194,7 @@ async createPayment(req, res) {
         WHERE p.id = ?
       `, [paymentId]);
 
-      res.json({
+      res.json({success: true, 
         success: true,
         message: 'Payment updated successfully',
         payment: updatedPayment[0]

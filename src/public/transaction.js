@@ -1338,6 +1338,66 @@ function initTransactionHandlers() {
     });
 }
 
+/**
+ * Создаёт новую транзакцию через API
+ */
+async function createTransaction() {
+    const propertyId = document.getElementById('createTransactionModal_propertyId')?.value;
+    const newOwnerId = document.getElementById('createTransactionModal_newOwnerId')?.value;
+    const totalAmountInput = document.getElementById('createTransactionModal_totalAmount');
+    const witness1Name = document.getElementById('createTransactionModal_witness1Name')?.value.trim();
+    const witness1CNIC = document.getElementById('createTransactionModal_witness1CNIC')?.value.trim();
+    const witness1Phone = document.getElementById('createTransactionModal_witness1Phone')?.value.trim();
+    const witness2Name = document.getElementById('createTransactionModal_witness2Name')?.value.trim();
+    const witness2CNIC = document.getElementById('createTransactionModal_witness2CNIC')?.value.trim();
+    const witness2Phone = document.getElementById('createTransactionModal_witness2Phone')?.value.trim();
+
+    const totalAmount = parseNumber(totalAmountInput?.value || '0');
+
+    if (!propertyId || !newOwnerId || isNaN(totalAmount) || totalAmount <= 0 ||
+        !witness1Name || !witness1CNIC || !witness2Name || !witness2CNIC) {
+        showNotification('error', 'All required fields must be filled');
+        return;
+    }
+
+    try {
+        const response = await apiRequest('/v1/admin/transactions', {
+            method: 'POST',
+            body: JSON.stringify({
+                property_id: propertyId,
+                new_owner_id: newOwnerId,
+                total_amount: totalAmount,
+                witnesses: {
+                    witness1: {
+                        name: witness1Name,
+                        cnic: witness1CNIC,
+                        phone: witness1Phone || null
+                    },
+                    witness2: {
+                        name: witness2Name,
+                        cnic: witness2CNIC,
+                        phone: witness2Phone || null
+                    }
+                }
+            })
+        });
+
+        if (response.success) {
+            showNotification('success', 'Transaction created successfully');
+            closeModal('createTransactionModal');
+            loadTransactions();
+        } else {
+            throw new Error(response.message || 'Failed to create transaction');
+        }
+    } catch (error) {
+        console.error('[TRANSACTION] Error creating transaction:', error);
+        showNotification('error', 'Error creating transaction: ' + error.message);
+    }
+}
+
+// Прикрепляем к глобальному объекту (если ещё нет)
+window.createTransaction = createTransaction;
+
 // Автоматическая инициализация
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('transactions') || document.getElementById('viewTransactionModal')) {

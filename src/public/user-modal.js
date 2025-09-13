@@ -33,14 +33,16 @@ function closeModal(modalId) {
     }
 }
 
-// Функция для просмотра пользователя
 async function viewUser(userId) {
     console.log(`[USER MODAL] Attempting to view user with ID: ${userId}`);
     
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
-        if (response.success && response.user) {
-            const user = response.user;
+        
+        // ✅ Проверяем, что ответ содержит данные пользователя (по наличию id)
+        if (response && response.id) {
+            const user = response; // ✅ Это и есть пользователь — больше не надо .user
+            
             const modalBody = document.getElementById('userModalBody');
             
             if (modalBody) {
@@ -58,18 +60,16 @@ async function viewUser(userId) {
                         <p><strong>CNIC:</strong> ${user.cnic || 'N/A'}</p>
                         <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
                         <p><strong>Address:</strong> ${user.address || 'N/A'}</p>
-                        <p><strong>Login:</strong> ${user.login || 'N/A'}</p>
+                        <p><strong>Login:</strong> ${user.email || 'N/A'}</p>
                         <p><strong>Status:</strong> 
-                            <span class="status-badge ${user.is_active ? 'active' : 'blocked'}">
-                                ${user.is_active ? 'Active' : 'Blocked'}
+                            <span class="status-badge ${user.status ? 'active' : 'blocked'}">
+                                ${user.status ? 'Active' : 'Blocked'}
                             </span>
                         </p>
                         <p><strong>Properties:</strong> ${user.properties ? user.properties.length : 0}</p>
                         <p><strong>Created:</strong> ${createdAt}</p>
                     </div>
                 `;
-                
-                openModal('userModal');
             } else {
                 console.error('[USER MODAL] User modal body not found');
                 showNotification('error', 'Error displaying user details');
@@ -160,7 +160,8 @@ function initUserModalHandlers() {
             const userId = viewUserBtn.getAttribute('data-id');
             console.log(`[USER MODAL] View user button clicked for user ID: ${userId}`);
             if (userId) {
-                viewUser(userId);
+                viewUser(userId); // ← Заполняем данные
+                openModal('userModal'); // ← ✅ ОТКРЫВАЕМ МОДАЛКУ ТУТ — ОДИН РАЗ!
             }
         }
     });
@@ -209,7 +210,6 @@ function initUserModalHandlers() {
 // Прикрепляем функции к глобальному объекту window
 window.openModal = openModal;
 window.closeModal = closeModal;
-window.viewUser = viewUser;
 window.openAddUserModal = openAddUserModal;
 window.regenerateLogin = regenerateLogin;
 window.regeneratePassword = regeneratePassword;

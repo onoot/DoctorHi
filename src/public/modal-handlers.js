@@ -154,16 +154,15 @@ function openCreateTransactionModal() {
     }
     
     const form = document.getElementById('createTransactionForm');
-    if (form) form.reset();
+    if (form) form.reset(); // ✅ Очищаем поля
     
-    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = ''); // ✅ Очищаем ошибки
     
-    if (typeof generateCredentials === 'function') generateCredentials();
+    if (typeof generateCredentials === 'function') generateCredentials(); // ✅ Генерируем логин/пароль
     
-    // 🔥 КРИТИЧЕСКИЙ ШАГ: ЗАПОЛНЯЕМ ВЫПАДАЮЩИЕ СПИСКИ ДО ОТКРЫТИЯ
-    populateCreateTransactionModal();
+    populateCreateTransactionModal(); // ✅ ЗАПОЛНЯЕМ SELECT'Ы ИЗ localStorage — КРИТИЧНО!
     
-    if (typeof openModal === 'function') openModal('createTransactionModal');
+    openModal('createTransactionModal'); // ✅ ОТКРЫВАЕМ МОДАЛКУ
 }
 
 /**
@@ -218,6 +217,11 @@ function initModalHandlers() {
         }
     });
     
+     document.querySelector('.create-transaction-btn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        createTransaction();
+    });
+
     console.log('[MODALS] Modal handlers initialized');
 }
 

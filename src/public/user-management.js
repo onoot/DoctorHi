@@ -203,38 +203,44 @@ async function createUser() {
  * Инициализация обработчиков управления пользователями
  */
 function initUserManagementHandlers() {
-    // Обработчик формы добавления пользователя — теперь работает с правильной формой
-    document.getElementById('addUserForm')?.addEventListener('submit', function(e) {
-        e.preventDefault();
-        createUser();
-    });
-    
-    // Обработчик кнопки отмены добавления пользователя
+    const createBtn = document.querySelector('.create-user-btn');
+    if (createBtn) {
+        createBtn.addEventListener('click', function() {
+            createUser(); 
+        });
+    }
+
+    // Обработчик кнопки отмены
     document.querySelector('.cancel-user-btn')?.addEventListener('click', function() {
         closeModal('addUserModal');
     });
-    
-    // Обработчики других кнопок отмены (оставляем как есть — они работают)
-    document.querySelector('.cancel-transaction-btn')?.addEventListener('click', function() {
-        closeModal('createTransactionModal');
-    });
-    
-    document.querySelector('.cancel-upload-btn')?.addEventListener('click', function() {
-        closeModal('uploadFileModal');
-    });
-    
-    document.querySelector('.cancel-multi-upload-btn')?.addEventListener('click', function() {
-        closeModal('multipleUploadModal');
-    });
-    
-    document.querySelector('.cancel-payment-btn')?.addEventListener('click', function() {
-        closeModal('addPaymentModal');
-    });
-    
-    document.querySelectorAll('.cancel-payment-btn').forEach(button => {
+
+    // Обработчики генерации логина/пароля
+    document.querySelector('.regenerate-login-btn')?.addEventListener('click', regenerateLogin);
+    document.querySelector('.regenerate-password-btn')?.addEventListener('click', regeneratePassword);
+
+    // Обработчики закрытия модальных окон (оставляем как есть)
+    document.querySelectorAll('.modal-close, .close').forEach(button => {
         button.addEventListener('click', function() {
-            closeModal('editPaymentModal');
+            const modalId = this.getAttribute('data-modal');
+            closeModal(modalId);
         });
+    });
+
+    // Закрытие по клику на overlay
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            closeModal(event.target.id);
+        }
+    });
+
+    // Закрытие по Esc
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                closeModal(modal.id);
+            });
+        }
     });
 }
 

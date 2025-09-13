@@ -4,13 +4,13 @@ import User from '../models/User.mjs';
 
 export const create = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        message: 'Validation error',
-        errors: errors.array() 
-      });
-    }
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return res.status(400).json({ 
+    //     message: 'Validation error',
+    //     errors: errors.array() 
+    //   });
+    // }
 
     const { name, login, password, cnic, phone, address } = req.body;
 

@@ -87,11 +87,6 @@ function initApp() {
         initUserModalHandlers();
     }
     
-    // Инициализация управления пользователями
-    if (typeof initUserManagementHandlers === 'function') {
-        initUserManagementHandlers();
-    }
-    
     // Инициализация управления транзакциями
     if (typeof initTransactionHandlers === 'function') {
         initTransactionHandlers();

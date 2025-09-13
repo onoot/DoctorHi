@@ -215,10 +215,3 @@ window.regenerateLogin = regenerateLogin;
 window.regeneratePassword = regeneratePassword;
 window.generateLoginCredentials = generateLoginCredentials;
 window.initUserModalHandlers = initUserModalHandlers;
-
-// Автоматическая инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('userModal') || document.getElementById('addUserModal')) {
-        initUserModalHandlers();
-    }
-});

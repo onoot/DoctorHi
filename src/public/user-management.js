@@ -225,6 +225,7 @@ function renderUsersTable(users, tbody) {
         return;
     }
 
+
     users.forEach(user => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -262,15 +263,18 @@ function renderUsersTable(users, tbody) {
         tbody.appendChild(row);
     });
 
-    document.querySelectorAll('.btn-view').forEach(button => {
-        button.addEventListener('click', (e) => viewUser(e.target.closest('[data-id]').dataset.id));
+    document.querySelectorAll('#usersTableBody .btn-view').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const userId = e.target.closest('[data-id]').dataset.id;
+            await viewUser(userId);
+            openModal('userModal');
+        });
     });
 
     document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
         button.addEventListener('click', (e) => toggleUserStatus(e.target.closest('[data-id]').dataset.id));
     });
 
-    // ✅ ИСПРАВЛЕНО: теперь работает!
     document.querySelectorAll('.archive-user-btn').forEach(button => {
         button.addEventListener('click', (e) => archiveUser(e.target.closest('[data-id]').dataset.id));
     });

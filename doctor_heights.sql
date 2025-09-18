@@ -1,13 +1,14 @@
 -- phpMyAdmin SQL Dump
--- version 5.0.2
+-- version 4.8.5
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1:3306
--- Время создания: Сен 13 2025 г., 19:47
--- Версия сервера: 8.0.19
--- Версия PHP: 7.1.33
+-- Время создания: Сен 18 2025 г., 16:29
+-- Версия сервера: 8.0.15
+-- Версия PHP: 7.2.10
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -28,7 +29,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `auth_users` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'user',
@@ -39,8 +40,8 @@ CREATE TABLE `auth_users` (
 -- Дамп данных таблицы `auth_users`
 --
 
-INSERT INTO `auth_users` (`id`, `email`, `password`, `role`, `created_at`) VALUES
-(1, 'admin@doctorheights.pk', '$2a$10$FfZ7FDockeLHCbVm/T4aEeEOrmYATtqs4zCVQtewjnxi1wKWTzWMe', 'admin', '2025-03-18 07:43:48');
+INSERT INTO `auth_users` (`id`, `email`, `password`, `role`) VALUES
+(1, 'admin@doctorheights.pk', '$2a$10$FfZ7FDockeLHCbVm/T4aEeEOrmYATtqs4zCVQtewjnxi1wKWTzWMe', 'admin');
 
 -- --------------------------------------------------------
 
@@ -49,12 +50,41 @@ INSERT INTO `auth_users` (`id`, `email`, `password`, `role`, `created_at`) VALUE
 --
 
 CREATE TABLE `ownership_history` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `property_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `owner_id` int NOT NULL,
+  `owner_id` int(11) NOT NULL,
   `from_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `to_date` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Дамп данных таблицы `ownership_history`
+--
+
+INSERT INTO `ownership_history` (`id`, `property_id`, `owner_id`, `to_date`) VALUES
+(25, 'DH02', 7, NULL),
+(26, 'DH02', 7, NULL),
+(27, 'DH02', 7, NULL),
+(28, 'DH02', 7, NULL),
+(29, 'DH01', 6, NULL),
+(30, 'DH01', 6, NULL),
+(31, 'DH01', 6, NULL),
+(32, 'DH01', 6, NULL),
+(33, 'DH02', 7, NULL),
+(34, 'DH02', 7, NULL),
+(35, 'DH02', 7, NULL),
+(36, 'DH02', 7, NULL),
+(37, 'DH02', 7, NULL),
+(38, 'DH02', 7, NULL),
+(39, 'DH02', 7, NULL),
+(40, 'DH02', 7, NULL),
+(41, 'DH02', 7, NULL),
+(42, 'DH02', 7, NULL),
+(43, 'DH02', 7, NULL),
+(44, 'DH02', 7, NULL),
+(45, 'DH02', 7, NULL),
+(46, 'DH01', 6, NULL),
+(47, 'DH02', 7, NULL);
 
 -- --------------------------------------------------------
 
@@ -63,11 +93,11 @@ CREATE TABLE `ownership_history` (
 --
 
 CREATE TABLE `properties` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `floor` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `current_owner_id` int DEFAULT NULL,
+  `current_owner_id` int(11) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -78,10 +108,10 @@ CREATE TABLE `properties` (
 --
 
 CREATE TABLE `transactions` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `property_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `previous_owner_id` int DEFAULT NULL,
-  `new_owner_id` int NOT NULL,
+  `previous_owner_id` int(11) DEFAULT NULL,
+  `new_owner_id` int(11) NOT NULL,
   `status` enum('pending','approved','rejected','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -89,9 +119,17 @@ CREATE TABLE `transactions` (
   `payment_schedule` json DEFAULT NULL,
   `paid_amount` decimal(15,2) NOT NULL DEFAULT '0.00',
   `payment_status` enum('not_started','in_progress','completed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'not_started',
-  `witness1_id` int DEFAULT NULL,
-  `witness2_id` int DEFAULT NULL
+  `witness1_id` int(11) DEFAULT NULL,
+  `witness2_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Дамп данных таблицы `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `property_id`, `previous_owner_id`, `new_owner_id`, `status`, `total_amount`, `payment_schedule`, `paid_amount`, `payment_status`, `witness1_id`, `witness2_id`) VALUES
+(24, 'DH01', NULL, 6, 'approved', '35000000.00', NULL, '0.00', 'not_started', NULL, NULL),
+(25, 'DH02', NULL, 7, 'approved', '100000000.00', NULL, '0.00', 'not_started', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -100,8 +138,8 @@ CREATE TABLE `transactions` (
 --
 
 CREATE TABLE `transaction_documents` (
-  `id` int NOT NULL,
-  `transaction_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `type` enum('contract','id_proof','payment_proof') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -115,8 +153,8 @@ CREATE TABLE `transaction_documents` (
 --
 
 CREATE TABLE `transaction_files` (
-  `id` int NOT NULL,
-  `transaction_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
   `file_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `original_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `file_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -132,13 +170,13 @@ CREATE TABLE `transaction_files` (
 --
 
 CREATE TABLE `transaction_payments` (
-  `id` int NOT NULL,
-  `transaction_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
   `amount` decimal(15,2) NOT NULL,
   `payment_date` date NOT NULL,
   `payment_method` enum('cash','bank_transfer','check') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('pending','paid','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `receipt_file_id` int DEFAULT NULL,
+  `receipt_file_id` int(11) DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -151,8 +189,8 @@ CREATE TABLE `transaction_payments` (
 --
 
 CREATE TABLE `transaction_witnesses` (
-  `id` int NOT NULL,
-  `transaction_id` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `transaction_id` int(11) NOT NULL,
   `witness_type` enum('witness1','witness2') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `cnic` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -161,6 +199,16 @@ CREATE TABLE `transaction_witnesses` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Дамп данных таблицы `transaction_witnesses`
+--
+
+INSERT INTO `transaction_witnesses` (`id`, `transaction_id`, `witness_type`, `name`, `cnic`, `phone`) VALUES
+(27, 24, 'witness1', 'Information', '1234-523-5', '88005457874'),
+(28, 24, 'witness2', 'Information2', '1234-523-2', '88005457871'),
+(29, 25, 'witness1', 'Information1', '1234556-21352-2', '+92-1234567890'),
+(30, 25, 'witness2', 'Information2', '1234556-21352-1', '+92-1234567891');
+
 -- --------------------------------------------------------
 
 --
@@ -168,9 +216,9 @@ CREATE TABLE `transaction_witnesses` (
 --
 
 CREATE TABLE `transfer_requests` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `property_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `requester_id` int NOT NULL,
+  `requester_id` int(11) NOT NULL,
   `requester_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `requester_cnic` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('pending','approved','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
@@ -186,14 +234,14 @@ CREATE TABLE `transfer_requests` (
 --
 
 CREATE TABLE `users` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `cnic` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(13) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `status` enum('active','blocked','archived') COLLATE utf8mb4_unicode_ci DEFAULT 'active',
+  `status` enum('active','blocked','archived') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
   `role` enum('user','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'user',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -203,9 +251,9 @@ CREATE TABLE `users` (
 -- Дамп данных таблицы `users`
 --
 
-INSERT INTO `users` (`id`, `name`, `email`, `password`, `cnic`, `phone`, `address`, `status`, `role`, `created_at`) VALUES
-(6, 'Rifat Sajid', 'Rifat302', '$2a$10$MLe9P7DIU9LTxkm4ouVt6OjaisdeqEXA6UlD/53YJ.MtR5E9mTxq2', '42201-8557410-2', '+923332438817', 'Apartment Number 302', 'archived', 'user', '2025-08-25 05:04:17'),
-(7, 'Trst', 'trst_8751', '$2a$10$wl7POSlpQs2XLflRJk/ZdeIE5zvg.NfKWfQ/4SVPLOe.iLMacvaoa', '12345-1234567-1', '+923001234567', 'dsadas', 'active', 'user', '2025-08-25 11:32:16');
+INSERT INTO `users` (`id`, `name`, `email`, `password`, `cnic`, `phone`, `address`, `status`, `role`) VALUES
+(6, 'Rifat Sajid', 'Rifat302', '$2a$10$MLe9P7DIU9LTxkm4ouVt6OjaisdeqEXA6UlD/53YJ.MtR5E9mTxq2', '42201-8557410-2', '+923332438817', 'Apartment Number 302', 'active', 'user'),
+(7, 'Trst', 'trst_8751', '$2a$10$wl7POSlpQs2XLflRJk/ZdeIE5zvg.NfKWfQ/4SVPLOe.iLMacvaoa', '12345-1234567-1', '+923001234567', 'dsadas', 'active', 'user');
 
 --
 -- Индексы сохранённых таблиц
@@ -238,6 +286,7 @@ ALTER TABLE `properties`
 --
 ALTER TABLE `transactions`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_property_id` (`property_id`),
   ADD KEY `idx_property` (`property_id`),
   ADD KEY `idx_previous_owner` (`previous_owner_id`),
   ADD KEY `idx_new_owner` (`new_owner_id`),
@@ -300,61 +349,61 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT для таблицы `auth_users`
 --
 ALTER TABLE `auth_users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT для таблицы `ownership_history`
 --
 ALTER TABLE `ownership_history`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- AUTO_INCREMENT для таблицы `properties`
 --
 ALTER TABLE `properties`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT для таблицы `transaction_documents`
 --
 ALTER TABLE `transaction_documents`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `transaction_files`
 --
 ALTER TABLE `transaction_files`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT для таблицы `transaction_payments`
 --
 ALTER TABLE `transaction_payments`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT для таблицы `transaction_witnesses`
 --
 ALTER TABLE `transaction_witnesses`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT для таблицы `transfer_requests`
 --
 ALTER TABLE `transfer_requests`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT для таблицы `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- Ограничения внешнего ключа сохраненных таблиц

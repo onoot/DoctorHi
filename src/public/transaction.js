@@ -1,9 +1,6 @@
 // transaction.js
 // Функции для работы с транзакциями
 
-// transaction.js
-// ТОЛЬКО работа с транзакциями, API, сохранение в localStorage, обновление интерфейса
-
 let transactionLoadInProgress = false;
 let currentTransactionId = null;
 
@@ -120,20 +117,27 @@ function showTransactionLoader(tbody) {
  * Привязка обработчиков действий
  */
 function attachTransactionActionHandlers() {
+    // Сначала заменяем все action-кнопки на клоны (удаляем все старые обработчики)
+    document.querySelectorAll('.view-transaction-btn, .btn-approve, .btn-reject').forEach(button => {
+        const newButton = button.cloneNode(true);
+        button.replaceWith(newButton);
+    });
+
+    // Теперь назначаем обработчики только один раз
     document.querySelectorAll('.view-transaction-btn').forEach(button => {
         button.addEventListener('click', e => {
             e.preventDefault();
             openViewTransactionModal(button.getAttribute('data-id'));
         });
     });
-    
+
     document.querySelectorAll('.btn-approve').forEach(button => {
         button.addEventListener('click', e => {
             e.preventDefault();
             updateTransactionStatus(button.getAttribute('data-id'), 'approved');
         });
     });
-    
+
     document.querySelectorAll('.btn-reject').forEach(button => {
         button.addEventListener('click', e => {
             e.preventDefault();
@@ -163,6 +167,49 @@ function openViewTransactionModal(transactionId) {
     loadTransactionDetails(transactionId);
     loadTransactionFiles(transactionId);
     loadTransactionPayments(transactionId);
+
+    // Отобразить название объекта (property) в h2 по id
+    try {
+        // Получаем id property из DOM или localStorage (ищем в details)
+        let propertyId = null;
+        // Пробуем взять из DOM (если есть скрытое поле)
+        const propertyIdInput = document.getElementById('propertyId');
+        if (propertyIdInput && propertyIdInput.value) {
+            propertyId = propertyIdInput.value;
+        } else {
+            // Пробуем взять из details, если уже загружены
+            const transactionDetails = window.currentTransactionDetails;
+            if (transactionDetails && transactionDetails.property_id) {
+                propertyId = transactionDetails.property_id;
+            }
+        }
+        // Если не нашли, пробуем из localStorage (последний просмотренный)
+        if (!propertyId && localStorage.getItem('lastViewedPropertyId')) {
+            propertyId = localStorage.getItem('lastViewedPropertyId');
+        }
+
+        // Получаем список объектов из localStorage
+        const propertiesData = localStorage.getItem('transactionProperties');
+        let propertyName = '';
+        if (propertiesData && propertyId) {
+            try {
+                const properties = JSON.parse(propertiesData);
+                const found = Array.isArray(properties)
+                    ? properties.find(p => String(p.id) === String(propertyId))
+                    : null;
+                if (found) propertyName = found.name;
+            } catch (e) {}
+        }
+        // Если не найдено, оставить пусто
+        const propertySelectEl = document.getElementById('propertySelect');
+        if (propertySelectEl) {
+            propertySelectEl.textContent = propertyName || '';
+        } else {
+            console.warn('[TRANSACTION] propertySelect element not found in DOM');
+        }
+    } catch (e) {
+        document.getElementById('propertySelect').textContent = '';
+    }
 }
 
 /**
@@ -495,32 +542,15 @@ function displayWitnesses(transaction) {
     try {
         console.log('[WITNESSES] Displaying witnesses for transaction:', transaction.id);
 
-        // Проверяем, есть ли элементы для свидетелей в DOM
-        const witness1Name = document.getElementById('witness1Name');
-        const witness1CNIC = document.getElementById('witness1CNIC');
-        const witness1Phone = document.getElementById('witness1Phone');
-        const witness2Name = document.getElementById('witness2Name');
-        const witness2CNIC = document.getElementById('witness2CNIC');
-        const witness2Phone = document.getElementById('witness2Phone');
 
-        // Если элементы не найдены, попробуем найти их в модальном окне
-        if (!witness1Name || !witness1CNIC || !witness1Phone ||
-            !witness2Name || !witness2CNIC || !witness2Phone) {
+        // Используем только элементы из модального окна просмотра транзакции
+        const witness1Name = document.getElementById('viewTransactionModal_witness1Name');
+        const witness1CNIC = document.getElementById('viewTransactionModal_witness1CNIC');
+        const witness1Phone = document.getElementById('viewTransactionModal_witness1Phone');
+        const witness2Name = document.getElementById('viewTransactionModal_witness2Name');
+        const witness2CNIC = document.getElementById('viewTransactionModal_witness2CNIC');
+        const witness2Phone = document.getElementById('viewTransactionModal_witness2Phone');
 
-            console.log('[WITNESSES] Primary elements not found, searching in modal...');
-
-            const modal = document.getElementById('witnessesModal');
-            if (modal) {
-                witness1Name = modal.querySelector('#witness1Name');
-                witness1CNIC = modal.querySelector('#witness1CNIC');
-                witness1Phone = modal.querySelector('#witness1Phone');
-                witness2Name = modal.querySelector('#witness2Name');
-                witness2CNIC = modal.querySelector('#witness2CNIC');
-                witness2Phone = modal.querySelector('#witness2Phone');
-            }
-        }
-
-        // Проверяем существование элементов
         if (!witness1Name || !witness1CNIC || !witness1Phone ||
             !witness2Name || !witness2CNIC || !witness2Phone) {
             console.error('Witness form elements not found in DOM');
@@ -581,15 +611,15 @@ function updateWitnesses() {
     }
 
     const witness1 = {
-        name: document.getElementById('witness1Name')?.value,
-        cnic: document.getElementById('witness1CNIC')?.value,
-        phone: document.getElementById('witness1Phone')?.value
+        name: document.getElementById('viewTransactionModal_witness1Name')?.value,
+        cnic: document.getElementById('viewTransactionModal_witness1CNIC')?.value,
+        phone: document.getElementById('viewTransactionModal_witness1Phone')?.value
     };
 
     const witness2 = {
-        name: document.getElementById('witness2Name')?.value,
-        cnic: document.getElementById('witness2CNIC')?.value,
-        phone: document.getElementById('witness2Phone')?.value
+        name: document.getElementById('viewTransactionModal_witness2Name')?.value,
+        cnic: document.getElementById('viewTransactionModal_witness2CNIC')?.value,
+        phone: document.getElementById('viewTransactionModal_witness2Phone')?.value
     };
 
     try {
@@ -1259,8 +1289,8 @@ function openMultiplUploadModal() {
  */
 function initTransactionHandlers() {
 
-    // Обработчик для кнопки создания новой транзакции
-    const createTransactionBtn = document.getElementById('create');
+    // Обработчик для кнопки создания новой транзакции (открытие модалки)
+    const createTransactionBtn = document.getElementById('createTransaction');
     if (createTransactionBtn) {
         createTransactionBtn.addEventListener('click', function () {
             openCreateTransactionModal();
@@ -1269,15 +1299,15 @@ function initTransactionHandlers() {
     } else {
         console.warn('[INIT] Create transaction button not found');
     }
+
     // Обработчик для кнопки редактирования суммы
     const editAmountBtn = document.querySelector('.edit-amount-btn');
     if (editAmountBtn) {
-        editAmountBtn.addEventListener('click', function () {
+        editAmountBtn.addEventListener('click', function() {
             const amountEditSection = document.getElementById('amountEditSection');
             if (amountEditSection) {
                 amountEditSection.style.display = amountEditSection.style.display === 'block' ? 'none' : 'block';
-
-                // Если секция открыта, устанавливаем фокус на поле ввода
+                // Можно добавить фокус на input
                 if (amountEditSection.style.display === 'block') {
                     const newTotalAmount = document.getElementById('newTotalAmount');
                     if (newTotalAmount) {
@@ -1357,6 +1387,7 @@ async function createTransaction() {
     if (!propertyId || !newOwnerId || isNaN(totalAmount) || totalAmount <= 0 ||
         !witness1Name || !witness1CNIC || !witness2Name || !witness2CNIC) {
         showNotification('error', 'All required fields must be filled');
+        console.trace('createTransaction called from:');
         return;
     }
 
@@ -1395,9 +1426,6 @@ async function createTransaction() {
     }
 }
 
-// Прикрепляем к глобальному объекту (если ещё нет)
-window.createTransaction = createTransaction;
-
 // Автоматическая инициализация
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('transactions') || document.getElementById('viewTransactionModal')) {
@@ -1425,17 +1453,3 @@ window.updateTransactionStatus = updateTransactionStatus;
 window.initTransactionHandlers = initTransactionHandlers;
 window.showTransactionLoader = showTransactionLoader;
 window.attachTransactionActionHandlers = attachTransactionActionHandlers;
-
-// Автоматическая инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function () {
-    // Проверяем существование элементов транзакций
-    if (document.getElementById('transactions') || document.getElementById('viewTransactionModal')) {
-        initTransactionHandlers();
-
-        // Если мы находимся на странице транзакций, загружаем данные
-        const transactionsSection = document.getElementById('transactions');
-        if (transactionsSection && transactionsSection.classList.contains('active')) {
-            loadTransactions();
-        }
-    }
-});

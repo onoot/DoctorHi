@@ -278,7 +278,7 @@ const transactionController = {
       });
     } catch (error) {
       console.error('Error getting transactions:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({success: false, message: 'Internal server error' });
     }
   },
 
@@ -362,12 +362,9 @@ const transactionController = {
         GROUP BY t.id
       `, [transactionId]);
 
-
-      console.log("Ебать", transactions)
       if (transactions.length === 0) {
-        return res.status(404).json({ message: 'Транзакция не найдена' });
+        return res.status(404).json({ success: false, message: 'Транзакция не найдена' });
       }
-
 
       const [dbWitnesses] = await pool.query(
         'SELECT witness_type, name, cnic, phone FROM transaction_witnesses WHERE transaction_id = ?',
@@ -383,8 +380,6 @@ const transactionController = {
         };
         return acc;
       }, {});
-
-
 
       // Получаем все платежи для транзакции
       const [payments] = await pool.query(`
@@ -412,6 +407,7 @@ const transactionController = {
 
       const { witnesses: transactionWitnesses, ...transactionData } = currentTransaction;
       const response = {
+        success: true,
         ...transactionData,
         witnesses,
         property_name: property ? property.name : 'Unknown Property',
@@ -457,7 +453,7 @@ const transactionController = {
       res.json(response);
     } catch (error) {
       console.error('Ошибка при получении транзакции:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
     }
   },
 
@@ -477,7 +473,7 @@ const transactionController = {
       // Валидация статуса
       const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
       if (!validStatuses.includes(status)) {
-        return res.status(400).json({ message: 'Invalid status' });
+        return res.status(400).json({success: false, message: 'Invalid status' });
       }
 
       // Обновление транзакции
@@ -674,7 +670,7 @@ async uploadFiles(req, res) {
       res.json(files);
     } catch (error) {
       console.error('Ошибка при получении файлов:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      res.status(500).json({success: false, message: 'Внутренняя ошибка сервера' });
     }
   },
 
@@ -710,7 +706,7 @@ async uploadFiles(req, res) {
       res.json({success: true,  message: 'File deleted successfully' });
     } catch (error) {
       console.error('Error deleting file:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({success: false, message: 'Internal server error' });
     }
   },
   async create(req, res) {
@@ -721,7 +717,22 @@ async uploadFiles(req, res) {
       const property = getPropertyById(property_id);
       if (!property) {
         console.log('Property not found:', property_id);
-        return res.status(404).json({ message: 'Property not found' });
+        return res.status(404).json({ success: false, message: 'Property not found' });
+      }
+
+      // Проверяем наличие активной транзакции для этого объекта
+      const [activeTransactions] = await pool.query(
+        'SELECT id FROM transactions WHERE property_id = ? AND status IN (?, ?)',
+        [property_id, 'pending', 'approved']
+      );
+      if (activeTransactions.length > 0) {
+        return res.status(400).json({ success: false, message: 'There is already an active transaction for this object.' });
+      }
+
+      // Проверка диапазона total_amount (например, DECIMAL(12,2) — максимум 9999999999.99)
+      const MAX_TOTAL_AMOUNT = 9999999999.99;
+      if (isNaN(total_amount) || Number(total_amount) > MAX_TOTAL_AMOUNT) {
+        return res.status(400).json({ success: false, message: `The transaction amount is maximum allowed (${MAX_TOTAL_AMOUNT})` });
       }
 
       // Получаем предыдущего владельца
@@ -737,7 +748,6 @@ async uploadFiles(req, res) {
 
       const transactionId = result.insertId;
 
-      // ТЕПЕРЬ ДОБАВЛЯЕМ СВИДЕТЕЛЕЙ С ИСПОЛЬЗОВАНИЕМ transactionId
       if (witnesses) {
         const connection = await pool.getConnection();
         try {
@@ -785,6 +795,7 @@ async uploadFiles(req, res) {
       }
 
       res.status(201).json({
+        success: true,
         message: 'Transaction created successfully',
         transaction_id: transactionId
       });
@@ -811,7 +822,7 @@ async uploadFiles(req, res) {
       // Проверяем существование объекта недвижимости
       const property = getPropertyById(property_id);
       if (!property) {
-        return res.status(400).json({ message: 'Объект недвижимости не найден' });
+        return res.status(400).json({success: false, message: 'Объект недвижимости не найден' });
       }
 
       // Проверяем наличие активных транзакций для данного объекта
@@ -821,7 +832,7 @@ async uploadFiles(req, res) {
       );
 
       if (activeTransactions.length > 0) {
-        return res.status(400).json({ message: 'Для данного объекта уже есть активная транзакция' });
+        return res.status(400).json({success: false, message: 'Для данного объекта уже есть активная транзакция' });
       }
 
       // Проверяем или создаем нового владельца
@@ -854,7 +865,7 @@ async uploadFiles(req, res) {
       });
     } catch (error) {
       console.error('Error creating transaction request:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({success: false, message: 'Internal server error' });
     }
   },
 
@@ -869,7 +880,7 @@ async uploadFiles(req, res) {
       // Проверяем существование объекта недвижимости
       const property = getPropertyById(propertyId);
       if (!property) {
-        return res.status(400).json({ message: 'Объект недвижимости не найден' });
+        return res.status(400).json({success: false, message: 'Объект недвижимости не найден' });
       }
 
       let query = `
@@ -916,7 +927,7 @@ async uploadFiles(req, res) {
       });
     } catch (error) {
       console.error('Ошибка при получении сделок:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      return res.status(500).json({success: false, message: 'Внутренняя ошибка сервера' });
     }
   },
 
@@ -944,7 +955,7 @@ async uploadFiles(req, res) {
 
       // Check current transaction status
       if (transaction[0].status !== 'pending') {
-        return res.status(400).json({ message: 'Only transactions in pending status can be modified' });
+        return res.status(400).json({success: false, message: 'Only transactions in pending status can be modified' });
       }
 
       // Update status
@@ -960,7 +971,7 @@ async uploadFiles(req, res) {
       res.json({success: true,  message: 'Transaction status updated successfully' });
     } catch (error) {
       console.error('Error updating transaction:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({success: false, message: 'Internal server error' });
     }
   },
 
@@ -969,7 +980,7 @@ async createPayment(req, res) {
   try {
     const transactionId = parseInt(req.params.id.toString(), 10);
     if (isNaN(transactionId)) {
-      return res.status(400).json({ message: 'Invalid transaction ID' });
+      return res.status(400).json({success: false, message: 'Invalid transaction ID' });
     }
     
     const { amount, payment_date, payment_method, notes } = req.body;
@@ -1110,7 +1121,7 @@ async createPayment(req, res) {
       });
     } catch (error) {
       console.error('Ошибка при получении платежей:', error);
-      res.status(500).json({ message: 'Внутренняя ошибка сервера' });
+      res.status(500).json({success: false, message: 'Внутренняя ошибка сервера' });
     }
   },
 
@@ -1127,7 +1138,7 @@ async createPayment(req, res) {
       const paymentId = parseInt(req.params.paymentId.toString(), 10);
 
       if (isNaN(transactionId) || isNaN(paymentId)) {
-        return res.status(400).json({ message: 'Invalid transaction or payment ID' });
+        return res.status(400).json({success: false, message: 'Invalid transaction or payment ID' });
       }
 
       // Проверяем существование платежа

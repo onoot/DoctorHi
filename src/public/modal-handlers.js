@@ -216,13 +216,6 @@ function initModalHandlers() {
             closeModal(event.target.id);
         }
     });
-    
-     document.querySelector('.create-transaction-btn')?.addEventListener('click', function(e) {
-        e.preventDefault();
-        createTransaction();
-    });
-
-    console.log('[MODALS] Modal handlers initialized');
 }
 
 // Прикрепляем к глобальному объекту
@@ -233,3 +226,13 @@ window.openViewTransactionModal = openViewTransactionModal;
 window.initModalHandlers = initModalHandlers;
 window.closeModal = closeModal;
 window.openModal = openModal;
+
+const modalCreateBtn = document.querySelector('.create-transaction-btn');
+if (modalCreateBtn) {
+    modalCreateBtn.replaceWith(modalCreateBtn.cloneNode(true));
+    const freshBtn = document.querySelector('.create-transaction-btn');
+    freshBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        createTransaction();
+    });
+}

@@ -39,9 +39,9 @@ async function viewUser(userId) {
     try {
         const response = await apiRequest(`/v1/admin/users/${userId}`);
         
-        // ✅ Проверяем, что ответ содержит данные пользователя (по наличию id)
         if (response && response.id) {
-            const user = response; // ✅ Это и есть пользователь — больше не надо .user
+            const user = response||response?.user;
+            
             
             const modalBody = document.getElementById('userModalBody');
             

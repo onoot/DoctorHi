@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Загрузка начальных данных
     navigateToSection('transactions');
 
-    loadTransactions(1, 1);
     loadUsers();
     initCurrencyConverter();
 });

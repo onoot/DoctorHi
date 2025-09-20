@@ -28,6 +28,7 @@ import { auth, adminAuth } from './middlewares/auth.mjs';
 import { v4 as uuidv4 } from 'uuid';
 import https from 'https';
 import { exec } from 'child_process';
+import compression from 'compression';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,6 +36,29 @@ const __dirname = dirname(__filename);
 dotenv.config();
 
 const app = express();
+
+app.use(compression({
+  level: 10,
+  threshold: 0, 
+  filter: (req, res) => {
+    const type = res.getHeader('Content-Type');
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    if (typeof type === 'string') {
+      if (
+        type.startsWith('image/') ||
+        type.startsWith('video/') ||
+        type.startsWith('audio/') ||
+        type.startsWith('font/') ||
+        type.includes('application/octet-stream')
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+}));
 
 // Базовые middleware
 app.use(cookieParser());
@@ -426,8 +450,10 @@ app.use((req, res, next) => {
     next();
   }
 });
+
 app.use(handleCSRFError);
 // Маршруты
+app.use('/uploads/receipts', adminAuth, express.static(path.join(uploadsPath, 'receipts')));
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/client', clientRoutes);
 app.use('/api/v1/admin', adminRoutes);
@@ -470,9 +496,20 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message });
 });
 
-// Handle non-existent routes
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
+// Error handler (должен быть до 404!)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
+  res.status(err.status || 500).json({ message });
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).redirect('/404.html');
+  }
+
+  // Для всех остальных — отдаем index.html → клиентский роутер сам решит, 404 это или нет
+  res.status(200).sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Обновлять сертификат каждые 24 часа

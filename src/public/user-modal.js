@@ -3,33 +3,16 @@
 
 // Универсальная функция для открытия модальных окон
 function openModal(modalId) {
-    console.log(`[DEBUG] Attempting to open modal with ID: ${modalId}`);
-    
     const modal = document.getElementById(modalId);
     if (modal) {
+        // Всегда удаляем hide и добавляем show
         modal.classList.remove('hide');
         modal.classList.add('show');
-        modal.style.display = 'flex';
-        void modal.offsetWidth; // Принудительная перерисовка
-        console.log(`[SUCCESS] Modal ${modalId} opened successfully`);
+        void modal.offsetWidth;
         return true;
     } else {
         console.error(`[ERROR] Modal with ID "${modalId}" not found`);
         return false;
-    }
-}
-
-// Универсальная функция для закрытия модальных окон
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hide');
-        modal.classList.remove('show');
-        setTimeout(() => {
-            if (modal.classList.contains('hide')) {
-                modal.style.display = 'none';
-            }
-        }, 300);
     }
 }
 
@@ -160,8 +143,8 @@ function initUserModalHandlers() {
             const userId = viewUserBtn.getAttribute('data-id');
             console.log(`[USER MODAL] View user button clicked for user ID: ${userId}`);
             if (userId) {
-                viewUser(userId); // ← Заполняем данные
-                openModal('userModal'); // ← ✅ ОТКРЫВАЕМ МОДАЛКУ ТУТ — ОДИН РАЗ!
+                viewUser(userId);
+                openModal('userModal'); 
             }
         }
     });
@@ -176,40 +159,10 @@ function initUserModalHandlers() {
     if (regeneratePasswordBtn) {
         regeneratePasswordBtn.addEventListener('click', regeneratePassword);
     }
-    
-    // Обработчики закрытия модальных окон
-    document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function() {
-            const modalId = this.getAttribute('data-modal');
-            console.log(`[DEBUG] Closing modal via close button: ${modalId}`);
-            closeModal(modalId);
-        });
-    });
-    
-    // Закрытие по клику на overlay
-    document.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            const modalId = event.target.id;
-            console.log(`[DEBUG] Closing modal via background click: ${modalId}`);
-            closeModal(modalId);
-        }
-    });
-    
-    // Закрытие по клавише Esc
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                const modalId = modal.id;
-                console.log(`[DEBUG] Closing modal via Escape key: ${modalId}`);
-                closeModal(modalId);
-            });
-        }
-    });
 }
 
 // Прикрепляем функции к глобальному объекту window
 window.openModal = openModal;
-window.closeModal = closeModal;
 window.openAddUserModal = openAddUserModal;
 window.regenerateLogin = regenerateLogin;
 window.regeneratePassword = regeneratePassword;

@@ -535,6 +535,25 @@ body {
     background-position: right center;
 }
 
+.update-witnesses-btn{
+    background: linear-gradient(to right, #06d6a0, #118ab2);
+    color: white;
+    background-size: 200% auto;
+}
+.update-witnesses-btn:hover {
+    background-position: right center;
+}
+
+.save-amount-btn{
+    background: linear-gradient(to right, #06d6a0, #118ab2);
+    color: white;
+    background-size: 200% auto;
+}
+
+.save-amount-btn:hover {
+    background-position: right center;
+}
+
 .btn-reject {
     background: linear-gradient(to right, #ef476f, #d62839);
     color: white;
@@ -1033,7 +1052,7 @@ body {
 }
 
 /* Стили для таблицы платежей */
-#paymentsTable {
+.table_admin {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
@@ -1041,7 +1060,7 @@ body {
     overflow: hidden;
 }
 
-#paymentsTable th {
+.table_admin th {
     background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
     padding: 14px 16px;
     text-align: left;
@@ -1053,12 +1072,12 @@ body {
     letter-spacing: 0.5px;
 }
 
-#paymentsTable td {
+.table_admin td {
     padding: 14px 16px;
     border-bottom: 1px solid var(--border-color);
 }
 
-#paymentsTable tr:hover {
+.table_admin tr:hover {
     background-color: rgba(67, 97, 238, 0.03);
 }
 
@@ -1204,9 +1223,10 @@ body {
     font-size: 16px;
 }
 
-.file-name-display {
-    margin-top: 10px;
-    padding: 10px;
+.file-upload .file-name-display {
+    display: block;
+    margin-top: 8px;
+    padding: 8px 10px;
     background-color: #f8fafc;
     border-radius: var(--rounded-md);
     font-size: var(--font-size-sm);
@@ -1217,6 +1237,8 @@ body {
     border: 1px dashed var(--border-color);
     color: var(--dark);
     min-height: 24px;
+    position: relative;
+    z-index: 1;
 }
 
 /* Стили для денежного формата */
@@ -2062,4 +2084,8 @@ body {
     .document-actions .action-btn i {
         font-size: 0.9em;
     }
+}
+
+.close{
+    padding: 15px;
 }

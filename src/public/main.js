@@ -108,11 +108,6 @@ function initApp() {
         attachCurrencyConverter();
     }
     
-    // Инициализация обработчиков ввода сумм
-    if (typeof initAmountInputHandlers === 'function') {
-        initAmountInputHandlers();
-    }
-    
     // Инициализация обработчиков модальных окон
     if (typeof initModalHandlers === 'function') {
         initModalHandlers();
@@ -170,16 +165,6 @@ function initAuthHandlers() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[APP] DOM content loaded, initializing app');
     initApp();
-    
-    // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            const modalId = event.target.id;
-            if (modalId && typeof closeModal === 'function') {
-                closeModal(modalId);
-            }
-        }
-    });
     
     // Инициализация кнопки создания транзакции (если она существует)
     const createTransactionBtn = document.getElementById('createTransaction');

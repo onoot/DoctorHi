@@ -11,53 +11,6 @@ function attachActionHandlers() {
 
         const action = button.getAttribute('data-action');
         const id = button.closest('[data-id]')?.dataset.id;
-
-        if (!id || !action) return;
-
-        // switch (action) {
-        //     case 'view':
-        //         viewTransaction(id);
-        //         break;
-        //     case 'view_user':
-        //         viewUser(id);
-        //         break;
-        //     case 'approve':
-        //         updateTransactionStatus(id, 'approved');
-        //         break;
-        //     case 'reject':
-        //         updateTransactionStatus(id, 'rejected');
-        //         break;
-        //     case 'block':
-        //         toggleUserStatus(id, 'blocked');
-        //         break;
-        //     case 'unblock':
-        //         toggleUserStatus(id, 'active');
-        //         break;
-        //     case 'archive':
-        //         archiveUser(id);
-        //         break;
-        //     case 'restore':
-        //         restoreUser(id);
-        //         break;
-        //     case 'toggle-status':
-        //         toggleUserStatus(id);
-        //         break;
-        //     case 'upload-modal':
-        //         const category = button.getAttribute('data-category');
-        //         openUploadFileModal(id, category);
-        //         break;
-        //     case 'upload-multiple':
-        //         openMultipleUploadModal(id);
-        //         break;
-        //     case 'add-payment':
-        //         openAddPaymentModal(id);
-        //         break;
-        //     case 'edit-amount':
-        //         toggleAmountEdit();
-        //         break;
-        //     default:
-        //         console.error(`Unknown action: ${action}`);
-        // }
     });
 }
 

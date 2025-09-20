@@ -113,7 +113,9 @@ router.put('/my/:id', auth, [
 router.post('/', adminAuth, [
   body('property_id').notEmpty().withMessage('Property ID is required'),
   body('new_owner_id').notEmpty().isInt().withMessage('Valid new owner ID is required'),
-  body('total_amount').isNumeric().withMessage('Valid total amount is required')
+  body('total_amount')
+    .isNumeric().withMessage('Valid total amount is required')
+    .custom(val => Number(val) > 0).withMessage('Amount must be greater than 0.')
 ], transactionController.create);
 
 router.get('/', adminAuth, transactionController.getAll);
@@ -131,15 +133,28 @@ router.delete('/:id/documents/:fileId', adminAuth, upload.any(), transactionCont
 
 // Маршруты для работы с платежами
 router.get('/:id/payments', adminAuth, transactionController.getPayments);
-
+// Получение конкретного платежа
+router.get('/:id/payments/:paymentId', adminAuth, transactionController.getPaymentById);
 // Создание платежа с загрузкой чека
-router.post('/:id/payments', adminAuth, upload.single('receipt'), transactionController.createPayment);
+router.post('/:id/payments', adminAuth, upload.fields([{ name: 'receipt', maxCount: 1 }]), transactionController.createPayment);
+// Валидация для создания платежа: amount > 0
+router.post('/:id/payments',
+  adminAuth,
+  body('amount')
+    .isNumeric().withMessage('Valid amount is required')
+    .custom(val => Number(val) > 0).withMessage('Amount must be greater than 0.'),
+  upload.single('receipt'),
+  transactionController.createPayment
+);
 
 // Обновление платежа с возможной новой загрузкой чека
 router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
   body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),
   body('notes').optional().isString().withMessage('Notes must be a string')
 ], transactionController.updatePayment);
+
+// Удаление платежа
+router.delete('/:id/payments/:paymentId', adminAuth, transactionController.deletePayment);
 
 // === Обработчик ошибок Multer (должен быть ПОСЛЕ всех маршрутов) ===
 router.use((error, req, res, next) => {
@@ -184,12 +199,13 @@ router.get('/files/*', adminAuth, async (req, res) => {
       });
     }
     
-    // Нормализуем путь и удаляем недопустимые символы
+    // После нормализации — удаляем лишний uploads/ в начале
     const normalizedPath = path.normalize(relativePath)
       .replace(/^(\.\.[\/\\])+/, '')
       .replace(/\\/g, '/')
-      .replace(/^\//, '');
-    
+      .replace(/^\//, '')
+      .replace(/^uploads\//, ''); 
+      
     // Проверяем на попытки выхода за пределы разрешенной директории
     if (normalizedPath.includes('../') || normalizedPath.includes('..\\')) {
       console.warn(`Path traversal attempt detected: ${relativePath}`);
@@ -213,6 +229,7 @@ router.get('/files/*', adminAuth, async (req, res) => {
         message: "Access denied"
       });
     }
+    console.log(realPath)
     
     // Проверяем существование файла
     if (!existsSync(realPath)) {

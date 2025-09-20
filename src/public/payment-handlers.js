@@ -9,7 +9,7 @@
 function displayPaymentsWithReceipts(payments, receiptFiles = []) {
     const tableBody = document.getElementById('paymentsTableBody');
     if (!tableBody) return;
-    
+
     // Создаем маппинг чеков по временной метке для быстрого поиска
     const receiptMap = new Map();
     receiptFiles.forEach(receipt => {
@@ -17,29 +17,29 @@ function displayPaymentsWithReceipts(payments, receiptFiles = []) {
         const timestamp = new Date(receipt.created_at).getTime();
         receiptMap.set(timestamp, receipt);
     });
-    
+
     if (!payments || payments.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
         return;
     }
-    
+
     let html = '';
     payments.forEach(payment => {
-        const paymentDate = payment.payment_date ? 
+        const paymentDate = payment.payment_date ?
             new Date(payment.payment_date).toLocaleDateString('en-GB', {
                 day: '2-digit',
-                month: '2-digit', 
+                month: '2-digit',
                 year: 'numeric'
             }) : 'N/A';
-        
+
         const amount = formatPKR(payment.amount);
         const statusClass = getStatusClass(payment.status);
         const statusText = formatStatus(payment.status);
-        
+
         // Ищем чек, соответствующий платежу по дате
         const paymentTimestamp = new Date(payment.created_at).getTime();
         const matchingReceipt = receiptMap.get(paymentTimestamp);
-        
+
         let receiptHtml = '<span class="no-receipt">No receipt</span>';
         if (matchingReceipt) {
             receiptHtml = `
@@ -59,7 +59,7 @@ function displayPaymentsWithReceipts(payments, receiptFiles = []) {
                 </div>
             `;
         }
-        
+
         html += `
             <tr>
                 <td>${payment.id}</td>
@@ -67,12 +67,12 @@ function displayPaymentsWithReceipts(payments, receiptFiles = []) {
                 <td>${formatPaymentMethod(payment.payment_method)}</td>
                 <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 <td>${new Date(payment.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}</td>
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}</td>
                 <td>${receiptHtml}</td>
                 <td>
                     <button class="action-btn btn-edit edit-payment-btn" 
@@ -87,9 +87,9 @@ function displayPaymentsWithReceipts(payments, receiptFiles = []) {
             </tr>
         `;
     });
-    
+
     tableBody.innerHTML = html;
-    
+
     // Инициализируем обработчики действий с платежами
     setupPaymentActionHandlers(payment.transaction_id);
 }
@@ -104,17 +104,20 @@ async function deleteReceiptFile(fileId, transactionId, category) {
     if (!confirm(`Вы уверены, что хотите удалить файл?`)) {
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/files/${fileId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.success) {
             showNotification('success', 'File deleted successfully');
-            
+
             // Перезагружаем детали транзакции для обновления данных
             await loadTransactionDetails(transactionId);
+            // Принудительная перерисовка для анимации
+    void modal.offsetWidth;
+
         } else {
             throw new Error(response.message || 'Failed to delete file');
         }
@@ -133,12 +136,12 @@ async function deletePayment(paymentId, transactionId) {
     if (!confirm('Are you sure you want to delete this payment?')) {
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.success) {
             showNotification('success', 'Payment deleted successfully');
             // Перезагружаем платежи и обновляем сумму
@@ -163,18 +166,18 @@ function setupPaymentActionHandlers(transactionId) {
         const clonedBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(clonedBtn, btn);
     });
-    
+
     // Добавляем обработчики для редактирования платежей
     document.querySelectorAll('.edit-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             openEditPaymentModal(transactionId, paymentId);
         });
     });
-    
+
     // Добавляем обработчики для удаления платежей
     document.querySelectorAll('.delete-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             deletePayment(paymentId, transactionId);
         });
@@ -192,15 +195,15 @@ async function updateAmountSummary(transactionId) {
             // Обновляем отображение сумм
             const totalAmountView = document.getElementById('totalAmountView');
             const paidAmount = document.getElementById('paidAmount');
-            
+
             if (totalAmountView) {
                 totalAmountView.textContent = formatPKR(response.total_amount);
             }
-            
+
             if (paidAmount) {
                 paidAmount.textContent = formatPKR(response.paid_amount);
             }
-            
+
             const remaining = parseFloat(response.total_amount) - parseFloat(response.paid_amount);
             document.getElementById('remainingAmount').textContent = formatPKR(remaining);
         }
@@ -259,7 +262,7 @@ function initPaymentHandlers() {
     // Обработчик для кнопки добавления платежа
     const addPaymentBtn = document.querySelector('[data-action="add-payment"]');
     if (addPaymentBtn) {
-        addPaymentBtn.addEventListener('click', function() {
+        addPaymentBtn.addEventListener('click', function () {
             const transactionId = document.getElementById('currentTransactionId')?.value;
             if (transactionId) {
                 openAddPaymentModal(transactionId);
@@ -268,168 +271,14 @@ function initPaymentHandlers() {
             }
         });
     }
-    
-    // Обработчик для кнопки сохранения платежа
-    const savePaymentBtn = document.getElementById('savePayment');
-    if (savePaymentBtn) {
-        savePaymentBtn.addEventListener('click', async function() {
-            const transactionId = document.getElementById('paymentTransactionId')?.value;
-            const paymentId = document.getElementById('paymentId')?.value;
-            const amount = parseNumber(document.getElementById('paymentAmount')?.value);
-            const method = document.getElementById('paymentMethod')?.value;
-            const status = document.getElementById('paymentStatus')?.value;
-            const notes = document.getElementById('paymentNotes')?.value;
-            const receiptFile = document.getElementById('receiptFile')?.files[0];
-            
-            if (!transactionId) {
-                showNotification('error', 'Transaction ID not found');
-                return;
-            }
-            
-            if (amount <= 0) {
-                showNotification('error', 'Amount must be greater than 0');
-                return;
-            }
-            
-            try {
-                // Создаем объект платежа
-                const paymentData = {
-                    amount,
-                    payment_method: method,
-                    status,
-                    notes
-                };
-                
-                // Если есть ID платежа, обновляем существующий платеж
-                if (paymentId) {
-                    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify(paymentData)
-                    });
-                    
-                    if (response.success) {
-                        showNotification('success', 'Payment updated successfully');
-                        
-                        // Если есть файл чека, загружаем его
-                        if (receiptFile) {
-                            const formData = new FormData();
-                            formData.append('file', receiptFile);
-                            formData.append('category', 'receipt');
-                            
-                            await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
-                                method: 'POST',
-                                credentials: 'include',
-                                body: formData
-                            });
-                        }
-                        
-                        closeModal('editPaymentModal');
-                        await loadTransactionDetails(transactionId);
-                    } else {
-                        throw new Error(response.message || 'Failed to update payment');
-                    }
-                } 
-                // Иначе создаем новый платеж
-                else {
-                    const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
-                        method: 'POST',
-                        body: JSON.stringify(paymentData)
-                    });
-                    
-                    if (response.success && response.payment) {
-                        showNotification('success', 'Payment added successfully');
-                        
-                        // Если есть файл чека, загружаем его
-                        if (receiptFile) {
-                            const formData = new FormData();
-                            formData.append('file', receiptFile);
-                            formData.append('category', 'receipt');
-                            
-                            await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
-                                method: 'POST',
-                                credentials: 'include',
-                                body: formData
-                            });
-                        }
-                        
-                        closeModal('addPaymentModal');
-                        await loadTransactionDetails(transactionId);
-                    } else {
-                        throw new Error(response.message || 'Failed to create payment');
-                    }
-                }
-            } catch (error) {
-                console.error('Error processing payment:', error);
-                showNotification('error', 'Error processing payment: ' + error.message);
-            }
-        });
-    }
-    
+   
     // Обработчик для кнопки отмены в модальных окнах платежей
     document.querySelectorAll('.cancel-payment-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             closeModal('addPaymentModal');
             closeModal('editPaymentModal');
         });
     });
-}
-
-/**
- * Функция для открытия модального окна добавления платежа
- * @param {string} transactionId - ID транзакции
- */
-function openAddPaymentModal(transactionId) {
-    console.log(`[PAYMENT] Opening add payment modal for transaction ${transactionId}`);
-    
-    // Устанавливаем ID транзакции
-    document.getElementById('paymentTransactionId').value = transactionId;
-    
-    // Сбрасываем форму
-    const form = document.getElementById('addPaymentForm');
-    if (form) {
-        form.reset();
-    }
-    
-    // Обновляем отображение
-    document.getElementById('receiptFileNameDisplay').textContent = 'No file chosen';
-    document.getElementById('receiptPreview').innerHTML = '';
-    
-    // Открываем модальное окно
-    openModal('addPaymentModal');
-}
-
-/**
- * Функция для открытия модального окна редактирования платежа
- * @param {string} transactionId - ID транзакции
- * @param {string} paymentId - ID платежа
- */
-async function openEditPaymentModal(transactionId, paymentId) {
-    console.log(`[PAYMENT] Opening edit payment modal for transaction ${transactionId}, payment ${paymentId}`);
-    
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
-        if (response.success && response.payment) {
-            const payment = response.payment;
-            
-            // Заполняем форму
-            document.getElementById('paymentTransactionId').value = transactionId;
-            document.getElementById('paymentId').value = payment.id;
-            document.getElementById('paymentAmount').value = formatPKR(payment.amount);
-            document.getElementById('rawPaymentAmount').value = payment.amount;
-            document.getElementById('paymentMethod').value = payment.payment_method;
-            document.getElementById('paymentStatus').value = payment.status;
-            document.getElementById('paymentNotes').value = payment.notes || '';
-            
-            // Обновляем конвертацию в USD
-            await updateUSD(payment.amount);
-            
-            // Открываем модальное окно
-            openModal('editPaymentModal');
-        }
-    } catch (error) {
-        console.error('[PAYMENT] Error loading payment details:', error);
-        showNotification('error', 'Error loading payment details');
-    }
 }
 
 // Прикрепляем функции к глобальному объекту
@@ -446,8 +295,56 @@ window.openAddPaymentModal = openAddPaymentModal;
 window.openEditPaymentModal = openEditPaymentModal;
 
 // Автоматическая инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('paymentsTableBody')) {
         initPaymentHandlers();
+    }
+
+    // Назначаем обработчик для кнопки сохранения изменений платежа только один раз
+    const saveEditPaymentBtn = document.querySelector('.save-payment-btn');
+    if (saveEditPaymentBtn) {
+        saveEditPaymentBtn.addEventListener('click', async function () {
+            const transactionId = document.getElementById('editPaymentModal_transactionId')?.value;
+            const paymentId = document.getElementById('editPaymentModal_paymentId')?.value;
+            const amount = parseNumber(document.getElementById('editPaymentModal_paymentAmount')?.value);
+            const method = document.getElementById('editPaymentModal_paymentMethod')?.value;
+            const status = document.getElementById('editPaymentModal_paymentStatus')?.value;
+            const notes = document.getElementById('editPaymentModal_paymentNotes')?.value;
+
+            if (!transactionId || !paymentId) {
+                showNotification('error', 'Transaction or Payment ID not found');
+                return;
+            }
+
+            if (amount <= 0) {
+                showNotification('error', 'Amount must be greater than 0');
+                return;
+            }
+
+            try {
+                const paymentData = {
+                    amount,
+                    payment_method: method,
+                    status,
+                    notes
+                };
+
+                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(paymentData)
+                });
+
+                if (response.success) {
+                    showNotification('success', 'Payment updated successfully');
+                    closeModal('editPaymentModal');
+                    await loadTransactionDetails(transactionId); // Обновляем данные
+                } else {
+                    throw new Error(response.message || 'Failed to update payment');
+                }
+            } catch (error) {
+                console.error('Error updating payment:', error);
+                showNotification('error', 'Error updating payment: ' + error.message);
+            }
+        });
     }
 });

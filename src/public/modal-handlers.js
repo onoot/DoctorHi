@@ -24,49 +24,6 @@ function openAddPaymentModal(transactionId) {
 }
 
 /**
- * Функция для открытия модального окна редактирования платежа
- * @param {string} transactionId - ID транзакции
- * @param {string} paymentId - ID платежа
- */
-async function openEditPaymentModal(transactionId, paymentId) {
-    console.log(`[PAYMENT] Opening edit payment modal for transaction ${transactionId}, payment ${paymentId}`);
-    
-    try {
-        const response = await window.apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`);
-        if (response.success && response.payment) {
-            const payment = response.payment;
-            
-            const paymentTransactionId = document.getElementById('paymentTransactionId');
-            if (paymentTransactionId) paymentTransactionId.value = transactionId;
-            
-            const paymentIdInput = document.getElementById('paymentId');
-            if (paymentIdInput) paymentIdInput.value = payment.id;
-            
-            const paymentAmount = document.getElementById('paymentAmount');
-            const rawPaymentAmount = document.getElementById('rawPaymentAmount');
-            if (paymentAmount && window.formatPKR) paymentAmount.value = window.formatPKR(payment.amount);
-            if (rawPaymentAmount) rawPaymentAmount.value = payment.amount;
-            
-            const paymentMethod = document.getElementById('paymentMethod');
-            if (paymentMethod) paymentMethod.value = payment.payment_method || payment.method;
-            
-            const paymentStatus = document.getElementById('paymentStatus');
-            if (paymentStatus) paymentStatus.value = payment.status;
-            
-            const paymentNotes = document.getElementById('paymentNotes');
-            if (paymentNotes) paymentNotes.value = payment.notes || '';
-            
-            if (typeof updateUSD === 'function') await updateUSD(payment.amount);
-            
-            if (typeof openModal === 'function') openModal('editPaymentModal');
-        }
-    } catch (error) {
-        console.error('[PAYMENT] Error loading payment details:', error);
-        if (typeof showNotification === 'function') showNotification('error', 'Error loading payment details');
-    }
-}
-
-/**
  * Заполняет выпадающие списки в модальном окне создания транзакции
  */
 function populateCreateTransactionModal() {
@@ -184,48 +141,12 @@ function openViewTransactionModal(transactionId) {
     // Она делается в transaction.js → loadTransactionDetails()
 }
 
-// Универсальные функции управления модальными окнами
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('show');
-        modal.classList.remove('hide');
-        return true;
-    }
-    console.error(`Modal with ID "${modalId}" not found`);
-    return false;
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('hide');
-        modal.classList.remove('show');
-        setTimeout(() => modal.classList.remove('hide'), 300);
-    }
-}
-
-// Инициализация обработчиков
-function initModalHandlers() {
-    document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', () => closeModal(button.getAttribute('data-modal')));
-    });
-
-    document.addEventListener('click', event => {
-        if (event.target.classList.contains('modal')) {
-            closeModal(event.target.id);
-        }
-    });
-}
 
 // Прикрепляем к глобальному объекту
 window.openAddPaymentModal = openAddPaymentModal;
 window.openEditPaymentModal = openEditPaymentModal;
 window.openCreateTransactionModal = openCreateTransactionModal;
 window.openViewTransactionModal = openViewTransactionModal;
-window.initModalHandlers = initModalHandlers;
-window.closeModal = closeModal;
-window.openModal = openModal;
 
 const modalCreateBtn = document.querySelector('.create-transaction-btn');
 if (modalCreateBtn) {

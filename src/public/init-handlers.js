@@ -30,10 +30,6 @@ function initAllHandlers() {
         initPaymentHandlers();
     }
     
-    if (typeof initUploadHandlers === 'function') {
-        initUploadHandlers();
-    }
-    
     if (typeof initTransferRequestHandlers === 'function') {
         initTransferRequestHandlers();
     }
@@ -130,15 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация приложения
     initApp();
     
-    // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
-        if (event.target.classList.contains('modal')) {
-            if (typeof closeModal === 'function') {
-                closeModal(event.target.id);
-            }
-        }
-    });
-    
     // Добавляем обработчик для кнопки "New Transaction"
     const createTransactionBtn = document.getElementById('createTransaction');
     if (createTransactionBtn) {
@@ -180,11 +167,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
 
             const transactionId = document.getElementById('paymentTransactionId')?.value;
-            const amount = window.parseNumber ? window.parseNumber(document.getElementById('paymentAmount')?.value) : parseFloat(document.getElementById('paymentAmount')?.value);
-            const method = document.getElementById('paymentMethod')?.value;
-            const status = document.getElementById('paymentStatus')?.value;
-            const notes = document.getElementById('paymentNotes')?.value;
-            const receiptFile = document.getElementById('receiptFile')?.files[0];
+            // Исправлено: используем правильный id поля и парсим число корректно
+            const amountInput = document.getElementById('addPaymentModal_paymentAmount');
+            let amount = amountInput ? amountInput.value : '';
+            amount = window.parseNumber ? window.parseNumber(amount) : parseFloat(amount.replace(/[^\d.\-]/g, ''));
+            const payment_method = document.getElementById('addPaymentModal_paymentMethod')?.value;
+            const status = document.getElementById('addPaymentModal_paymentStatus')?.value;
+            const notes = document.getElementById('addPaymentModal_paymentNotes')?.value;
+            const receiptFile = document.getElementById('addPaymentModal_receiptFile')?.files[0];
 
             if (!transactionId) {
                 if (typeof showNotification === 'function') {
@@ -193,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            if (amount <= 0) {
+            if (!amount || isNaN(amount) || amount <= 0) {
                 if (typeof showNotification === 'function') {
                     showNotification('error', 'Amount must be greater than 0');
                 }
@@ -201,35 +191,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             try {
-                // Создаем объект платежа
-                const paymentData = {
-                    amount,
-                    method,
-                    status,
-                    notes
-                };
-
-                // Сначала создаем платеж
-                const paymentResponse = await window.apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
-                    method: 'POST',
-                    body: JSON.stringify(paymentData)
-                });
-
+                let paymentResponse;
+                if (receiptFile) {
+                    const formData = new FormData();
+                    formData.append('amount', amount);
+                    formData.append('payment_method', payment_method);
+                    formData.append('status', status);
+                    formData.append('notes', notes || '');
+                    formData.append('receipt', receiptFile);
+                    paymentResponse = await fetch(`${window.API_BASE_URL}/v1/admin/transactions/${transactionId}/payments`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    }).then(r => r.json());
+                } else {
+                    const paymentData = { amount, payment_method, status, notes };
+                    paymentResponse = await window.apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                        method: 'POST',
+                        body: JSON.stringify(paymentData)
+                    });
+                }
                 if (paymentResponse.success && paymentResponse.payment) {
-                    // Если есть файл чека, загружаем его
-                    if (receiptFile) {
-                        const formData = new FormData();
-                        formData.append('file', receiptFile);
-                        formData.append('category', 'receipt');
-
-                        // Загружаем чек как документ транзакции
-                        await fetch(`${window.API_BASE_URL}/v1/admin/transactions/${transactionId}/documents`, {
-                            method: 'POST',
-                            credentials: 'include',
-                            body: formData
-                        });
-                    }
-
                     if (typeof showNotification === 'function') {
                         showNotification('success', 'Payment added successfully');
                     }
@@ -249,3 +231,75 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Обработчик для кнопки сохранения платежа
+const savePaymentBtn = document.getElementById('savePayment');
+if (savePaymentBtn) {
+    savePaymentBtn.addEventListener('click', async function() {
+        const transactionId = document.getElementById('paymentTransactionId')?.value;
+        const paymentId = document.getElementById('paymentId')?.value;
+        const amount = parseNumber(document.getElementById('paymentAmount')?.value);
+        const method = document.getElementById('paymentMethod')?.value;
+        const status = document.getElementById('paymentStatus')?.value;
+        const notes = document.getElementById('paymentNotes')?.value;
+        const receiptFile = document.getElementById('receiptFile')?.files[0];
+        if (!transactionId) {
+            showNotification('error', 'Transaction ID not found');
+            return;
+        }
+        if (amount <= 0) {
+            showNotification('error', 'Amount must be greater than 0 payment');
+            return;
+        }
+        try {
+            let response;
+            if (paymentId) {
+                // Обновление платежа (оставим как есть, можно доработать аналогично)
+                const paymentData = { amount, payment_method: method, status, notes };
+                response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(paymentData)
+                });
+                if (response.success) {
+                    showNotification('success', 'Payment updated successfully');
+                    // Можно реализовать обновление чека через PUT с FormData, если нужно
+                    closeModal('editPaymentModal');
+                    await loadTransactionDetails(transactionId);
+                } else {
+                    throw new Error(response.message || 'Failed to update payment');
+                }
+            } else {
+                // СОЗДАНИЕ платежа: если есть файл — отправляем FormData
+                if (receiptFile) {
+                    const formData = new FormData();
+                    formData.append('amount', amount);
+                    formData.append('payment_method', method);
+                    formData.append('status', status);
+                    formData.append('notes', notes || '');
+                    formData.append('receipt', receiptFile);
+                    response = await fetch(`${API_BASE_URL}/v1/admin/transactions/${transactionId}/payments`, {
+                        method: 'POST',
+                        credentials: 'include',
+                        body: formData
+                    }).then(r => r.json());
+                } else {
+                    const paymentData = { amount, payment_method: method, status, notes };
+                    response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`, {
+                        method: 'POST',
+                        body: JSON.stringify(paymentData)
+                    });
+                }
+                if (response.success && response.payment) {
+                    showNotification('success', 'Payment added successfully');
+                    closeModal('addPaymentModal');
+                    await loadTransactionDetails(transactionId);
+                } else {
+                    throw new Error(response.message || 'Failed to create payment');
+                }
+            }
+        } catch (error) {
+            console.error('Error processing payment:', error);
+            showNotification('error', 'Error processing payment: ' + error.message);
+        }
+    });
+}

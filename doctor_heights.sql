@@ -209,26 +209,6 @@ INSERT INTO `transaction_witnesses` (`id`, `transaction_id`, `witness_type`, `na
 (29, 25, 'witness1', 'Information1', '1234556-21352-2', '+92-1234567890'),
 (30, 25, 'witness2', 'Information2', '1234556-21352-1', '+92-1234567891');
 
--- --------------------------------------------------------
-
---
--- Структура таблицы `transfer_requests`
---
-
-CREATE TABLE `transfer_requests` (
-  `id` int(11) NOT NULL,
-  `property_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `requester_id` int(11) NOT NULL,
-  `requester_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `requester_cnic` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `status` enum('pending','approved','rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'pending',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `admin_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
 --
 -- Структура таблицы `users`
 --

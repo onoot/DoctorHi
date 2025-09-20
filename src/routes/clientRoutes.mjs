@@ -1,123 +1,87 @@
-//clientRoutes.mjs
 import express from 'express';
 import authController from '../controllers/authController.mjs';
 import transactionController from '../controllers/transactionController.mjs';
-import { auth, authLocale } from '../middlewares/auth.mjs';
+import { auth, authLocale, validateToken } from '../middlewares/auth.mjs';
 import { body, query } from 'express-validator';
-import Transaction from '../models/Transaction.mjs';
-import jwt from 'jsonwebtoken';
+
+import path from 'path';
+import fs from 'fs/promises';
+import { fileURLToPath } from 'url';
+import { createReadStream } from 'fs'; 
+
 import pool from '../config/database.mjs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Transaction routes
-router.post('/transactions/request', [
-  auth,
-  body('property_id').notEmpty().withMessage('Please specify property ID'),
-  body('new_owner_name').notEmpty().withMessage('Please specify new owner name'),
-  body('new_owner_cnic').notEmpty().withMessage('Please specify new owner CNIC')
-], transactionController.requestTransaction);
-
 router.get('/transactions', auth, transactionController.getUserTransactions);
+router.get('/transactions/:id/details', authLocale, transactionController.getTransactionDetails);
 
-// Новый маршрут для получения истории транзакций объекта
-router.get('/get-object', [
-    query('property_id').notEmpty().withMessage('Property ID is required')
-], async (req, res) => {
+router.get('/transactions/my', transactionController.getUserTransactions);
+router.get('/my/:propertyId', authLocale, transactionController.getUserPropertyTransactions);
+router.put('/my/:id', authLocale, [
+    body('status').isIn(['pending', 'cancelled']).withMessage('Invalid status')
+], transactionController.updateUserTransaction);
+
+// Роут для скачивания файла по ID
+router.get('/files/:id', authLocale, async (req, res) => {
+    const fileId = req.params.id;
+
+    if (!fileId || isNaN(fileId)) {
+        return res.status(400).json({ success: false, message: 'Invalid file ID' });
+    }
+
     try {
-        const propertyId = req.query.property_id;
-
-
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return res.status(401).json({ isAuthenticated: false, message: 'No token provided' });
-        }
-    
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // Check if user exists and is not blocked
-        const [users] = await pool.query(
-          'SELECT id, name, cnic, email, role, status FROM users WHERE id = ?',
-          [decoded.id]
+        // Получаем информацию о файле из БД — через pool.query
+        const [files] = await pool.query(
+            `SELECT file_name, original_name, file_type, file_path FROM transaction_files WHERE id = ?`,
+            [fileId]
         );
-        
-        const user = users[0];
-        if (!user || user.status === 'blocked') {
-          return res.status(401).json({ 
-            isAuthenticated: false, 
-            message: 'User not found or blocked' 
-          });
+
+        if (files.length === 0) {
+            return res.status(404).json({ success: false, message: 'File not found' });
         }
-       
-        const transactions = await Transaction.getObjectTransactions(propertyId, decoded.id);
-        
-        res.json({
-            success: true,
-            transactions: transactions
+
+        const fileInfo = files[0];
+        let filePath = fileInfo.file_path;
+
+        // Нормализуем путь
+        if (filePath.startsWith('../../../')) {
+            filePath = path.join(__dirname, '..', '..', filePath.replace('../../../', ''));
+        } else if (filePath.startsWith('../')) {
+            filePath = path.join(__dirname, '..', filePath);
+        } else {
+            filePath = path.join(__dirname, filePath);
+        }
+
+        // Проверяем существование файла
+        try {
+            await fs.access(filePath);
+        } catch {
+            return res.status(404).json({ success: false, message: 'File not found on disk' });
+        }
+
+        // Устанавливаем заголовки
+        res.setHeader('Content-Type', fileInfo.file_type);
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileInfo.original_name)}"`);
+
+        // Потоковая передача — ИСПРАВЛЕНО
+        const fileStream = createReadStream(filePath); // <-- ВОТ ТУТ ИСПРАВЛЕНИЕ
+        fileStream.pipe(res);
+
+        fileStream.on('error', (err) => {
+            console.error('Error streaming file:', err);
+            if (!res.headersSent) {
+                res.status(500).json({ success: false, message: 'Error reading file' });
+            }
         });
+
     } catch (error) {
-        console.error('Error getting object transactions:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error getting object transactions'
-        });
+        console.error('Database or file system error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
 
-// Transfer Request routes
-router.post('/transfer-request', [
-    authLocale,
-    body('property_id').notEmpty().withMessage('Property ID is required'),
-    body('requester_name').notEmpty().withMessage('Requester name is required'),
-    body('requester_cnic').notEmpty().withMessage('Requester CNIC is required')
-], async (req, res) => {
-    try {
-        const authHeader = req.headers.authorization;
-            if (!authHeader || !authHeader.startsWith('Bearer ')) {
-              return res.status(401).json({ isAuthenticated: false, message: 'No token provided' });
-            }
-        
-            const token = authHeader.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            
-            // Check if user exists and is not blocked
-            const [users] = await pool.query(
-              'SELECT id, name, cnic, email, role, status FROM users WHERE id = ?',
-              [decoded.id]
-            );
-            
-            const user = users[0];
-            if (!user || user.status === 'blocked') {
-              return res.status(401).json({ 
-                isAuthenticated: false, 
-                message: 'User not found or blocked' 
-              });
-            }
-
-        const requestData = {
-            property_id: req.body.property_id,
-            requester_id: decoded.id,
-            requester_name: req.body.name,
-            requester_cnic: req.body.cnic
-        };
-        console.log("Чебурек",requestData);
-
-        const requestId = await Transaction.createTransferRequest(requestData);
-        
-        res.json({
-            success: true,
-            message: 'Transfer request created successfully',
-            request_id: requestId
-        });
-    } catch (error) {
-        console.error('Error creating transfer request:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error creating transfer request'
-        });
-    }
-});
-
-
-export default router; 
+export default router;

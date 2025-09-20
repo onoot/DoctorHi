@@ -1,7 +1,7 @@
 import express from 'express';
 import authController from '../controllers/authController.mjs';
 import { body } from 'express-validator';
-import { validateToken } from '../middlewares/auth.mjs';
+import { auth, authLocale, validateToken } from '../middlewares/auth.mjs';
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post('/login', [
 ], authController.login);
 
 // Add check-auth route
-router.get('/check-auth', authController.checkAuth);
+router.get('/check-auth', authLocale, authController.checkAuth);
 
 // Admin panel routes
 router.post('/admin/login', [

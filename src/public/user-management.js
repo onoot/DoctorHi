@@ -181,30 +181,6 @@ function initUserManagementHandlers() {
     // Обработчики генерации логина/пароля
     document.querySelector('.regenerate-login-btn')?.addEventListener('click', regenerateLogin);
     document.querySelector('.regenerate-password-btn')?.addEventListener('click', regeneratePassword);
-
-    // Обработчики закрытия модальных окон (оставляем как есть)
-    document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function () {
-            const modalId = this.getAttribute('data-modal');
-            closeModal(modalId);
-        });
-    });
-
-    // Закрытие по клику на overlay
-    document.addEventListener('click', function (event) {
-        if (event.target.classList.contains('modal')) {
-            closeModal(event.target.id);
-        }
-    });
-
-    // Закрытие по Esc
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape') {
-            document.querySelectorAll('.modal.show').forEach(modal => {
-                closeModal(modal.id);
-            });
-        }
-    });
 }
 
 /**

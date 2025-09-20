@@ -104,6 +104,7 @@
                     </table>
                 </div>
             </div>
+
             <div id="users-archive" class="section">
                 <div class="section-header">
                     <h2 class="section-title">Archive</h2>
@@ -133,6 +134,7 @@
                     </table>
                 </div>
             </div>
+
             <!-- Модальное окно для просмотра пользователя -->
             <div id="userModal" class="modal">
                 <div class="modal-content">
@@ -146,7 +148,150 @@
                 </div>
             </div>
 
-            <!-- Модальное окно для редактирования платежа -->
+            <!-- Модальное окно для просмотра сделки -->
+            <div id="viewTransactionModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Transaction Details</h2>
+                        <span class="close" data-modal="viewTransactionModal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="currentTransactionId">
+                        <div class="transaction-details">
+                            <p><strong>Transaction ID:</strong> <span id="transactionId"></span></p>
+                            <p><strong>Property:</strong> <span id="propertyName"></span></p>
+                            <p><strong>Previous Owner:</strong> <span id="previousOwner"></span></p>
+                            <p><strong>New Owner:</strong> <span id="newOwner"></span></p>
+                            <p><strong>Status:</strong> <span id="transactionStatus"></span></p>
+                            <!-- Контейнеры для документов -->
+                            <!-- Кнопки действий с транзакцией -->
+                            <div class="transaction-actions"
+                                style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
+                                <button class="action-btn btn-edit" data-action="upload-modal"
+                                    data-category="agreement">Upload Agreement</button>
+                                <button class="action-btn btn-edit" data-action="upload-modal"
+                                    data-category="video">Upload Video</button>
+                                <button class="action-btn btn-edit" data-action="upload-multiple">Upload Proof
+                                    Documents</button>
+                                <button class="action-btn btn-edit" data-action="add-payment">Add Payment</button>
+                            </div>
+                                <br>
+                                <br>
+                                <br>
+                            <div class="transaction-documents">
+                                <h3>Transaction Documents</h3>
+                                <br>
+                                <br>
+                                <table id="documentsTable" class="documents-table table_admin">
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>File Name</th>
+                                            <th>Upload Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="documentsTableBody">
+                                        <!-- Файлы будут добавлены сюда через JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+  <br>
+                                <br>
+                            <div class="transaction-documents">
+                                <h3>Payments</h3>
+                            <!-- Таблица платежей -->
+                            <table id="paymentsTable" class="table_admin">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                        <th>Receipt</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="paymentsTableBody"></tbody>
+                            </table>
+                            <div class="amount-section">
+                                <p><strong>Total Amount:</strong>
+                                    <span id="totalAmountView"></span> PKR
+                                    <button id="editAmountBtn" class="action-btn btn-edit edit-amount-btn" style="padding: 2px 8px; margin-left: 10px;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    </p>
+                                    <div id="amountEditSection" style="display: none; margin: 10px 0;">
+                                    <input type="number" id="newTotalAmount" value="0" class="form-control"
+                                        placeholder="Enter new amount" style="width: 200px; display: inline-block;">
+                                    <button class="action-btn save-amount-btn" style="margin-left: 10px;">
+                                        <i class="fas fa-save"></i> Save
+                                    </button>
+                                    <button class="action-btn btn-reject cancel-amount-btn" style="margin-left: 5px;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+                            <p><strong>Paid Amount:</strong> <span id="paidAmount"></span></p>
+                            <p><strong>Remaining Amount:</strong> <span id="remainingAmount"></span></p>
+                            <p><strong>Created Date:</strong> <span id="createdAt"></span></p>
+                        </div>
+                        </div>
+  <br>
+                                <br>
+                        <div class="witnesses-section">
+                            <h3>Witnesses Information</h3>
+                            <div class="witness-form">
+                                <div class="witness-block">
+                                    <h4>Witness 1</h4>
+                                    <div class="form-group">
+                                        <label>Name *</label>
+                                        <input type="text" id="viewTransactionModal_witness1Name" class="form-control"
+                                            placeholder="Enter witness name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>CNIC *</label>
+                                        <input type="text" id="viewTransactionModal_witness1CNIC" class="form-control"
+                                            placeholder="XXXXX-XXXXXXX-X">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone</label>
+                                        <input type="text" id="viewTransactionModal_witness1Phone" class="form-control"
+                                            placeholder="+XXXXXXXXXXXX">
+                                    </div>
+                                </div>
+
+                                <div class="witness-block">
+                                    <h4>Witness 2</h4>
+                                    <div class="form-group">
+                                        <label>Name *</label>
+                                        <input type="text" id="viewTransactionModal_witness2Name" class="form-control"
+                                            placeholder="Enter witness name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>CNIC *</label>
+                                        <input type="text" id="viewTransactionModal_witness2CNIC" class="form-control"
+                                            placeholder="XXXXX-XXXXXXX-X">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone</label>
+                                        <input type="text" id="viewTransactionModal_witness2Phone" class="form-control"
+                                            placeholder="+XXXXXXXXXXXX">
+                                    </div>
+                                </div>
+
+                                <div class="witness-actions">
+                                    <button class="action-btn update-witnesses-btn">
+                                        <i class="fas fa-save"></i> Save Witnesses
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+              <!-- Модальное окно для редактирования платежа -->
             <div id="editPaymentModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -192,140 +337,13 @@
                                     rows="3"></textarea>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="action-btn btn-delete cancel-payment-btn">Cancel</button>
-                                <button type="submit" class="action-btn btn-edit save-payment-btn">Save Changes</button>
+                                <button type="button" class="action-btn btn-edit save-payment-btn">Save Changes</button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-            <!-- Модальное окно для просмотра сделки -->
-            <div id="viewTransactionModal" class="modal">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Transaction Details</h2>
-                        <span class="close" data-modal="viewTransactionModal">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="currentTransactionId">
-                        <div class="transaction-details">
-                            <p><strong>Transaction ID:</strong> <span id="transactionId"></span></p>
-                            <p><strong>Property:</strong> <span id="propertyName"></span></p>
-                            <p><strong>Previous Owner:</strong> <span id="previousOwner"></span></p>
-                            <p><strong>New Owner:</strong> <span id="newOwner"></span></p>
-                            <p><strong>Status:</strong> <span id="transactionStatus"></span></p>
-                            <!-- Контейнеры для документов -->
-                            <!-- Кнопки действий с транзакцией -->
-                            <div class="transaction-actions"
-                                style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
-                                <button class="action-btn btn-edit" data-action="upload-modal"
-                                    data-category="agreement">Upload Agreement</button>
-                                <button class="action-btn btn-edit" data-action="upload-modal"
-                                    data-category="video">Upload Video</button>
-                                <button class="action-btn btn-edit" data-action="upload-multiple">Upload Proof
-                                    Documents</button>
-                                <button class="action-btn btn-edit" data-action="add-payment">Add Payment</button>
-                            </div>
-                            <div class="transaction-documents">
-                                <h3>Agreement File:</h3>
-                                <div id="agreementFile"></div>
-                                <h3>Video File:</h3>
-                                <div id="videoFile"></div>
 
-                                <h3>Proof Documents:</h3>
-                                <div id="proofDocuments"></div>
-                            </div>
-
-                            <!-- Таблица платежей -->
-                            <table id="paymentsTable">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Date</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                        <th>Receipt</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="paymentsTableBody"></tbody>
-                            </table>
-                            <div class="amount-section">
-                                <p><strong>Total Amount:</strong>
-                                    <span id="totalAmountView"></span>
-                                    <button class="action-btn btn-edit edit-amount-btn"
-                                        style="padding: 2px 8px; margin-left: 10px;">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                </p>
-                                <div id="amountEditSection" style="display: none; margin: 10px 0;">
-                                    <input type="number" id="newTotalAmount" value="0" class="form-control"
-                                        placeholder="Enter new amount" style="width: 200px; display: inline-block;">
-                                    <button class="action-btn btn-approve save-amount-btn" style="margin-left: 10px;">
-                                        <i class="fas fa-save"></i> Save
-                                    </button>
-                                    <button class="action-btn btn-reject cancel-amount-btn" style="margin-left: 5px;">
-                                        <i class="fas fa-times"></i> Cancel
-                                    </button>
-                                </div>
-                            </div>
-                            <p><strong>Paid Amount:</strong> <span id="paidAmount"></span></p>
-                            <p><strong>Remaining Amount:</strong> <span id="remainingAmount"></span></p>
-                            <p><strong>Created Date:</strong> <span id="createdAt"></span></p>
-                        </div>
-
-                        <div class="witnesses-section">
-                            <h3>Witnesses Information</h3>
-                            <div class="witness-form">
-                                <div class="witness-block">
-                                    <h4>Witness 1</h4>
-                                    <div class="form-group">
-                                        <label>Name *</label>
-                                        <input type="text" id="viewTransactionModal_witness1Name" class="form-control"
-                                            placeholder="Enter witness name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>CNIC *</label>
-                                        <input type="text" id="viewTransactionModal_witness1CNIC" class="form-control"
-                                            placeholder="XXXXX-XXXXXXX-X">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Phone</label>
-                                        <input type="text" id="viewTransactionModal_witness1Phone" class="form-control"
-                                            placeholder="+XXXXXXXXXXXX">
-                                    </div>
-                                </div>
-
-                                <div class="witness-block">
-                                    <h4>Witness 2</h4>
-                                    <div class="form-group">
-                                        <label>Name *</label>
-                                        <input type="text" id="viewTransactionModal_witness2Name" class="form-control"
-                                            placeholder="Enter witness name">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>CNIC *</label>
-                                        <input type="text" id="viewTransactionModal_witness2CNIC" class="form-control"
-                                            placeholder="XXXXX-XXXXXXX-X">
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Phone</label>
-                                        <input type="text" id="viewTransactionModal_witness2Phone" class="form-control"
-                                            placeholder="+XXXXXXXXXXXX">
-                                    </div>
-                                </div>
-
-                                <div class="witness-actions">
-                                    <button class="action-btn btn-approve update-witnesses-btn">
-                                        <i class="fas fa-save"></i> Save Witnesses
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 <div id="addUserModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
@@ -490,27 +508,21 @@
                     </div>
                     <div class="modal-body">
                         <form id="singleFileUploadForm">
-                            <input type="hidden" id="uploadFileModal_transactionId" name="transactionId">
-                            <input type="hidden" id="uploadFileModal_category" name="category">
+                            <input type="hidden" id="uploadTransactionId" name="transactionId">
+                            <input type="hidden" id="uploadCategory" name="category">
                             <div class="form-group">
-                                <label for="uploadFileModal_file">Select File</label>
+                                <label for="file">Select File</label>
                                 <div class="file-upload">
-                                    <input type="file" id="uploadFileModal_file" name="agreement"
-                                        accept="image/jpeg,image/png,application/pdf" required
-                                        class="file-upload-input">
+                                    <input type="file" id="file" name="file" class="file-upload-input">
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose File
                                     </button>
-                                    <div class="file-name-display" id="uploadFileModal_fileNameDisplay">No file chosen
-                                    </div>
+                                    <span class="file-name-display" id="fileNameDisplay">No file chosen</span>
                                 </div>
-                                <div id="uploadFileModal_imagePreview" style="margin-top: 10px; max-width: 300px;">
-                                    <img id="uploadFileModal_previewImage" style="max-width: 100%; display: none;">
-                                </div>
+                                <div id="previewImage" style="margin-top: 10px; max-width: 300px;"></div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="action-btn btn-delete cancel-upload-btn">Cancel</button>
-                                <button type="submit" class="action-btn btn-edit upload-single-btn">Upload</button>
+                                <button type="button" class="action-btn btn-primary" id="uploadSingleFileBtn">Ok</button>
                             </div>
                         </form>
                     </div>
@@ -526,24 +538,19 @@
                     </div>
                     <div class="modal-body">
                         <form id="multipleFileUploadForm">
-                            <input type="hidden" id="multipleUploadModal_transactionId" name="transactionId">
+                            <input type="hidden" id="multiUploadTransactionId" name="transactionId">
                             <div class="form-group">
-                                <label for="multipleUploadModal_files">Select Files</label>
+                                <label for="files">Select Files</label>
                                 <div class="file-upload">
-                                    <input type="file" id="multipleUploadModal_files" name="proof_documents" multiple
-                                        accept="image/jpeg,image/png,application/pdf" required
-                                        class="file-upload-input">
+                                    <input type="file" id="files" name="files" class="file-upload-input" multiple>
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose Files
                                     </button>
-                                    <div class="file-name-display" id="multipleUploadModal_fileNameDisplay">No files
-                                        chosen</div>
+                                    <span class="file-name-display" id="multipleFileNameDisplay">No files chosen</span>
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button"
-                                    class="action-btn btn-delete cancel-multi-upload-btn">Cancel</button>
-                                <button type="submit" class="action-btn btn-edit upload-multiple-btn">Upload</button>
+                                <button type="button" class="action-btn btn-primary" id="uploadMultipleFilesBtn">Загрузить</button>
                             </div>
                         </form>
                     </div>
@@ -614,7 +621,14 @@
                     </div>
                     <div class="modal-body">
                         <form id="addPaymentForm">
-                            <input type="hidden" id="addPaymentModal_transactionId">
+                            <div class="form-group">
+                                <label>Receipt File</label>
+                                <div class="file-upload">
+                                    <span class="file-name-display" id="receiptFileNameDisplay">No file chosen</span>
+                                </div>
+                                <div id="receiptPreview"></div>
+                            </div>
+                            <input type="hidden" id="paymentTransactionId" name="transactionId">
                             <div class="form-group">
                                 <label for="addPaymentModal_paymentAmount">Amount (PKR)</label>
                                 <div class="amount-input-container">
@@ -644,8 +658,7 @@
                                     <button type="button" class="file-upload-button">
                                         <i class="fas fa-upload"></i> Choose File
                                     </button>
-                                    <div class="file-name-display" id="addPaymentModal_receiptFileNameDisplay">No file
-                                        chosen</div>
+                                    <span class="file-name-display" id="addPaymentModal_receiptFileNameDisplay">No file chosen</span>
                                 </div>
                                 <div id="addPaymentModal_receiptPreview" style="margin-top: 10px;"></div>
                             </div>

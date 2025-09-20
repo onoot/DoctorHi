@@ -1,3 +1,63 @@
+// Для receiptFileNameDisplay (например, в форме создания платежа)
+document.addEventListener('DOMContentLoaded', function() {
+    const receiptFileInput = document.querySelector('input[type="file"][name="receipt"]');
+    const receiptFileNameDisplay = document.getElementById('receiptFileNameDisplay');
+    if (receiptFileInput && receiptFileNameDisplay) {
+        receiptFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            receiptFileNameDisplay.textContent = file ? file.name : 'No file chosen';
+        });
+    }
+});
+// Обновление имени файла для singleFileUploadForm
+document.addEventListener('DOMContentLoaded', function() {
+    // Для receipt в addPaymentModal (уже реализовано выше)
+    const receiptInput = document.getElementById('addPaymentModal_receiptFile');
+    const receiptNameDisplay = document.getElementById('addPaymentModal_receiptFileNameDisplay');
+    if (receiptInput && receiptNameDisplay) {
+        receiptInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            receiptNameDisplay.textContent = file ? file.name : 'No file chosen';
+        });
+    }
+
+    // Для single file upload modal
+    const fileInput = document.getElementById('file');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    if (fileInput && fileNameDisplay) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            fileNameDisplay.textContent = file ? file.name : 'No file chosen';
+        });
+    }
+
+    // Для multiple file upload modal
+    const filesInput = document.getElementById('files');
+    const multipleFileNameDisplay = document.getElementById('multipleFileNameDisplay');
+    if (filesInput && multipleFileNameDisplay) {
+        filesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) {
+                multipleFileNameDisplay.textContent = 'No files chosen';
+            } else if (files.length === 1) {
+                multipleFileNameDisplay.textContent = files[0].name;
+            } else {
+                multipleFileNameDisplay.textContent = files.map(f => f.name).join(', ');
+            }
+        });
+    }
+});
+// Обновление имени файла для receipt в addPaymentModal
+document.addEventListener('DOMContentLoaded', function() {
+    const receiptInput = document.getElementById('addPaymentModal_receiptFile');
+    const receiptNameDisplay = document.getElementById('addPaymentModal_receiptFileNameDisplay');
+    if (receiptInput && receiptNameDisplay) {
+        receiptInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            receiptNameDisplay.textContent = file ? file.name : 'No file chosen';
+        });
+    }
+});
 // file-upload.js
 // Функции для загрузки файлов
 
@@ -7,23 +67,129 @@
  */
 function openAddPaymentModal(transactionId) {
     console.log(`[PAYMENT] Opening add payment modal for transaction ${transactionId}`);
-    
     // Устанавливаем ID транзакции
     document.getElementById('paymentTransactionId').value = transactionId;
-    
     // Сбрасываем форму
     const form = document.getElementById('addPaymentForm');
     if (form) {
         form.reset();
     }
-    
     // Обновляем отображение
     document.getElementById('receiptFileNameDisplay').textContent = 'No file chosen';
     document.getElementById('receiptPreview').innerHTML = '';
-    
     // Открываем модальное окно
     openModal('addPaymentModal');
 }
+
+// === Новый код для загрузки файлов без submit ===
+document.addEventListener('DOMContentLoaded', function() {
+    // Одиночная загрузка
+    const uploadBtn = document.getElementById('uploadSingleFileBtn');
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', async function() {
+            const transactionId = document.getElementById('uploadTransactionId').value;
+            const category = document.getElementById('uploadCategory').value;
+            const fileInput = document.getElementById('file');
+            const file = fileInput.files[0];
+            if (!file) {
+                showNotification('error', 'Please select a file');
+                return;
+            }
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('category', category);
+                const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/documents`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+                    throw new Error(error.message || 'Upload failed');
+                }
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('success', 'File uploaded successfully');
+                    // Закрываем модальное окно
+                    closeModal('uploadFileModal');
+                    // Обновляем DOM - загружаем файлы для текущей транзакции
+                    if (transactionId) {
+                        loadTransactionFiles(transactionId);
+                    }
+                    // Показываем имя файла и превью
+                    document.getElementById('fileNameDisplay').textContent = file.name;
+                    const preview = document.getElementById('previewImage');
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.style.display = 'block';
+                            preview.innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:200px;">`;
+                        };
+                        reader.readAsDataURL(file);
+                    } else if (file.type === 'application/pdf') {
+                        preview.style.display = 'block';
+                        preview.innerHTML = '<i class="fas fa-file-pdf" style="font-size:48px;color:#dc3545;"></i>';
+                    } else if (file.type.startsWith('video/')) {
+                        preview.style.display = 'block';
+                        preview.innerHTML = '<i class="fas fa-file-video" style="font-size:48px;color:#007bff;"></i>';
+                    } else {
+                        preview.style.display = 'block';
+                        preview.innerHTML = '<i class="fas fa-file" style="font-size:48px;"></i>';
+                    }
+                } else {
+                    throw new Error(result.message || 'Upload failed');
+                }
+            } catch (error) {
+                showNotification('error', error.message || 'Error uploading file');
+            }
+        });
+    }
+    // Множественная загрузка
+    const uploadMultiBtn = document.getElementById('uploadMultipleFilesBtn');
+    if (uploadMultiBtn) {
+        uploadMultiBtn.addEventListener('click', async function() {
+            const transactionId = document.getElementById('multiUploadTransactionId').value;
+            const filesInput = document.getElementById('files');
+            if (!filesInput.files.length) {
+                showNotification('error', 'Please select files');
+                return;
+            }
+            const formData = new FormData();
+            for (let i = 0; i < filesInput.files.length; i++) {
+                formData.append('files', filesInput.files[i]);
+            }
+            formData.append('category', 'proof_documents');
+            try {
+                const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/documents`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: 'Upload failed' }));
+                    throw new Error(error.message || 'Upload failed');
+                }
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('success', 'Files uploaded successfully');
+                    // Закрываем модальное окно
+                    closeModal('multipleUploadModal');
+                    // Обновляем DOM - загружаем файлы для текущей транзакции
+                    if (transactionId) {
+                        loadTransactionFiles(transactionId);
+                    }
+                    // Показываем имена файлов
+                    document.getElementById('multipleFileNameDisplay').textContent = Array.from(filesInput.files).map(f=>f.name).join(', ');
+                } else {
+                    throw new Error(result.message || 'Failed to upload files');
+                }
+            } catch (error) {
+                showNotification('error', error.message || 'Error uploading files');
+            }
+        });
+    }
+});
 
 /**
  * Функция для открытия модального окна редактирования платежа
@@ -38,20 +204,74 @@ async function openEditPaymentModal(transactionId, paymentId) {
         if (response.success && response.payment) {
             const payment = response.payment;
             
-            // Заполняем форму
-            document.getElementById('paymentTransactionId').value = transactionId;
-            document.getElementById('paymentId').value = payment.id;
-            document.getElementById('paymentAmount').value = formatPKR(payment.amount);
-            document.getElementById('rawPaymentAmount').value = payment.amount;
-            document.getElementById('paymentMethod').value = payment.method;
-            document.getElementById('paymentStatus').value = payment.status;
-            document.getElementById('paymentNotes').value = payment.notes || '';
+            // Заполняем форму с правильными ID
+            const transactionIdEl = document.getElementById('editPaymentModal_transactionId');
+            const paymentIdEl = document.getElementById('editPaymentModal_paymentId');
+            const paymentAmountEl = document.getElementById('editPaymentModal_paymentAmount');
+            const rawPaymentAmountEl = document.getElementById('editPaymentModal_rawPaymentAmount');
+            const paymentMethodEl = document.getElementById('editPaymentModal_paymentMethod');
+            const paymentStatusEl = document.getElementById('editPaymentModal_paymentStatus');
+            const paymentNotesEl = document.getElementById('editPaymentModal_paymentNotes');
+            
+            if (transactionIdEl) transactionIdEl.value = transactionId;
+            if (paymentIdEl) paymentIdEl.value = payment.id;
+            if (paymentAmountEl) paymentAmountEl.value = formatPKR(payment.amount);
+            if (rawPaymentAmountEl) rawPaymentAmountEl.value = payment.amount;
+            if (paymentMethodEl) paymentMethodEl.value = payment.payment_method;
+            if (paymentStatusEl) paymentStatusEl.value = payment.status;
+            if (paymentNotesEl) paymentNotesEl.value = payment.notes || '';
             
             // Обновляем конвертацию в USD
             await updateUSD(payment.amount);
             
             // Открываем модальное окно
             openModal('editPaymentModal');
+             const saveEditPaymentBtn = document.querySelector('.save-payment-btn');
+    if (saveEditPaymentBtn) {
+        saveEditPaymentBtn.addEventListener('click', async function () {
+            const transactionId = document.getElementById('editPaymentModal_transactionId')?.value;
+            const paymentId = document.getElementById('editPaymentModal_paymentId')?.value;
+            const amount = parseNumber(document.getElementById('editPaymentModal_paymentAmount')?.value);
+            const method = document.getElementById('editPaymentModal_paymentMethod')?.value;
+            const status = document.getElementById('editPaymentModal_paymentStatus')?.value;
+            const notes = document.getElementById('editPaymentModal_paymentNotes')?.value;
+
+            if (!transactionId || !paymentId) {
+                showNotification('error', 'Transaction or Payment ID not found');
+                return;
+            }
+
+            if (amount <= 0) {
+                showNotification('error', 'Amount must be greater than 0');
+                return;
+            }
+
+            try {
+                const paymentData = {
+                    amount,
+                    payment_method: method,
+                    status,
+                    notes
+                };
+
+                const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(paymentData)
+                });
+
+                if (response.success) {
+                    showNotification('success', 'Payment updated successfully');
+                    closeModal('editPaymentModal');
+                    await loadTransactionDetails(transactionId); // Обновляем данные
+                } else {
+                    throw new Error(response.message || 'Failed to update payment');
+                }
+            } catch (error) {
+                console.error('Error updating payment:', error);
+                showNotification('error', 'Error updating payment: ' + error.message);
+            }
+        });
+    }
         } else {
             throw new Error(response.message || 'Payment not found');
         }
@@ -206,7 +426,7 @@ async function deleteFile(fileId, transactionId, category) {
     }
     
     try {
-        const response = await apiRequest(`/v1/admin/files/${fileId}`, {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents/${fileId}`, {
             method: 'DELETE'
         });
         
@@ -225,34 +445,6 @@ async function deleteFile(fileId, transactionId, category) {
     } catch (error) {
         console.error('Error deleting file:', error);
         showNotification('error', 'Error deleting file: ' + error.message);
-    }
-}
-
-
-/**
- * Функция для загрузки документов транзакции
- * @param {string} transactionId - ID транзакции
- */
-async function loadTransactionFiles(transactionId) {
-    try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`, {
-            method: 'GET'
-        });
-        
-        if (response.success && response.documents) {
-            // Распределяем файлы по категориям
-            const agreementFiles = response.documents.filter(file => file.category === 'agreement');
-            const videoFiles = response.documents.filter(file => file.category === 'video');
-            const proofFiles = response.documents.filter(file => file.category === 'proof');
-            
-            // Отображаем файлы в соответствующих контейнерах
-            displayFiles(agreementFiles, 'agreementFile', 'agreement');
-            displayFiles(videoFiles, 'videoFile', 'video');
-            displayFiles(proofFiles, 'proofDocuments', 'proof');
-        }
-    } catch (error) {
-        console.error('Error loading transaction files:', error);
-        showNotification('error', 'Error loading files');
     }
 }
 

@@ -35,6 +35,51 @@
         href='../wp-content/plugins/themesflat-addons-for-elementor/assets/css/tf-header-footerd1c0.css?ver=6.7.2'
         media='all' />
     <style>
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-success {
+            background-color: #e8f5e9;
+            border-left: 4px solid #2e7d32;
+            color: #2e7d32;
+        }
+
+        .alert-warning {
+            background-color: #e8f5e9;
+            border-left: 4px solid #787d2e;
+            color: #7d782e;
+        }
+
+        .alert-error {
+            background-color: #ffebee;
+            border-left: 4px solid #c62828;
+            color: #c62828;
+        }
+
+        .alert-info {
+            background-color: #e3f2fd;
+            border-left: 4px solid #1565c0;
+            color: #1565c0;
+        }
+
+        .alert h4 {
+            margin: 0 0 5px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .alert p {
+            margin: 0;
+            font-size: 14px;
+        }
+
         /* Стили для секции авторизации */
         .auth-form {
             max-width: 400px;
@@ -168,6 +213,9 @@
             background-color: #ffebee;
             border-left: 4px solid #c62828;
             color: #c62828;
+        }
+        .card{
+            padding: 0 15px;
         }
 
         .alert-info {
@@ -1735,11 +1783,11 @@
     <link rel="alternate" title="JSON" type="application/json" href="../wp-json/wp/v2/pages/251.json" />
     <link rel="EditURI" type="application/rsd+xml" title="RSD" href="../xmlrpc0db0.php?rsd" />
     <meta name="generator" content="WordPress 6.7.2" />
-	<link rel="canonical" href="https://doctor-height.online/transfer-ownership.html" />
-<meta property="og:image" content="https://doctor-height.online/wp-content/uploads/2024/02/favicon-32x32-1.png">
-<meta property="og:image:type" content="image/png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
+    <link rel="canonical" href="https://doctor-height.online/transfer-ownership.html" />
+    <meta property="og:image" content="https://doctor-height.online/wp-content/uploads/2024/02/favicon-32x32-1.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <link rel='shortlink' href='https://doctor-height.online/transfer-ownership.html' />
     <link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed"
         href="../wp-json/oembed/1.0/embed0a95.json?url=https%3A%2F%2Fdoctorheights.pk%2Famenities%2F" />
@@ -1773,7 +1821,7 @@
     <link rel="icon" href="../wp-content/uploads/2024/02/favicon-32x32-1.png" sizes="192x192" />
     <link rel="apple-touch-icon" href="../wp-content/uploads/2024/02/favicon-32x32-1.png" />
     <meta name="msapplication-TileImage"
-        content="https://doctorheights.pk/wp-content/uploads/2024/02/favicon-32x32-1.png" />
+        content="https://doctor-height.online/wp-content/uploads/2024/02/favicon-32x32-1.png" />
     <style id="wp-custom-css">
         input#wpforms-350-field_0 {
             padding: 25px 20px;
@@ -1874,22 +1922,26 @@
                                                         <li id="menu-item-98"
                                                             class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-98">
                                                             <a href="../index.html">Home<i class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-99"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-99">
                                                             <a href="../about/index.html">About<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-254"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-255">
                                                             <a href="index.html" aria-current="page">Amenities<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-255"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-251 current_page_item menu-item-254">
                                                             <a href="../transfer-ownership.html">Transfer Ownership<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -1902,11 +1954,13 @@
                                                     <li id="menu-item-98"
                                                         class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-98">
                                                         <a href="../index.html">Home<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-99"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-99">
                                                         <a href="../about/index.html">About<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-254"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-255">
                                                         <a href="index.html" aria-current="page">Amenities<i
@@ -1962,42 +2016,50 @@
                                                         <li id="menu-item-90"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-90">
                                                             <a href="../index.html">Home<i class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-87"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-87">
                                                             <a href="../about/index.html">About<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-344"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-345">
                                                             <a href="index.html" aria-current="page">Amenities<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-345"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-251 current_page_item menu-item-344">
                                                             <a href="../transfer-ownership.html">Transfer Ownership<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-91"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-91">
                                                             <a href="../plans/index.html">Plans<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-1114"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1114">
                                                             <a href="../gallery/index.html">Gallery<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-88"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-88">
                                                             <a href="../blog/index.html">Blog<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-89"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-89">
                                                             <a href="../contact/index.html">Contact<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -2011,17 +2073,19 @@
                                                     <li id="menu-item-90"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-90">
                                                         <a href="../index.html">Home<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-87"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-87">
                                                         <a href="../about/index.html">About<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-344"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-91">
                                                         <a href="index.html" aria-current="page">Amenities<i
                                                                 class="fa fa-angle-right" aria-hidden="true"></i></a>
-                                                    </li> 
-                                                     <li id="menu-item-344"
+                                                    </li>
+                                                    <li id="menu-item-344"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-91">
                                                         <a href="../plans/index.html" aria-current="page">Plans<i
                                                                 class="fa fa-angle-right" aria-hidden="true"></i></a>
@@ -2029,7 +2093,8 @@
                                                     <li id="menu-item-91"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-251 current_page_item menu-item-344">
                                                         <a href="/">Transfer Ownership<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-1114"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1114">
                                                         <a href="../gallery/index.html">Gallery<i
@@ -2038,7 +2103,8 @@
                                                     <li id="menu-item-88"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-88">
                                                         <a href="../blog/index.html">Blog<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-89"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-89">
                                                         <a href="../contact/index.html">Contact<i
@@ -2076,22 +2142,26 @@
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1113">
                                                             <a href="../plans/index.html">Plans<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-1111"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1111">
                                                             <a href="../gallery/index.html">Gallery<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-101"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-101">
                                                             <a href="../blog/index.html">Blog<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                         <li id="menu-item-102"
                                                             class="menu-item menu-item-type-post_type menu-item-object-page menu-item-102">
                                                             <a href="../contact/index.html">Contact<i
                                                                     class="fa fa-angle-right"
-                                                                    aria-hidden="true"></i></a></li>
+                                                                    aria-hidden="true"></i></a>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -2104,7 +2174,8 @@
                                                     <li id="menu-item-1113"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1113">
                                                         <a href="../plans/index.html">Plans<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-1111"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-1111">
                                                         <a href="../gallery/index.html">Gallery<i
@@ -2113,7 +2184,8 @@
                                                     <li id="menu-item-101"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-101">
                                                         <a href="../blog/index.html">Blog<i class="fa fa-angle-right"
-                                                                aria-hidden="true"></i></a></li>
+                                                                aria-hidden="true"></i></a>
+                                                    </li>
                                                     <li id="menu-item-102"
                                                         class="menu-item menu-item-type-post_type menu-item-object-page menu-item-102">
                                                         <a href="../contact/index.html">Contact<i
@@ -2172,6 +2244,7 @@
                     </div>
                 </div>
             </div>
+            <div class="alert" id="notification-container"></div>
 
             <div id="authSection">
                 <div class="auth-form" id="loginForm">
@@ -2190,9 +2263,8 @@
                         </div>
                         <div class="form-actions">
                             <button type="button" style="border: none" class="submit-btn"
-                                id="loginButton">Login</button>
-                            <button type="button" style="border: none" class="switch-btn"
-                                onclick="window.location.href='./index.html'">Back</button>
+                                id="loginButton">Login
+                            </button>
                         </div>
                         <div id="errorMessage" class="error-message"></div>
                     </form>
@@ -2234,7 +2306,7 @@
 
                                                         <div id="metform-wrap-35c246c0-175" class="mf-form-wrapper"
                                                             data-form-id="175"
-                                                            data-action="https://doctorheights.pk/wp-json/metform/v1/entries/insert/175"
+                                                            data-action="https://doctor-height.online/wp-json/metform/v1/entries/insert/175"
                                                             data-wp-nonce="f58aeca955" data-form-nonce="5b8aa8093b"
                                                             data-quiz-summery="false" data-save-progress="false"
                                                             data-form-type="general-form" data-stop-vertical-effect="">
@@ -2525,7 +2597,8 @@
                                                             <p class="ekit-heading--title elementskit-section-title ">©
                                                                 Copyright 2024 <span><span>Doctor Height</span></span>
                                                             </p>
-                                                        </a></div>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -2542,8 +2615,10 @@
                                                         <a href="https://digi-inn.com/" target="_blank">
                                                             <p class="ekit-heading--title elementskit-section-title ">
                                                                 Design &amp; Develop by
-                                                                <span><span>Digi-Inn</span></span></p>
-                                                        </a></div>
+                                                                <span><span>Digi-Inn</span></span>
+                                                            </p>
+                                                        </a>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -2672,7 +2747,7 @@
         id="elementskit-framework-js-frontend-js"></script>
     <script id="elementskit-framework-js-frontend-js-after">
         var elementskit = {
-            resturl: 'https://doctorheights.pk/wp-json/elementskit/v1/',
+            resturl: 'https://doctor-height.online/wp-json/elementskit/v1/',
         }
 
 
@@ -2729,60 +2804,186 @@
         });
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const baseURL = `https://${window?.location?.host}`;
-        const token = localStorage.getItem('client_token');
+    function showNotification(type, message) {
+        let duration = 5000;
 
-        function showNotification(type, message) {
-            let duration = 3000
-            // Создаем контейнер для уведомлений, если его еще нет
-            let container = document.getElementById('notification-container');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'notification-container';
-                document.body.appendChild(container);
-            }
-
-            // Создаем элемент уведомления
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-
-            // Добавляем уведомление в контейнер
-            container.appendChild(notification);
-
-            // Показываем уведомление с анимацией
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 10); // Небольшая задержка для корректного запуска анимации
-
-            // Автоматически скрываем и удаляем уведомление через указанное время
-            setTimeout(() => {
-                notification.classList.remove('show'); // Запускаем анимацию исчезновения
-                setTimeout(() => {
-                    notification.remove(); // Удаляем элемент из DOM
-                }, 300); // Ждем завершения анимации исчезновения
-            }, duration);
+        // Создаем контейнер для уведомлений, если его еще нет
+        let container = document.getElementById('notification-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'notification-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '1000';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '10px';
+            container.style.maxWidth = '400px';
+            document.body.appendChild(container);
         }
 
-        if (token) {
-            verifyToken();
+        // Создаем элемент уведомления
+        const notification = document.createElement('div');
+
+        // Используем правильные классы из CSS
+        let alertClass = 'alert';
+        switch (type) {
+            case 'success':
+                alertClass += ' alert-success';
+                break;
+            case 'warning':
+                alertClass += ' alert-warning';
+                break;
+            case 'error':
+                alertClass += ' alert-error';
+                break;
+            case 'info':
+                alertClass += ' alert-info';
+                break;
+            default:
+                alertClass += ' alert-info';
         }
-        const loginForm = document.getElementById('userLoginForm');
+
+        notification.className = alertClass;
+
+        // Форматируем сообщение с заголовком и текстом
+        const title = type.charAt(0).toUpperCase() + type.slice(1);
+        notification.innerHTML = `
+        <h4>${title}</h4>
+        <p>${message}</p>
+    `;
+
+        // Добавляем уведомление в контейнер
+        container.appendChild(notification);
+
+        // Принудительная перерисовка для анимации
+        void notification.offsetWidth;
+
+        // Анимация появления
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateY(0)';
+
+        // Функция закрытия уведомления
+        const closeNotification = () => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateY(-20px)';
+
+            setTimeout(() => {
+                notification.remove();
+                if (container.children.length === 0) {
+                    document.body.removeChild(container);
+                }
+            }, 300);
+        };
+
+        // Обработчик закрытия по клику на крестик
+        const closeBtn = notification.querySelector('.notification-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeNotification();
+            });
+        }
+
+        // Обработчик закрытия по клику на уведомление
+        notification.addEventListener('click', () => {
+            closeNotification();
+        });
+
+        // Автоматически скрываем уведомление через указанное время
+        setTimeout(() => {
+            closeNotification();
+        }, duration);
+    }
+
+   document.addEventListener('DOMContentLoaded', function () {
+    const baseURL = `https://${window?.location?.host}`;
+    const token = localStorage.getItem('client_token');
+
+    // Создаем контейнер для сообщения об отсутствии транзакций (если его еще нет)
+    let noTransactionsContainer = document.getElementById('no-transactions-container');
+    if (!noTransactionsContainer) {
+        noTransactionsContainer = document.createElement('div');
+        noTransactionsContainer.id = 'no-transactions-container';
+        noTransactionsContainer.style.display = 'none';
+        noTransactionsContainer.className = 'container mt-5 text-center';
+        noTransactionsContainer.style.maxWidth = '600px';
+        noTransactionsContainer.style.margin = '100px auto';
+        
+        noTransactionsContainer.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">You have no active transactions</h2>
+                    <p class="card-text mb-4">Your account is active but there are no property transactions associated with it.</p>
+                    <p class="card-text mb-4">Please contact administrator if you believe this is an error.</p>
+                </div>
+            </div>
+        `;
+        
+        // Вставляем контейнер после authSection
         const authSection = document.getElementById('authSection');
-        const transferSection = document.getElementById('propertyContainer');
+        if (authSection) {
+            authSection.parentNode.insertBefore(noTransactionsContainer, authSection.nextSibling);
+        }
+    }
 
-        const buttonLogin = document.getElementById('loginButton');
+    // Обработчик для кнопки "Back to Login"
+    const backToLoginBtn = document.getElementById('backToLoginBtn');
+    if (backToLoginBtn) {
+        backToLoginBtn.addEventListener('click', function() {
+            // Скрываем сообщение об отсутствии транзакций
+            noTransactionsContainer.style.display = 'none';
+            // Показываем форму авторизации
+            const authSection = document.getElementById('authSection');
+            if (authSection) authSection.style.display = 'block';
+            
+            // Очищаем токен и данные пользователя
+            localStorage.removeItem('client_token');
+            localStorage.removeItem('users');
+        });
+    }
+
+    if (token) {
+        verifyToken();
+    }
+
+    const loginForm = document.getElementById('userLoginForm');
+    const authSection = document.getElementById('authSection');
+
+    const buttonLogin = document.getElementById('loginButton');
+    if (buttonLogin) {
         buttonLogin.addEventListener('click', handleLoginFormSubmit);
+    }
 
-        async function handleLoginFormSubmit() {
-            const login = loginForm.email.value;
-            const password = loginForm.password.value;
+    async function handleLoginFormSubmit() {
+        if (!loginForm) {
+            showNotification('error', 'Login form not found');
+            return;
+        }
+        
+        const login = loginForm.email.value.trim();
+        const password = loginForm.password.value.trim();
 
-            const loginData = {
-                login: login,
-                password: password
-            };
+        // Валидация полей
+        if (!login) {
+            showNotification('error', "Please enter your email");
+            loginForm.email.focus();
+            return;
+        }
+
+        if (!password) {
+            showNotification('error', "Please enter your password");
+            loginForm.password.focus();
+            return;
+        }
+
+        const loginData = {
+            login: login,
+            password: password
+        };
+
+        try {
             const loginResponse = await fetch(baseURL + '/api/auth/login', {
                 method: 'POST',
                 headers: {
@@ -2791,22 +2992,39 @@
                 body: JSON.stringify(loginData)
             });
 
+            // Исправлено: Проверяем loginResponse.ok вместо loginResponse.success
+            if (!loginResponse.ok) {
+                const errorData = await loginResponse.json().catch(() => ({}));
+                showNotification('error', errorData.message || "Invalid email or password");
+                return;
+            }
+
             const loginResponseData = await loginResponse.json();
-            console.log(loginResponseData);
-            if (loginResponse?.status == 401) {
-                showNotification('error', "Invalid password or login");
+
+            // Проверяем успешный ответ
+            if (!loginResponseData?.success) {
+                showNotification('error', loginResponseData.message || "Invalid email or password");
                 return;
             }
 
             localStorage.setItem('client_token', loginResponseData.client_token);
-            if (loginResponse.status === 200) {
-                authSection.classList.add('hidden');
-                transferSection.classList.remove('hidden');
-            }
+
+            // После успешного логина сразу проверяем транзакции
+            await verifyToken();
+
+        } catch (error) {
+            console.error('Login error:', error);
+            showNotification('error', 'An error occurred during login. Please try again.');
+        }
+    }
+
+    async function verifyToken() {
+        const token = localStorage.getItem('client_token');
+        if (!token) {
+            return;
         }
 
-        async function verifyToken() {
-            const token = localStorage.getItem('client_token');
+        try {
             const verifyResponse = await fetch(baseURL + '/api/auth/check-auth', {
                 method: 'GET',
                 headers: {
@@ -2815,59 +3033,86 @@
                 }
             });
 
-            const verifyResponseData = await verifyResponse.json();
-            localStorage.setItem('users', JSON.stringify(verifyResponseData.user));
-            if (verifyResponse.status === 200) {
-                authSection.classList.add('hidden');
-                transferSection.classList.remove('hidden');
-                updateProperties(verifyResponseData?.transaction);
+            if (!verifyResponse.ok) {
+                console.error('Token verification failed with status:', verifyResponse.status);
+                // Очищаем токен при ошибке проверки
+                localStorage.removeItem('client_token');
+                localStorage.removeItem('users');
+                return;
             }
-            if (currentUser.role === 'user') {
-      // Получаем транзакции пользователя
-      const transactionsResponse = await fetch(`${API_BASE_URL}/v1/transactions/my`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
+
+            const verifyResponseData = await verifyResponse.json();
+
+            if (!verifyResponseData.isAuthenticated || !verifyResponseData.success) {
+                console.error('Token verification failed: isAuthenticated is false');
+                localStorage.removeItem('client_token');
+                localStorage.removeItem('users');
+                return;
+            }
+
+            if (!verifyResponseData.user) {
+                console.error('Token verification failed: user data is missing');
+                localStorage.removeItem('client_token');
+                localStorage.removeItem('users');
+                return;
+            }
+
+            localStorage.setItem('users', JSON.stringify(verifyResponseData.user));
+
+            // Получаем транзакции пользователя
+            const transactionsResponse = await fetch(`${baseURL}/api/v1/client/transactions/my`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!transactionsResponse.ok) {
+                throw new Error('Failed to fetch transactions');
+            }
+
+            const responseData = await transactionsResponse.json();
+
+            // Проверяем, что данные содержат массив транзакций
+            if (!responseData.success || !Array.isArray(responseData.transactions)) {
+                throw new Error('Invalid response format for transactions');
+            }
+
+            const transactions = responseData.transactions;
+
+            // Фильтруем только активные транзакции
+            const activeTransactions = transactions.filter(transaction =>
+                transaction.status === 'approved' || transaction.status === 'pending'
+            );
+
+            // Получаем элементы секции авторизации и контейнера сообщения
+            const authSection = document.getElementById('authSection');
+            const noTransactionsContainer = document.getElementById('no-transactions-container');
+
+            if (activeTransactions.length > 0) {
+                // Если есть активные транзакции — переходим к первой
+                const firstActiveTransaction = activeTransactions[0];
+                window.location.href = `ownership-details.html?id=${encodeURIComponent(firstActiveTransaction.property_name)}&type=${encodeURIComponent(firstActiveTransaction.type || 'default')}`;
+            } else {
+                // Показываем сообщение о том, что нет активных транзакций
+                if (authSection) authSection.style.display = 'none';
+                if (noTransactionsContainer) noTransactionsContainer.style.display = 'block';
+            }
+
+        } catch (error) {
+            console.error('Token verification error:', error);
+            showNotification('error', error.message || 'An error occurred during authentication');
+            
+            // Очищаем токен при ошибке
+            localStorage.removeItem('client_token');
+            localStorage.removeItem('users');
         }
-      });
-
-      if (!transactionsResponse.ok) {
-        throw new Error('Failed to fetch transactions');
-      }
-
-      const transactions = await transactionsResponse.json();
-      // Фильтруем только активные транзакции (одобренные или находящиеся в процессе)
-      const activeTransactions = transactions.filter(transaction => 
-        transaction.status === 'approved' || transaction.status === 'pending'
-      );
-
-      if (activeTransactions.length > 0) {
-        // Перенаправляем на страницу владения с ID первой активной транзакции
-        window.location.href = `ownership-details.html?id=${encodeURIComponent(activeTransactions[0].id)}`;
-      } else {
-        // Показываем сообщение о том, что нет активных транзакций
-        document.body.innerHTML = `
-          <div class="container mt-5 text-center" style="max-width: 600px; margin: 100px auto;">
-            <div class="card">
-              <div class="card-body">
-                <h2 class="card-title mb-4">You have no active transactions</h2>
-                <p class="card-text mb-4">Your account is active but there are no property transactions associated with it.</p>
-                <p class="card-text mb-4">Please contact administrator if you believe this is an error.</p>
-                <button class="btn btn-primary" onclick="window.location.href='/dashboard.html'">
-                  Back
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    } 
     }
-    })
-   
-    function handleTransfer(id, type) {
-        window.location.href = `ownership-details.html?id=${encodeURIComponent(id)}&type=${encodeURIComponent(type)}`;
-    }
+});
+
+function handleTransfer(property_name, type) {
+    window.location.href = `ownership-details.html?id=${encodeURIComponent(property_name)}&type=${encodeURIComponent(type)}`;
+}
 
     jQuery(document).ready(function ($) {
         $('.menu-toggle').on('click', function () {

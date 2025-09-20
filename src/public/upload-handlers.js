@@ -29,8 +29,8 @@ function openUploadFileModal(transactionId, category) {
             modalTitle.textContent = 'Upload Agreement';
         } else if (category === 'video') {
             modalTitle.textContent = 'Upload Video';
-        } else if (category === 'proof') {
-            modalTitle.textContent = 'Upload Proof Document';
+        } else if (category === 'proof_documents') {
+            modalTitle.textContent = 'Upload Proof Documents';
         }
     }
     
@@ -59,29 +59,19 @@ function openUploadFileModal(transactionId, category) {
 
 /**
  * Функция для открытия модального окна множественной загрузки
- * @param {string} transactionId - ID транзакции (опционально)
+ * @param {string} transactionId - ID транзакции
+ * @param {string} category - Категория файла (по умолчанию 'proof_documents')
  */
-function openMultipleUploadModal(transactionId) {
-    // Получаем ID текущей транзакции, если не передан явно
-    if (!transactionId) {
-        const transactionIdElement = document.getElementById('currentTransactionId');
-        if (!transactionIdElement || !transactionIdElement.value) {
-            console.error('Transaction ID not found');
-            showNotification('error', 'Transaction ID not found');
-            return;
-        }
-        transactionId = transactionIdElement.value;
-    }
-    
+function openMultipleUploadModal(transactionId, category = 'proof_documents') {
     // Устанавливаем ID транзакции
     const multiUploadTransactionId = document.getElementById('multiUploadTransactionId');
-    if (multiUploadTransactionId) {
-        multiUploadTransactionId.value = transactionId;
-    } else {
+    if (!multiUploadTransactionId) {
         console.error('Multi upload transaction ID input not found');
         showNotification('error', 'Upload form not initialized correctly');
         return;
     }
+    
+    multiUploadTransactionId.value = transactionId;
     
     // Сбрасываем форму
     const form = document.getElementById('multipleFileUploadForm');
@@ -131,8 +121,10 @@ function initUploadHandlers() {
     document.querySelectorAll('[data-action="upload-multiple"]').forEach(button => {
         button.addEventListener('click', function() {
             const transactionId = document.getElementById('currentTransactionId')?.value;
+            const category = this.getAttribute('data-category') || 'proof_documents';
+            
             if (transactionId) {
-                openMultipleUploadModal(transactionId);
+                openMultipleUploadModal(transactionId, category);
             } else {
                 showNotification('error', 'Transaction ID not found');
             }
@@ -223,12 +215,26 @@ function initUploadHandlers() {
                 if (result.success) {
                     showNotification('success', 'File uploaded successfully');
                     
-                    // Обновляем список файлов
+                    // ✅ Обновляем список файлов — это и есть ПЕРЕРЕНДЕР
                     if (loadFilesAvailable) {
                         await loadTransactionFiles(transactionId);
                     }
                     
-                    closeModal('uploadFileModal');
+                    // ✅ Сбрасываем форму
+                    const form = document.getElementById('singleFileUploadForm');
+                    if (form) form.reset();
+                    
+                    // ✅ Очищаем превью
+                    const previewImage = document.getElementById('previewImage');
+                    if (previewImage) {
+                        previewImage.style.display = 'none';
+                        previewImage.src = '';
+                    }
+                    
+                    const fileNameDisplay = document.getElementById('fileNameDisplay');
+                    if (fileNameDisplay) {
+                        fileNameDisplay.textContent = 'No file chosen';
+                    }
                 } else {
                     throw new Error(result.message || 'Upload failed');
                 }
@@ -247,6 +253,7 @@ function initUploadHandlers() {
             
             const transactionId = document.getElementById('multiUploadTransactionId')?.value;
             const filesInput = document.getElementById('files');
+            const category = document.getElementById('uploadCategory')?.value || 'proof_documents';
             
             if (!transactionId) {
                 showNotification('error', 'Transaction ID not found');
@@ -262,7 +269,7 @@ function initUploadHandlers() {
             for (let i = 0; i < filesInput.files.length; i++) {
                 formData.append('files', filesInput.files[i]);
             }
-            formData.append('category', 'proof');
+            formData.append('category', category);
             
             try {
                 const response = await fetch(API_BASE_URL + `/v1/admin/transactions/${transactionId}/documents`, {
@@ -280,11 +287,19 @@ function initUploadHandlers() {
                 
                 if (result.success) {
                     showNotification('success', 'Files uploaded successfully');
-                    closeModal('multipleUploadModal');
                     
-                    // Обновляем документы транзакции
+                    // ✅ Обновляем документы — это и есть ПЕРЕРЕНДЕР
                     if (loadFilesAvailable) {
                         await loadTransactionFiles(transactionId);
+                    }
+                    
+                    // ✅ Сбрасываем форму
+                    const form = document.getElementById('multipleFileUploadForm');
+                    if (form) form.reset();
+                    
+                    const multipleFileNameDisplay = document.getElementById('multipleFileNameDisplay');
+                    if (multipleFileNameDisplay) {
+                        multipleFileNameDisplay.textContent = 'No files chosen';
                     }
                 } else {
                     throw new Error(result.message || 'Failed to upload files');
@@ -348,7 +363,7 @@ function displayFiles(files, containerId, category) {
         // Создаем превью файла
         let filePreview = '';
         if (file.file_type && file.file_type.startsWith('image/')) {
-            filePreview = `<div class="file-preview"><img src="${API_BASE_URL}/v1/admin/files/${file.id}" alt="${file.original_name}"></div>`;
+            filePreview = `<div class="file-preview"><img src="${API_BASE_URL}/v1/admin/files/${file.id}" alt="${file.original_name || 'Image'}"></div>`;
         } else if (file.file_type && file.file_type.includes('pdf')) {
             filePreview = '<i class="fas fa-file-pdf file-icon"></i>';
         } else if (file.file_type && (file.file_type.includes('video') || file.file_type.includes('mp4'))) {
@@ -361,7 +376,7 @@ function displayFiles(files, containerId, category) {
         fileElement.innerHTML = `
             ${filePreview}
             <div class="file-info">
-                <span class="file-name">${file.original_name || file.file_name}</span>
+                <span class="file-name">${file.original_name || file.name || file.file_name || file.fileName || 'Unknown file'}</span>
                 <span class="file-date">${new Date(file.created_at).toLocaleDateString()}</span>
             </div>
         `;
@@ -378,14 +393,6 @@ function displayFiles(files, containerId, category) {
  * @param {string} category - Категория файла
  */
 async function deleteFile(fileId, transactionId, category) {
-    if (!transactionId) {
-        transactionId = document.getElementById('currentTransactionId')?.value;
-        if (!transactionId) {
-            showNotification('error', 'Transaction ID not found');
-            return;
-        }
-    }
-    
     if (!confirm(`Вы уверены, что хотите удалить файл?`)) {
         return;
     }
@@ -394,19 +401,23 @@ async function deleteFile(fileId, transactionId, category) {
         const response = await apiRequest(`/v1/admin/files/${fileId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.success) {
             showNotification('success', 'File deleted successfully');
             
-            // Обновляем отображение файлов
-            if (category === 'agreement' || category === 'video' || category === 'proof') {
-                if (typeof loadTransactionFiles === 'function') {
-                    await loadTransactionFiles(transactionId);
-                }
+            // ✅ Удаляем элемент из DOM
+            const fileElement = document.querySelector(`[data-file-id="${fileId}"]`);
+            if (fileElement && fileElement.parentNode) {
+                fileElement.parentNode.removeChild(fileElement);
+            }
+
+            // ✅ Обновляем список файлов — это и есть ПЕРЕРЕНДЕР
+            if (category === 'agreement' || category === 'video' || category === 'proof_documents') {
+                await loadTransactionFiles(transactionId);
             } else if (category === 'receipt') {
-                if (typeof loadTransactionDetails === 'function') {
-                    await loadTransactionDetails(transactionId);
-                }
+                await loadTransactionPayments(transactionId);
+            } else {
+                console.warn(`[DELETE] Unknown category: ${category}. No UI update triggered.`);
             }
         } else {
             throw new Error(response.message || 'Failed to delete file');

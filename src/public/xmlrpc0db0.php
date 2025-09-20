@@ -2,13 +2,13 @@
 	<service>
 		<engineName>WordPress</engineName>
 		<engineLink>https://wordpress.org/</engineLink>
-		<homePageLink>https://doctorheights.pk</homePageLink>
+		<homePageLink>https://doctor-height.online</homePageLink>
 		<apis>
-			<api name="WordPress" blogID="1" preferred="true" apiLink="https://doctorheights.pk/xmlrpc.php" />
-			<api name="Movable Type" blogID="1" preferred="false" apiLink="https://doctorheights.pk/xmlrpc.php" />
-			<api name="MetaWeblog" blogID="1" preferred="false" apiLink="https://doctorheights.pk/xmlrpc.php" />
-			<api name="Blogger" blogID="1" preferred="false" apiLink="https://doctorheights.pk/xmlrpc.php" />
-				<api name="WP-API" blogID="1" preferred="false" apiLink="https://doctorheights.pk/wp-json/" />
+			<api name="WordPress" blogID="1" preferred="true" apiLink="https://doctor-height.online/xmlrpc.php" />
+			<api name="Movable Type" blogID="1" preferred="false" apiLink="https://doctor-height.online/xmlrpc.php" />
+			<api name="MetaWeblog" blogID="1" preferred="false" apiLink="https://doctor-height.online/xmlrpc.php" />
+			<api name="Blogger" blogID="1" preferred="false" apiLink="https://doctor-height.online/xmlrpc.php" />
+				<api name="WP-API" blogID="1" preferred="false" apiLink="https://doctor-height.online/wp-json/" />
 			</apis>
 	</service>
 </rsd>

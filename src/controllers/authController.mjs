@@ -44,12 +44,17 @@ const authController = {
 
       console.log('Cookies set, sending response');
       res.json({ 
+        success: true,
         user: userWithoutPassword,
         client_token: token 
       });
     } catch (error) {
       console.error('Login error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json(
+        { 
+           success: true,
+          message: 'Internal server error' 
+        });
     }
   },
 
@@ -81,6 +86,7 @@ const authController = {
       const { password, ...userWithoutPassword } = user;
 
       res.json({ 
+        success: true,
         isAuthenticated: true, 
         user: userWithoutPassword
       });
@@ -114,20 +120,20 @@ const authController = {
 
       const { email, password } = req.body;
       
-      const [admins] = await pool.query('SELECT * FROM auth_users WHERE email = ? AND role = ?', [email, 'admin']);
-      const admin = admins[0];
+      const [users] = await pool.query('SELECT * FROM auth_users WHERE email = ?', [email]);
+      const user = users[0];
 
-      if (!admin) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials !' });
       }
 
-      const isValidPassword = await bcrypt.compare(password, admin.password);
+      const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
 
       const token = jwt.sign(
-        { id: admin.id, role: admin.role },
+        { id: user.id, role: user.role },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -142,9 +148,9 @@ const authController = {
 
       // Return only necessary user data
       const userData = {
-        id: admin.id,
-        email: admin.email,
-        role: admin.role
+        id: user.id,
+        email: user.email,
+        role: user.role
       };
 
       res.json({ user: userData });

@@ -7,27 +7,27 @@
  */
 async function updateTransactionAmount(newAmount) {
     const transactionId = document.getElementById('currentTransactionId')?.value;
-    
+
     if (!transactionId) {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/amount`, {
             method: 'PUT',
             body: JSON.stringify({ amount: newAmount })
         });
-        
+
         if (response.success) {
             // Обновляем отображение суммы
             const totalAmountView = document.getElementById('totalAmountView');
             if (totalAmountView) {
                 totalAmountView.textContent = formatPKR(newAmount);
             }
-            
+
             showNotification('success', 'Transaction amount updated successfully');
-            
+
             // Обновляем оставшуюся сумму
             await loadTransactionDetails(transactionId);
         } else {
@@ -53,7 +53,7 @@ function displayWitnesses(transaction) {
                 document.getElementById('witness1CNIC').value = transaction.witnesses.witness1.cnic || '';
                 document.getElementById('witness1Phone').value = transaction.witnesses.witness1.phone || '';
             }
-            
+
             if (transaction.witnesses.witness2) {
                 document.getElementById('witness2Name').value = transaction.witnesses.witness2.name || '';
                 document.getElementById('witness2CNIC').value = transaction.witnesses.witness2.cnic || '';
@@ -76,121 +76,145 @@ function displayWitnesses(transaction) {
 }
 
 /**
- * Функция для отображения документов транзакции
- * @param {Object} transaction - Данные транзакции
+ * Функция для отображения документов транзакции в таблице
+ * @param {Object|Array} transaction - Данные транзакции или массив файлов
  */
 function displayTransactionDocuments(transaction) {
-    const agreementFile = document.getElementById('agreementFile');
-    const videoFile = document.getElementById('videoFile');
-    const proofDocuments = document.getElementById('proofDocuments');
-    
-    if (!agreementFile || !videoFile || !proofDocuments) {
-        console.warn('Document containers not found. Skipping document display.');
+    const tableBody = document.getElementById('documentsTableBody');
+    if (!tableBody) {
+        console.warn('Documents table body not found. Skipping document display.');
         return;
     }
-    
-    // Очистка контейнеров
-    agreementFile.innerHTML = '';
-    videoFile.innerHTML = '';
-    proofDocuments.innerHTML = '';
-    
-    // Отображение документов из ответа API
-    if (transaction.files) {
-        // Обработка всех файлов из ответа
+
+    // Очистка таблицы
+    tableBody.innerHTML = '';
+
+    let files = [];
+
+    // Обработка разных форматов данных
+    if (transaction && transaction.files) {
+        // Формат: { files: { agreement: [...], video: [...], ... } }
         Object.keys(transaction.files).forEach(category => {
-            // Игнорируем категорию receipt
-            if (category === 'receipt' || category.includes('receipt')) {
-                return;
-            }
-            
-            const files = transaction.files[category];
-            
-            if (!Array.isArray(files) || files.length === 0) return;
-            
-            // Определяем, куда добавлять файлы
-            let container;
-            if (category === 'agreement' || category.includes('agreement')) {
-                container = agreementFile;
-            } else if (category === 'video' || category.includes('video')) {
-                container = videoFile;
-            } else {
-                container = proofDocuments;
-            }
-            
-            // Добавляем файлы в соответствующий контейнер
-            files.forEach(file => {
-                const fileLink = document.createElement('a');
-                fileLink.href = `${API_BASE_URL}/v1/admin/files/${file.id}`;
-                fileLink.target = '_blank';
-                fileLink.textContent = file.original_name || file.name || 'Document';
-                fileLink.className = 'file-link';
-                
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.appendChild(fileLink);
-                
-                // Добавляем кнопку удаления
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'action-btn btn-delete';
-                deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteFile(file.id, transaction.id, category);
-                });
-                
-                fileItem.appendChild(deleteBtn);
-                container.appendChild(fileItem);
-            });
-        });
-    } else {
-        // Если структура files отсутствует, обрабатываем как массив файлов
-        if (Array.isArray(transaction)) {
-            transaction.forEach(file => {
-                // Игнорируем файлы с категорией receipt
-                if (file.category === 'receipt' || file.category.includes('receipt')) {
-                    return;
-                }
-                
-                const container = file.category === 'agreement' ? agreementFile : 
-                               file.category === 'video' ? videoFile : proofDocuments;
-                
-                if (container) {
-                    const fileLink = document.createElement('a');
-                    fileLink.href = `${API_BASE_URL}/v1/admin/files/${file.id}`;
-                    fileLink.target = '_blank';
-                    fileLink.textContent = file.original_name || file.name || 'Document';
-                    fileLink.className = 'file-link';
-                    
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'file-item';
-                    fileItem.appendChild(fileLink);
-                    
-                    // Добавляем кнопку удаления
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'action-btn btn-delete';
-                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-                    deleteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        deleteFile(file.id, transaction.id, file.category);
+            if (category === 'receipt') return; // Игнорируем квитанции
+            const categoryFiles = transaction.files[category];
+            if (Array.isArray(categoryFiles)) {
+                categoryFiles.forEach(file => {
+                    files.push({
+                        ...file,
+                        category: category
                     });
-                    
-                    fileItem.appendChild(deleteBtn);
-                    container.appendChild(fileItem);
-                }
-            });
+                });
+            }
+        });
+    } else if (Array.isArray(transaction)) {
+        // Формат: массив файлов [{ id, original_name, category, ... }]
+        files = transaction.filter(file => file.category !== 'receipt');
+    } else if (transaction && Array.isArray(transaction.files)) {
+        // Формат: { files: [...] }
+        files = transaction.files.filter(file => file.category !== 'receipt');
+    }
+
+    if (files.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+            <td colspan="4" style="text-align: center; padding: 20px;">
+                No documents uploaded
+            </td>
+        `;
+        tableBody.appendChild(emptyRow);
+        return;
+    }
+
+    // Сортируем файлы по категориям для порядка: agreement, video, proof_documents
+    const categoryOrder = { 'agreement': 1, 'video': 2, 'proof_documents': 3 };
+    files.sort((a, b) => {
+        const orderA = categoryOrder[a.category] || 999;
+        const orderB = categoryOrder[b.category] || 999;
+        return orderA - orderB;
+    });
+
+    // Добавляем строки в таблицу
+    files.forEach(file => {
+        const row = document.createElement('tr');
+
+        // Определяем человекочитаемое название категории
+        const categoryMap = {
+            'agreement': 'Agreement to Sell',
+            'video': 'Meeting Video',
+            'proof_documents': 'Proof Documents'
+        };
+        const categoryName = categoryMap[file.category] || file.category;
+        let receiptPreview;
+
+        // Форматируем дату
+        const uploadDate = file.created_at
+            ? new Date(file.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
+            : 'Unknown';
+
+        if (file?.path) {
+            const receipt = file.name;
+            const receiptPath = file.path;
+            let cleanPath = file.path.replace(/^(\.\.\/)+/, ''); // Удаляем все ../ в начале
+
+            const receiptUrl = `${API_BASE_URL}/v1/admin/transactions/files/${encodeURIComponent(cleanPath)}`;
+
+
+            receiptPreview = `
+                        <div class="receipt-preview">
+                            <i class="fas fa-file-alt receipt-icon"></i>
+                            <div>
+                                <a href="${receiptUrl}" target="_blank" class="action-btn btn-download">
+                                <i class="fas fa-download"></i> 
+                                View</a>
+                                
+                                <button class="action-btn btn-delete" data-file-id="${file.id}" data-category="${file.category}">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                            </div>
+                        </div>
+                    `;
+        } else {
+            receiptPreview = '<span class="no-receipt">No files</span>';
         }
-    }
-    
-    // Если нет файлов в определенных категориях, показываем сообщение
-    if (agreementFile.children.length === 0) {
-        agreementFile.textContent = 'No agreement files uploaded';
-    }
-    if (videoFile.children.length === 0) {
-        videoFile.textContent = 'No video files uploaded';
-    }
-    if (proofDocuments.children.length === 0) {
-        proofDocuments.textContent = 'No proof documents uploaded';
-    }
+
+        row.innerHTML = `
+            <td><h3>${categoryName}</h3></td>
+            <td class="center-rd">
+                <span>${file.original_name || file.name || 'Unnamed File'}</span>
+            </td>
+            <td>${uploadDate}</td>
+            <td>
+                ${receiptPreview}
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+    });
+
+    // Назначаем обработчики событий
+    tableBody.querySelectorAll('.btn-download').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const fileId = e.currentTarget.dataset.fileId;
+            if (fileId) {
+                downloadFileById(parseInt(fileId));
+            }
+        });
+    });
+
+    tableBody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const fileId = e.currentTarget.dataset.fileId;
+            const category = e.currentTarget.dataset.category;
+            const transactionId = transaction.id || (transaction[0] && transaction[0].transaction_id);
+            if (fileId && transactionId) {
+                deleteFile(parseInt(fileId), parseInt(transactionId), category);
+            }
+        });
+    });
 }
 
 /**
@@ -202,35 +226,35 @@ function updateWitnesses() {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     const witness1 = {
         name: document.getElementById('witness1Name')?.value,
         cnic: document.getElementById('witness1CNIC')?.value,
         phone: document.getElementById('witness1Phone')?.value
     };
-    
+
     const witness2 = {
         name: document.getElementById('witness2Name')?.value,
         cnic: document.getElementById('witness2CNIC')?.value,
         phone: document.getElementById('witness2Phone')?.value
     };
-    
+
     try {
         apiRequest(`/v1/admin/transactions/${transactionId}/witnesses`, {
             method: 'PUT',
             body: JSON.stringify({ witness1, witness2 })
         })
-        .then(response => {
-            if (response.success) {
-                showNotification('success', 'Witnesses updated successfully');
-            } else {
-                throw new Error(response.message || 'Failed to update witnesses');
-            }
-        })
-        .catch(error => {
-            console.error('Error updating witnesses:', error);
-            showNotification('error', 'Error updating witnesses: ' + error.message);
-        });
+            .then(response => {
+                if (response.success) {
+                    showNotification('success', 'Witnesses updated successfully');
+                } else {
+                    throw new Error(response.message || 'Failed to update witnesses');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating witnesses:', error);
+                showNotification('error', 'Error updating witnesses: ' + error.message);
+            });
     } catch (error) {
         console.error('Error updating witnesses:', error);
         showNotification('error', 'Error updating witnesses: ' + error.message);
@@ -247,18 +271,18 @@ function setupPaymentActionHandlers(transactionId) {
         const clonedBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(clonedBtn, btn);
     });
-    
+
     // Добавляем обработчики для редактирования платежей
     document.querySelectorAll('.edit-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             openEditPaymentModal(paymentId, transactionId);
         });
     });
-    
+
     // Добавляем обработчики для подтверждения платежей
     document.querySelectorAll('.confirm-payment-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const paymentId = this.getAttribute('data-payment-id');
             confirmPayment(paymentId, transactionId);
         });
@@ -274,13 +298,13 @@ async function confirmPayment(paymentId, transactionId) {
     if (!confirm('Are you sure you want to confirm this payment?')) {
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}/payments/${paymentId}`, {
             method: 'PUT',
             body: JSON.stringify({ status: 'paid' })
         });
-        
+
         if (response.success) {
             showNotification('success', 'Payment confirmed successfully');
             await loadTransactionPayments(transactionId);
@@ -392,11 +416,11 @@ function initTransactionHandlers() {
     // Обработчик для кнопки редактирования суммы
     const editAmountBtn = document.querySelector('.edit-amount-btn');
     if (editAmountBtn) {
-        editAmountBtn.addEventListener('click', function() {
+        editAmountBtn.addEventListener('click', function () {
             const amountEditSection = document.getElementById('amountEditSection');
             if (amountEditSection) {
                 amountEditSection.style.display = amountEditSection.style.display === 'block' ? 'none' : 'block';
-                
+
                 // Если секция открыта, устанавливаем фокус на поле ввода
                 if (amountEditSection.style.display === 'block') {
                     const newTotalAmount = document.getElementById('newTotalAmount');
@@ -408,11 +432,11 @@ function initTransactionHandlers() {
             }
         });
     }
-    
+
     // Обработчик для кнопки сохранения суммы
     const saveAmountBtn = document.querySelector('.save-amount-btn');
     if (saveAmountBtn) {
-        saveAmountBtn.addEventListener('click', function() {
+        saveAmountBtn.addEventListener('click', function () {
             const newAmount = parseFloat(document.getElementById('newTotalAmount')?.value);
             if (!isNaN(newAmount) && newAmount > 0) {
                 updateTransactionAmount(newAmount);
@@ -425,32 +449,32 @@ function initTransactionHandlers() {
             }
         });
     }
-    
+
     // Обработчик для кнопки отмены редактирования суммы
     const cancelAmountBtn = document.querySelector('.cancel-amount-btn');
     if (cancelAmountBtn) {
-        cancelAmountBtn.addEventListener('click', function() {
+        cancelAmountBtn.addEventListener('click', function () {
             const amountEditSection = document.getElementById('amountEditSection');
             if (amountEditSection) {
                 amountEditSection.style.display = 'none';
             }
         });
     }
-    
+
     // Обработчик для кнопки сохранения свидетелей
     const updateWitnessesBtn = document.querySelector('.update-witnesses-btn');
     if (updateWitnessesBtn) {
         updateWitnessesBtn.addEventListener('click', updateWitnesses);
     }
-    
+
     // Обработчик для кнопок действий с транзакцией
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const button = e.target.closest('[data-action]');
         if (!button) return;
-        
+
         const action = button.getAttribute('data-action');
         const category = button.getAttribute('data-category');
-        
+
         switch (action) {
             case 'upload-modal':
                 openUploadModal(category);
@@ -496,17 +520,17 @@ function openUploadModal(category) {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     const transactionId = transactionIdElement.value;
-    
+
     // Устанавливаем значения в скрытые поля формы
     const uploadTransactionId = document.getElementById('uploadTransactionId');
     const uploadCategory = document.getElementById('uploadCategory');
-    
+
     if (uploadTransactionId && uploadCategory) {
         uploadTransactionId.value = transactionId;
         uploadCategory.value = category;
-        
+
         // Обновляем заголовок модального окна
         const modalTitle = document.querySelector('#uploadFileModal .modal-title');
         if (modalTitle) {
@@ -516,7 +540,7 @@ function openUploadModal(category) {
                 modalTitle.textContent = 'Upload Video';
             }
         }
-        
+
         // Открываем модальное окно
         openModal('uploadFileModal');
     }
@@ -532,12 +556,12 @@ function openMultiplUploadModal() {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     const transactionId = transactionIdElement.value;
-    
+
     // Устанавливаем ID транзакции
     document.getElementById('multiUploadTransactionId').value = transactionId;
-    
+
     // Открываем модальное окно
     openModal('multipleUploadModal');
 }
@@ -552,15 +576,17 @@ async function deleteFile(fileId, transactionId, category) {
     if (!confirm(`Вы уверены, что хотите удалить файл?`)) {
         return;
     }
-    
+
     try {
         const response = await apiRequest(`/v1/admin/files/${fileId}`, {
             method: 'DELETE'
         });
-        
+
         if (response.success) {
             showNotification('success', 'File deleted successfully');
-            
+// Принудительная перерисовка для анимации
+    void modal.offsetWidth;
+
             // Обновляем отображение файлов
             await loadTransactionDetails(transactionId);
         } else {
@@ -582,12 +608,12 @@ function openAddPaymentModal() {
         showNotification('error', 'Transaction ID not found');
         return;
     }
-    
+
     const transactionId = transactionIdElement.value;
-    
+
     // Устанавливаем ID транзакции
     document.getElementById('paymentTransactionId').value = transactionId;
-    
+
     // Открываем модальное окно
     openModal('addPaymentModal');
 }
@@ -600,27 +626,27 @@ async function loadTransactionPayments(transactionId) {
     try {
         // Загружаем платежи
         const paymentsResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/payments`);
-        
+
         // Проверяем, что ответ содержит платежи
         if (paymentsResponse && Array.isArray(paymentsResponse.payments)) {
             const payments = paymentsResponse.payments;
             const tbody = document.getElementById('paymentsTableBody');
-            
+
             if (!tbody) {
                 console.error('Payments table body not found');
                 return;
             }
-            
+
             tbody.innerHTML = '';
-            
+
             if (payments.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No payments found</td></tr>';
                 return;
             }
-            
+
             // Загружаем документы, чтобы найти чеки
             const filesResponse = await apiRequest(`/v1/admin/transactions/${transactionId}/documents`);
-            
+
             // Создаем объект для быстрого поиска чеков по payment_id
             const receiptMap = {};
             if (filesResponse && filesResponse.documents) {
@@ -630,26 +656,26 @@ async function loadTransactionPayments(transactionId) {
                     }
                 });
             }
-            
+
             // Заполняем таблицу платежей
             payments.forEach(payment => {
                 const row = document.createElement('tr');
-                
+
                 // Форматируем дату
-                const paymentDate = payment.payment_date ? 
+                const paymentDate = payment.payment_date ?
                     new Date(payment.payment_date).toLocaleDateString('en-GB', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric'
                     }) : 'N/A';
-                
+
                 // Создаем ячейку для превью чека
                 let receiptPreview = '';
                 if (payment.receipt || receiptMap[payment.id]) {
                     const receipt = payment.receipt || receiptMap[payment.id];
                     const receiptPath = receipt.path || receipt.file_path;
                     const receiptUrl = `${API_BASE_URL}/v1/admin/transactions/files/${receiptPath}`;
-                    
+
                     receiptPreview = `
                         <div class="receipt-preview">
                             <i class="fas fa-file-alt receipt-icon"></i>
@@ -662,7 +688,7 @@ async function loadTransactionPayments(transactionId) {
                 } else {
                     receiptPreview = '<span class="no-receipt">No receipt</span>';
                 }
-                
+
                 row.innerHTML = `
                     <td>${payment.id}</td>
                     <td>${paymentDate}</td>
@@ -674,22 +700,22 @@ async function loadTransactionPayments(transactionId) {
                             <button class="action-btn btn-edit edit-payment-btn" data-payment-id="${payment.id}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            ${payment.status === 'pending' ? 
-                                `<button class="action-btn btn-approve confirm-payment-btn" data-payment-id="${payment.id}">
+                            ${payment.status === 'pending' ?
+                        `<button class="action-btn btn-approve confirm-payment-btn" data-payment-id="${payment.id}">
                                     <i class="fas fa-check"></i> Confirm
                                 </button>` : ''}
-                            ${payment.status !== 'cancelled' ? 
-                                `<button class="action-btn btn-delete cancel-payment-btn" data-payment-id="${payment.id}">
+                            ${payment.status !== 'cancelled' ?
+                        `<button class="action-btn btn-delete cancel-payment-btn" data-payment-id="${payment.id}">
                                     <i class="fas fa-times"></i> Cancel
                                 </button>` : ''}
                         </div>
                     </td>
                     <td class="receipt-cell">${receiptPreview}</td>
                 `;
-                
+
                 tbody.appendChild(row);
             });
-            
+
             // Настраиваем обработчики действий с платежами
             setupPaymentActionHandlers(transactionId);
         } else {
@@ -762,7 +788,7 @@ window.deleteFile = deleteFile;
 window.openAddPaymentModal = openAddPaymentModal;
 
 // Автоматическая инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Проверяем существование элементов транзакций
     if (document.getElementById('transactions') || document.getElementById('viewTransactionModal')) {
         initTransactionHandlers();

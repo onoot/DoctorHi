@@ -87,26 +87,6 @@ router.post('/transactions/history/clear', [
         .withMessage('Invalid statuses')
 ], clearTransactionHistory);
 
-// Маршруты для работы с запросами на сделку
-// router.get('/transfer-requests', adminAuth, async (req, res) => {
-//     try {
-//         const { status } = req.query;
-//         const filters = {};
-//         if (status && status !== 'all') {
-//             filters.status = status;
-//         }
-
-//         const requests = await Transaction.getTransferRequests(filters);
-//         res.json({ success: true, requests });
-//     } catch (error) {
-//         console.error('Error getting transfer requests:', error);
-//         res.status(500).json({ 
-//             success: false, 
-//             message: 'Error getting transfer requests' 
-//         });
-//     }
-// });
-
 router.put('/transfer-requests/:id', [
     adminAuth,
     body('status').isIn(['approved', 'rejected']).withMessage('Invalid status'),
@@ -216,6 +196,7 @@ router.get('/transactions/:transactionId/witnesses', adminAuth, async (req, res)
         });
     }
 });
+
 router.put('/transactions/:transactionId/witnesses', [
     adminAuth,
     body('witness1.name').notEmpty().withMessage('Witness 1 name is required'),
@@ -243,30 +224,7 @@ router.put('/transactions/:transactionId/witnesses', [
 
             // Обработка первого свидетеля
             if (witness1) {
-                // Поиск существующих свидетелей по CNIC
-                let [existingWitness] = await connection.query(
-                    'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-                    [witness1.cnic]
-                );
-
-                // Если свидетель не найден, добавляем нового
-                if (existingWitness.length === 0) {
-                    await connection.query(
-                        `INSERT INTO transaction_witnesses 
-                        (name, cnic, phone) 
-                        VALUES (?, ?, ?)`,
-                        [witness1.name, witness1.cnic, witness1.phone || null]
-                    );
-
-                    // Получаем ID вновь созданного свидетеля
-                    const [newWitness] = await connection.query(
-                        'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
-                        [witness1.cnic]
-                    );
-                    existingWitness = newWitness;
-                }
-
-                // Связываем свидетеля с транзакцией
+                // Вставляем свидетеля прямо с привязкой к транзакции
                 await connection.query(
                     `INSERT INTO transaction_witnesses 
                     (transaction_id, witness_type, name, cnic, phone) 
@@ -280,32 +238,9 @@ router.put('/transactions/:transactionId/witnesses', [
                 );
             }
 
-            // Обработка второго свидетеля (аналогично первому)
+            // Обработка второго свидетеля
             if (witness2) {
-                // Поиск существующих свидетелей по CNIC
-                let [existingWitness] = await connection.query(
-                    'SELECT id FROM transaction_witnesses WHERE cnic = ? LIMIT 1',
-                    [witness2.cnic]
-                );
-
-                // Если свидетель не найден, добавляем нового
-                if (existingWitness.length === 0) {
-                    await connection.query(
-                        `INSERT INTO transaction_witnesses 
-                        (name, cnic, phone) 
-                        VALUES (?, ?, ?)`,
-                        [witness2.name, witness2.cnic, witness2.phone || null]
-                    );
-
-                    // Получаем ID вновь созданного свидетеля
-                    const [newWitness] = await connection.query(
-                        'SELECT id FROM transaction_witnesses WHERE cnic = ? ORDER BY id DESC LIMIT 1',
-                        [witness2.cnic]
-                    );
-                    existingWitness = newWitness;
-                }
-
-                // Связываем свидетеля с транзакцией
+                // Вставляем свидетеля прямо с привязкой к транзакции
                 await connection.query(
                     `INSERT INTO transaction_witnesses 
                     (transaction_id, witness_type, name, cnic, phone) 
@@ -344,16 +279,16 @@ router.put('/transactions/:transactionId/witnesses', [
 router.get('/latest/PKR', async (req, res) => {
     try {
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR  ');
-        
+
         if (!response.ok) {
             return res.status(502).json({
                 success: false,
                 message: `External API error: ${response.status}`
             });
         }
-        
+
         const data = await response.json();
-        
+
         // Добавляем проверку структуры ответа
         if (!data || !data.rates || typeof data.rates.USD === 'undefined') {
             return res.status(502).json({
@@ -361,7 +296,7 @@ router.get('/latest/PKR', async (req, res) => {
                 message: 'Invalid response structure from external API'
             });
         }
-        
+
         return res.json({
             success: true,
             USD: data.rates.USD

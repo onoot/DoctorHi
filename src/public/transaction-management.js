@@ -119,69 +119,6 @@ function initAmountInputHandlers() {
     }
 }
 
-
-// Функции для управления транзакциями и платежами
-
-/**
- * Отображение документов транзакции
- * @param {Object} transaction - Данные транзакции
- */
-function displayTransactionDocuments(transaction) {
-    const agreementFile = document.getElementById('agreementFile');
-    const videoFile = document.getElementById('videoFile');
-    const proofDocuments = document.getElementById('proofDocuments');
-    
-    if (!agreementFile || !videoFile || !proofDocuments) {
-        console.error('Document containers not found');
-        return;
-    }
-    
-    // Очистка контейнеров
-    agreementFile.innerHTML = '';
-    videoFile.innerHTML = '';
-    proofDocuments.innerHTML = '';
-    
-    // Отображение договора
-    if (transaction.agreement_file) {
-        const agreementLink = document.createElement('a');
-        agreementLink.href = `${API_BASE_URL}/v1/admin/files/${transaction.agreement_file.id}`;
-        agreementLink.target = '_blank';
-        agreementLink.textContent = transaction.agreement_file.original_name;
-        agreementFile.appendChild(agreementLink);
-    } else {
-        agreementFile.textContent = 'No agreement file uploaded';
-    }
-    
-    // Отображение видео
-    if (transaction.video_file) {
-        const videoLink = document.createElement('a');
-        videoLink.href = `${API_BASE_URL}/v1/admin/files/${transaction.video_file.id}`;
-        videoLink.target = '_blank';
-        videoLink.textContent = transaction.video_file.original_name;
-        videoFile.appendChild(videoLink);
-    } else {
-        videoFile.textContent = 'No video file uploaded';
-    }
-    
-    // Отображение доказательных документов
-    if (transaction.proof_documents && transaction.proof_documents.length > 0) {
-        transaction.proof_documents.forEach(doc => {
-            const docLink = document.createElement('a');
-            docLink.href = `${API_BASE_URL}/v1/admin/files/${doc.id}`;
-            docLink.target = '_blank';
-            docLink.textContent = doc.original_name;
-            
-            const docItem = document.createElement('div');
-            docItem.className = 'file-item';
-            docItem.appendChild(docLink);
-            
-            proofDocuments.appendChild(docItem);
-        });
-    } else {
-        proofDocuments.textContent = 'No proof documents uploaded';
-    }
-}
-
 /**
  * Функция для создания нового платежа
  * @param {Event} event - Событие отправки формы
@@ -324,9 +261,9 @@ async function savePaymentChanges(event) {
  */
 async function updateTransactionAmount(transactionId, newAmount) {
     try {
-        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/amount`, {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/update-amount`, {
             method: 'PUT',
-            body: JSON.stringify({ amount: newAmount })
+            body: JSON.stringify({ total_amount: newAmount })
         });
         
         if (response.success) {

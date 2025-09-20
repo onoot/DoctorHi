@@ -13,7 +13,7 @@ const openModalsStack = [];
  */
 function openModal(modalId, isNested = false) {
     console.log(`[MODALS] Attempting to open modal with ID: ${modalId}`);
-    
+
     const modal = document.getElementById(modalId);
     if (modal) {
         // Проверяем, не открыто ли уже это модальное окно
@@ -21,33 +21,33 @@ function openModal(modalId, isNested = false) {
             console.warn(`[MODALS] Modal ${modalId} is already open`);
             return true;
         }
-        
+
         // Сохраняем предыдущий активный элемент для возврата фокуса
         if (!isNested && !previousFocusedElement) {
             previousFocusedElement = document.activeElement;
         }
-        
+
         // Удаляем класс hide, если он есть
         modal.classList.remove('hide');
-        
+
         // Добавляем класс show для отображения
-        modal.classList.add('show');
-        
+        // modal.classList.add('show');
+
         // Принудительная перерисовка для анимации
         void modal.offsetWidth;
-        
+
         // Добавляем в стек открытых модальных окон
         openModalsStack.push(modalId);
-        
+
         // Устанавливаем фокус на первый фокусируемый элемент внутри модального окна
         setTimeout(() => {
             trapFocus(modal);
         }, 100);
-        
+
         // Устанавливаем ARIA атрибуты для доступности
         modal.setAttribute('aria-hidden', 'false');
         modal.setAttribute('aria-modal', 'true');
-        
+
         console.log(`[MODALS] Modal ${modalId} opened successfully`);
         return true;
     } else {
@@ -55,6 +55,7 @@ function openModal(modalId, isNested = false) {
         return false;
     }
 }
+
 /**
  * Универсальная функция для закрытия модальных окон
  * @param {string} modalId - ID модального окна
@@ -62,44 +63,23 @@ function openModal(modalId, isNested = false) {
  */
 function closeModal(modalId, isNested = false) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        // Удаляем из стека открытых модальных окон
-        const modalIndex = openModalsStack.indexOf(modalId);
-        if (modalIndex !== -1) {
-            openModalsStack.splice(modalIndex, 1);
-        }
-        
-        modal.classList.add('hide');
-        modal.classList.remove('show');
-        
-        // Устанавливаем ARIA атрибуты для доступности
-        modal.setAttribute('aria-hidden', 'true');
-        
-        // Устанавливаем таймер для полного скрытия после анимации
-        const animationDuration = getModalAnimationDuration(modal);
-        
-        setTimeout(() => {
-            if (modal.classList.contains('hide')) {
-                modal.style.display = 'none';
-                
-                // Возвращаем фокус на предыдущий элемент, если это не вложенное модальное окно
-                if (!isNested && previousFocusedElement && document.body.contains(previousFocusedElement)) {
-                    previousFocusedElement.focus();
-                    previousFocusedElement = null;
-                }
-                
-                // Если есть другие открытые модальные окна, устанавливаем фокус в последнее
-                if (openModalsStack.length > 0) {
-                    const lastModalId = openModalsStack[openModalsStack.length - 1];
-                    const lastModal = document.getElementById(lastModalId);
-                    if (lastModal && lastModal.classList.contains('show')) {
-                        trapFocus(lastModal);
-                    }
-                }
-            }
-        }, animationDuration);
-    } else {
-        console.error(`[MODALS] Modal with ID "${modalId}" not found`);
+    if (!modal) return;
+
+    // Remove show, add hide
+    modal.classList.remove('show');
+    modal.classList.add('hide');
+
+    // Set ARIA attributes for accessibility
+    modal.setAttribute('aria-hidden', 'true');
+    modal.removeAttribute('aria-modal');
+
+    // Принудительная перерисовка для анимации
+    void modal.offsetWidth;
+
+    // Удаляем из стека открытых модальных окон
+    const modalIndex = openModalsStack.indexOf(modalId);
+    if (modalIndex !== -1) {
+        openModalsStack.splice(modalIndex, 1);
     }
 }
 
@@ -111,7 +91,7 @@ function closeModal(modalId, isNested = false) {
 function getModalAnimationDuration(modal) {
     const style = window.getComputedStyle(modal);
     const transitionDuration = style.transitionDuration || '0.3s';
-    
+
     // Парсим значение анимации (может быть в секундах или миллисекундах)
     if (transitionDuration.includes('ms')) {
         return parseFloat(transitionDuration);
@@ -126,13 +106,13 @@ function getModalAnimationDuration(modal) {
  */
 function trapFocus(modal) {
     if (!modal) return;
-    
+
     const focusableElements = getFocusableElements(modal);
-    
+
     if (focusableElements.length > 0) {
         // Устанавливаем фокус на первый фокусируемый элемент
         focusableElements[0].focus();
-        
+
         // Добавляем обработчик для ловушки фокуса
         modal.addEventListener('keydown', function focusTrapHandler(e) {
             if (e.key === 'Tab') {
@@ -140,7 +120,7 @@ function trapFocus(modal) {
                 if (e.shiftKey && document.activeElement === focusableElements[0]) {
                     e.preventDefault();
                     focusableElements[focusableElements.length - 1].focus();
-                } 
+                }
                 // Если нажали Tab и фокус на последнем элементе
                 else if (!e.shiftKey && document.activeElement === focusableElements[focusableElements.length - 1]) {
                     e.preventDefault();
@@ -168,19 +148,10 @@ function getFocusableElements(container) {
  * Инициализация обработчиков закрытия модальных окон
  */
 function initModalCloseHandlers() {
-    // Закрытие модальных окон по кнопке "×"
-    document.querySelectorAll('.modal-close, .close').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const modalId = this.closest('.modal')?.id || this.getAttribute('data-modal');
-            if (modalId) {
-                closeModal(modalId);
-            }
-        });
-    });
-    
+
+
     // Закрытие модального окна при клике вне его содержимого
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (event.target.classList.contains('modal')) {
             const modalId = event.target.id;
             if (modalId) {
@@ -188,16 +159,16 @@ function initModalCloseHandlers() {
             }
         }
     });
-    
+
     // Закрытие модальных окон по клавише Esc
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && openModalsStack.length > 0) {
             const topModalId = openModalsStack[openModalsStack.length - 1];
             closeModal(topModalId);
             event.stopPropagation();
         }
     });
-    
+
     console.log('[MODALS] Modal close handlers initialized');
 }
 
@@ -207,9 +178,9 @@ function initModalCloseHandlers() {
 function initModals() {
     // Инициализация обработчиков закрытия
     initModalCloseHandlers();
-    
+
     // Добавляем обработчик для вложенных модальных окон
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         const nestedModalTrigger = event.target.closest('[data-nested-modal]');
         if (nestedModalTrigger) {
             const modalId = nestedModalTrigger.getAttribute('data-nested-modal');
@@ -217,7 +188,7 @@ function initModals() {
             event.stopPropagation();
         }
     });
-    
+
     console.log('[MODALS] Modals initialized successfully');
 }
 
@@ -227,18 +198,18 @@ window.closeModal = closeModal;
 window.initModals = initModals;
 
 // Автоматическая инициализация после загрузки DOM
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initModals();
-    
+
     // Добавляем обработчик для кнопок открытия модальных окон
     document.querySelectorAll('[data-modal]').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const modalId = this.getAttribute('data-modal');
             if (modalId) {
                 openModal(modalId);
             }
         });
     });
-    
+
     console.log('[MODALS] DOM loaded, modals ready');
 });

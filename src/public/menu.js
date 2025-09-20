@@ -193,6 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Закрытие модальных окон по кнопке "×"
+document.querySelectorAll('.modal-close, .close').forEach(button => {
+    button.addEventListener('click', function(e) {
+        e.stopPropagation(); // ← ОБЯЗАТЕЛЬНО!
+        e.preventDefault();  // ← НА ВСЯКИЙ СЛУЧАЙ
+        const modalId = this.closest('.modal')?.id || this.getAttribute('data-modal');
+        if (modalId) {
+            closeModal(modalId);
+        }
+    });
+});
     // Добавляем обработчик для нажатия клавиши Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && sidebarToggle && sidebarToggle.checked) {

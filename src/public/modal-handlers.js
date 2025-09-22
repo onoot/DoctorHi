@@ -117,9 +117,89 @@ function openCreateTransactionModal() {
     
     if (typeof generateCredentials === 'function') generateCredentials(); // ✅ Генерируем логин/пароль
     
-    populateCreateTransactionModal(); // ✅ ЗАПОЛНЯЕМ SELECT'Ы ИЗ localStorage — КРИТИЧНО!
+    populateCreateTransactionModal();
     
-    openModal('createTransactionModal'); // ✅ ОТКРЫВАЕМ МОДАЛКУ
+    openModal('createTransactionModal'); 
+}
+
+/**
+ * Функция для создания новой транзакции
+ */
+async function createTransaction() {
+    console.log('[TRANSACTION] Attempting to create new transaction');
+    
+    // Получаем значения из формы
+    const propertyId = document.getElementById('createTransactionModal_propertyId')?.value;
+    const newOwnerId = document.getElementById('createTransactionModal_newOwnerId')?.value;
+    const totalAmount = parseNumber(document.getElementById('createTransactionModal_totalAmount')?.value);
+    const witness1Name = document.getElementById('createTransactionModal_witness1Name')?.value;
+    const witness1CNIC = document.getElementById('createTransactionModal_witness1CNIC')?.value;
+    const witness1Phone = document.getElementById('createTransactionModal_witness1Phone')?.value;
+    const witness2Name = document.getElementById('createTransactionModal_witness2Name')?.value;
+    const witness2CNIC = document.getElementById('createTransactionModal_witness2CNIC')?.value;
+    const witness2Phone = document.getElementById('createTransactionModal_witness2Phone')?.value;
+
+    // Валидация обязательных полей
+    if (!propertyId) {
+        showNotification('error', 'Please select a property');
+        return;
+    }
+    if (!newOwnerId) {
+        showNotification('error', 'Please select a new owner');
+        return;
+    }
+    if (!totalAmount || totalAmount <= 0) {
+        showNotification('error', 'Please enter a valid amount greater than 0');
+        return;
+    }
+    if (!witness1Name || !witness1CNIC) {
+        showNotification('error', 'Witness 1: Name and CNIC are required');
+        return;
+    }
+    if (!witness2Name || !witness2CNIC) {
+        showNotification('error', 'Witness 2: Name and CNIC are required');
+        return;
+    }
+
+    try {
+        // Подготавливаем данные для отправки
+        const transactionData = {
+            property_id: propertyId,
+            new_owner_id: newOwnerId,
+            total_amount: totalAmount,
+            witnesses: {
+                witness1: {
+                    name: witness1Name,
+                    cnic: witness1CNIC,
+                    phone: witness1Phone || null
+                },
+                witness2: {
+                    name: witness2Name,
+                    cnic: witness2CNIC,
+                    phone: witness2Phone || null
+                }
+            }
+        };
+
+        console.log('[TRANSACTION] Sending data:', transactionData);
+
+        // Отправляем запрос на создание транзакции
+        const response = await apiRequest('/v1/admin/transactions', {
+            method: 'POST',
+            body: JSON.stringify(transactionData)
+        });
+
+        if (response.success && response.transaction) {
+            showNotification('success', 'Transaction created successfully');
+            closeModal('createTransactionModal');
+            loadTransactions(); // Обновляем список транзакций
+        } else {
+            throw new Error(response.message || 'Failed to create transaction');
+        }
+    } catch (error) {
+        console.error('[TRANSACTION] Error creating transaction:', error);
+        showNotification('error', error.message || 'Error creating transaction');
+    }
 }
 
 /**
@@ -144,9 +224,9 @@ function openViewTransactionModal(transactionId) {
 
 // Прикрепляем к глобальному объекту
 window.openAddPaymentModal = openAddPaymentModal;
-window.openEditPaymentModal = openEditPaymentModal;
 window.openCreateTransactionModal = openCreateTransactionModal;
 window.openViewTransactionModal = openViewTransactionModal;
+window.createTransaction = createTransaction;
 
 const modalCreateBtn = document.querySelector('.create-transaction-btn');
 if (modalCreateBtn) {

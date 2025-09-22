@@ -38,7 +38,7 @@ dotenv.config();
 const app = express();
 
 app.use(compression({
-  level: 10,
+  level: 9,
   threshold: 0, 
   filter: (req, res) => {
     const type = res.getHeader('Content-Type');
@@ -66,7 +66,7 @@ app.use(cookieParser());
 // Условный парсинг JSON — только если Content-Type включает application/json
 app.use((req, res, next) => {
   if (req.headers['content-type']?.includes('application/json')) {
-    express.json({ limit: '500mb' })(req, res, next);
+    express.json({ limit: '1000mb' })(req, res, next);
   } else {
     next();
   }

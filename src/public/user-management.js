@@ -193,15 +193,11 @@ function renderUsersTable(users, tbody) {
         console.error('No tbody provided to renderUsersTable');
         return;
     }
-
     tbody.innerHTML = ''; // Очищаем
-
     if (!users || users.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">No users found</td></tr>';
         return;
     }
-
-
     users.forEach(user => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -213,10 +209,8 @@ function renderUsersTable(users, tbody) {
             <td><span class="status-badge ${user.status}">${user.status}</span></td>
             <td class="actions-cell"></td>
         `;
-
         const actionsCell = row.querySelector('.actions-cell');
         let actionsHTML = '';
-
         if (user.status === 'archived') {
             actionsHTML = `
                 <div class="actions-footer">
@@ -230,16 +224,16 @@ function renderUsersTable(users, tbody) {
                 <div class="actions-column">
                     <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
                     <button class="action-btn btn-delete archive-user-btn" data-id="${user.id}">
-    <i class="fas fa-archive"></i> Archive
-</button>
+                        <i class="fas fa-archive"></i> Archive
+                    </button>
                 </div>`;
         }
-
         actionsCell.innerHTML = actionsHTML;
         tbody.appendChild(row);
     });
 
-    document.querySelectorAll('#usersTableBody .btn-view').forEach(button => {
+    // 👇 ИСПРАВЛЕНО: Привязываем обработчики ко ВСЕМ кнопкам .btn-view на странице
+    document.querySelectorAll('.btn-view').forEach(button => {
         button.addEventListener('click', async (e) => {
             const userId = e.target.closest('[data-id]').dataset.id;
             await viewUser(userId);
@@ -247,16 +241,17 @@ function renderUsersTable(users, tbody) {
         });
     });
 
-    document.querySelectorAll('.btn-edit[data-action="toggle-status"]').forEach(button => {
-        button.addEventListener('click', (e) => toggleUserStatus(e.target.closest('[data-id]').dataset.id));
+    // 👇 ИСПРАВЛЕНО: Привязываем обработчики ко ВСЕМ кнопкам восстановления
+    document.querySelectorAll('.btn-edit[data-action="restore"]').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const userId = e.target.closest('[data-id]').dataset.id;
+            restoreUser(userId);
+        });
     });
 
+    // Остальные обработчики (если нужны)
     document.querySelectorAll('.archive-user-btn').forEach(button => {
         button.addEventListener('click', (e) => archiveUser(e.target.closest('[data-id]').dataset.id));
-    });
-
-    document.querySelectorAll('.restore-user-btn').forEach(button => {
-        button.addEventListener('click', (e) => restoreUser(e.target.closest('[data-id]').dataset.id));
     });
 }
 

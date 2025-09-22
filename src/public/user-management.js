@@ -214,7 +214,7 @@ function renderUsersTable(users, tbody) {
         if (user.status === 'archived') {
             actionsHTML = `
                 <div class="actions-footer">
-                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-view btn-view-users" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
                     <button class="action-btn btn-edit" data-id="${user.id}" data-action="restore">
                         <i class="fas fa-undo"></i> Restore
                     </button>
@@ -222,7 +222,7 @@ function renderUsersTable(users, tbody) {
         } else {
             actionsHTML = `
                 <div class="actions-column">
-                    <button class="action-btn btn-view" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
+                    <button class="action-btn btn-view btn-view-users" data-id="${user.id}"><i class="fas fa-eye"></i> View</button>
                     <button class="action-btn btn-delete archive-user-btn" data-id="${user.id}">
                         <i class="fas fa-archive"></i> Archive
                     </button>
@@ -233,7 +233,7 @@ function renderUsersTable(users, tbody) {
     });
 
     // 👇 ИСПРАВЛЕНО: Привязываем обработчики ко ВСЕМ кнопкам .btn-view на странице
-    document.querySelectorAll('.btn-view').forEach(button => {
+    document.querySelectorAll('.btn-view-users').forEach(button => {
         button.addEventListener('click', async (e) => {
             const userId = e.target.closest('[data-id]').dataset.id;
             await viewUser(userId);

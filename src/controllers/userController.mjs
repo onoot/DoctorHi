@@ -66,14 +66,14 @@ export const create = async (req, res) => {
 
 export const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, search } = req.query;
-    const offset = (page - 1) * limit;
+    const { search, status, page = 1, limit = 10 } = req.query;
+    const offset = (page-1) * limit;
 
     const filters = {
-      status,
-      search,
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      status: status || 'active',
+      search: search || '',
+      limit: limit > 0 ? limit : 10,
+      offset: offset >= 0 ? offset : 0
     };
 
     const [users, total] = await Promise.all([
@@ -88,14 +88,15 @@ export const getAll = async (req, res) => {
     });
 
     res.json({
+      success: true,
       users: sanitizedUsers,
       total,
       page: parseInt(page),
       totalPages: Math.ceil(total / limit)
     });
   } catch (error) {
-    console.error('Ошибка при получении списка пользователей:', error);
-    res.status(500).json({ message: 'Ошибка при получении списка пользователей' });
+    console.error('Error when getting the list of users:', error);
+    res.status(500).json({ message: 'Error when getting the list of users' });
   }
 };
 
@@ -111,6 +112,65 @@ export const getById = async (req, res) => {
   } catch (error) {
     console.error('Error getting user:', error);
     res.status(500).json({ message: 'Error getting user' });
+  }
+};
+
+/**
+ * Администратор меняет пароль пользователя
+ * @param {Object} req - Запрос
+ * @param {Object} res - Ответ
+ */
+export const updatePassword = async (req, res) => {
+  try {
+    const { id } = req.params; // ID пользователя, чей пароль меняем
+    const { newPassword } = req.body;
+
+    // Проверяем, что пароль передан
+    if (!newPassword || newPassword.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'New password is required'
+      });
+    }
+
+    // Проверяем, существует ли пользователь
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Обновляем пароль в БД
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { password: newPassword } // Хэширование происходит внутри findByIdAndUpdate
+    );
+
+    // Проверяем, успешно ли обновление
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found or update failed'
+      });
+    }
+
+    // Удаляем пароль из ответа
+    const { password, ...userWithoutPassword } = updatedUser;
+
+    res.json({
+      success: true,
+      message: 'Password updated successfully',
+      user: userWithoutPassword
+    });
+
+  } catch (error) {
+    console.error('Error updating user password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
   }
 };
 

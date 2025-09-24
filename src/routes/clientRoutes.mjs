@@ -21,9 +21,12 @@ router.get('/transactions/:id/details', authLocale, transactionController.getTra
 
 router.get('/transactions/my', transactionController.getUserTransactions);
 router.get('/my/:propertyId', authLocale, transactionController.getUserPropertyTransactions);
-router.put('/my/:id', authLocale, [
-    body('status').isIn(['pending', 'cancelled']).withMessage('Invalid status')
-], transactionController.updateUserTransaction);
+
+// Получение списка транзакций пользователя
+router.get('/transactions/my', authLocale, transactionController.getUserTransactions);
+
+// Получение детальной информации о транзакции пользователя С ОБНОВЛЕННЫМ КОНТРОЛЛЕРОМ
+router.get('/transactions/:id/details', authLocale, transactionController.getUserTransactionDetails);
 
 // Роут для скачивания файла по ID
 router.get('/files/:id', authLocale, async (req, res) => {

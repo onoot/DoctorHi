@@ -134,54 +134,142 @@ class User {
     return result.affectedRows > 0;
   }
 
+
   static async getAll(filters = {}) {
     let query = 'SELECT * FROM users WHERE role = "user"';
     const values = [];
 
-    if (filters.status) {
-      query += ' AND status = ?';
-      values.push(filters.status);
-    }
-
-    if (filters.search) {
-      query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
-      const searchTerm = `%${filters.search}%`;
-      values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
-    }
-
-    query += ' ORDER BY created_at DESC';
-
-    if (filters.limit) {
-      query += ' LIMIT ?';
-      values.push(parseInt(filters.limit));
-
-      if (filters.offset) {
-        query += ' OFFSET ?';
-        values.push(parseInt(filters.offset));
+    try {
+      if (filters.status) {
+        query += ' AND status = ?';
+        values.push(filters.status);
       }
-    }
 
-    const [rows] = await pool.execute(query, values);
-    return rows;
+      if (filters.search) {
+        query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
+        const searchTerm = `%${filters.search}%`;
+        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      }
+
+      query += ' ORDER BY created_at DESC';
+
+      // Всегда добавляем LIMIT и OFFSET правильно
+      const limit = Math.max(1, parseInt(filters.limit) || 10);
+      const offset = Math.max(0, parseInt(filters.offset) || 0);
+
+      query += ' LIMIT ? OFFSET ?';
+      values.push(limit, offset);
+
+      console.log('Executing query:', query);
+      console.log('With values:', values);
+
+      // Используем query вместо execute
+      const [rows] = await pool.query(query, values);
+      return rows;
+    } catch (e) {
+      console.error('User.getAll ERROR:', {
+        message: e.message,
+        code: e.code,
+        errno: e.errno,
+        sql: query,
+        values: values,
+        filters: filters
+      });
+      throw e;
+    }
   }
 
   static async count(filters = {}) {
-    let query = 'SELECT COUNT(*) as count FROM users WHERE role = "user"';
-    const values = [];
+    let query = ''; // Объявляем query вне try
+    const values = []; // Объявляем values вне try
 
-    if (filters.status) {
-      query += ' AND status = ?';
-      values.push(filters.status);
+    try {
+      query = 'SELECT COUNT(*) as count FROM users WHERE role = "user"';
+
+      if (filters.status) {
+        query += ' AND status = ?';
+        values.push(filters.status);
+      }
+
+      if (filters.search) {
+        query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
+        const searchTerm = `%${filters.search}%`;
+        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      }
+
+      const [rows] = await pool.execute(query, values);
+      return rows[0].count;
+    } catch (e) {
+      console.log(e);
+      console.log("Query that failed:", query); // Теперь query доступен
+      console.log("Values that failed:", values); // Теперь values доступен
+      throw e;
+    }
+  }
+
+  static async findByIdAndUpdate(id, userData) {
+    if (!id) {
+      throw new Error('ID is required for update');
     }
 
-    if (filters.search) {
-      query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
-      const searchTerm = `%${filters.search}%`;
-      values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+    if (!userData || typeof userData !== 'object' || Object.keys(userData).length === 0) {
+      throw new Error('Valid user data is required for update');
     }
 
-    const [rows] = await pool.execute(query, values);
-    return rows[0].count;
+    try {
+      // Подготавливаем поля для обновления
+      const updates = [];
+      const values = [];
+      const allowedFields = ['name', 'email', 'password', 'cnic', 'phone', 'address', 'status'];
+
+      // Проверяем и добавляем разрешенные поля для обновления
+      for (const field of allowedFields) {
+        if (userData[field] !== undefined) {
+          if (field === 'password') {
+            // Хэшируем пароль перед сохранением
+            const hashedPassword = await bcrypt.hash(userData[field], 10);
+            updates.push(`${field} = ?`);
+            values.push(hashedPassword);
+          } else if (field === 'email') {
+            // Приводим email к нижнему регистру
+            updates.push(`${field} = ?`);
+            values.push(userData[field].trim().toLowerCase());
+          } else {
+            updates.push(`${field} = ?`);
+            values.push(userData[field]);
+          }
+        }
+      }
+
+      // Добавляем updated_at
+      updates.push('updated_at = NOW()');
+
+      if (updates.length === 0) {
+        throw new Error('No valid fields to update');
+      }
+
+      // Добавляем ID в конец значений для WHERE clause
+      values.push(id);
+
+      // Выполняем UPDATE запрос
+      const [result] = await pool.execute(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = ? AND role = ?`,
+        [...values, 'user']
+      );
+
+      // Если ничего не обновлено, пользователь не найден
+      if (result.affectedRows === 0) {
+        return null;
+      }
+
+      // Возвращаем обновленного пользователя
+      const updatedUser = await this.findById(id);
+      return updatedUser;
+
+    } catch (error) {
+      console.error('Error in findByIdAndUpdate:', error);
+      throw error;
+    }
   }
 }
 

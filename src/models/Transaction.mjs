@@ -73,9 +73,9 @@ try {
   const hasWitness2 = existingColumns.some(col => col.column_name === 'witness2_id');
 
   if (!hasWitness1 || !hasWitness2) {
-    await pool.query(addNewColumnsSQL);
+    // await pool.query(addNewColumnsSQL);
   } else {
-    console.log('Columns witness1_id and witness2_id already exist. Skipping ALTER.');
+    // console.log('Columns witness1_id and witness2_id already exist. Skipping ALTER.');
   }
 
 } catch (error) {
@@ -503,87 +503,6 @@ class Transaction {
       totalPaid >= 0 ? 'partially_paid' : 'not_started',
       transactionId
     ]);
-  }
-
-  static async validateAdmin() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/admin/validate`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        window.location.href = '/admin-panel.html';
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-    }
-  }
-
-  static async handleLogin(email, password) {
-    try {
-      console.log('Attempting login...');
-      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({ email, password })
-      });
-
-      console.log('Login response status:', response.status);
-      const data = await response.json();
-      console.log('Login response:', data);
-
-      if (response.ok) {
-        window.location.href = '/admin-panel.html';
-        showNotification('success', "Success");
-      } else {
-        showNotification('error', "Invalid password or login");
-        return false;
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      showNotification('error', error);
-      return false;
-    }
-  }
-
-  static showNotification(type, message) {
-    let duration = 3000;
-    // Создаем контейнер для уведомлений, если его еще нет
-    let container = document.getElementById('notification-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'notification-container';
-      document.body.appendChild(container);
-    }
-
-    // Создаем элемент уведомления
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-
-    // Добавляем уведомление в контейнер
-    container.appendChild(notification);
-
-    // Показываем уведомление с анимацией
-    setTimeout(() => {
-      notification.classList.add('show');
-    }, 10); // Небольшая задержка для корректного запуска анимации
-
-    // Автоматически скрываем и удаляем уведомление через указанное время
-    setTimeout(() => {
-      notification.classList.remove('show'); // Запускаем анимацию исчезновения
-      setTimeout(() => {
-        notification.remove(); // Удаляем элемент из DOM
-      }, 300); // Ждем завершения анимации исчезновения
-    }, duration);
   }
 }
 

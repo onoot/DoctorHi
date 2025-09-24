@@ -1,52 +1,5 @@
 import pool from '../config/database.mjs';
 
-export const getUsers = async (req, res) => {
-  try {
-    const { search, status, page = 1, limit = 10 } = req.query;
-    const offset = (page - 1) * limit;
-
-    let query = 'SELECT * FROM users WHERE 1=1';
-    const queryParams = [];
-
-    if (search) {
-      query += ' AND (name LIKE ? OR cnic LIKE ?)';
-      queryParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    if (status) {
-      query += ' AND status = ?';
-      queryParams.push(status);
-    }
-
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-    queryParams.push(parseInt(limit), offset);
-
-    const [users] = await pool.query(query, queryParams);
-
-    // Получаем общее количество
-    const [totalRows] = await pool.query(
-      'SELECT COUNT(*) as count FROM users WHERE 1=1' +
-      (search ? ' AND (name LIKE ? OR cnic LIKE ?)' : '') +
-      (status ? ' AND status = ?' : ''),
-      queryParams.slice(0, -2)
-    );
-
-    const total = totalRows[0].count;
-    const totalPages = Math.ceil(total / limit);
-
-    res.json({
-      success: true,
-      users,
-      total,
-      page: parseInt(page),
-      pages: totalPages
-    });
-  } catch (error) {
-    console.error('Error getting user list:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
 export const updateUserStatus = async (req, res) => {
   try {
     const { userId } = req.params;

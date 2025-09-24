@@ -105,9 +105,9 @@ const upload = multer({
 // Маршруты для пользователей
 router.get('/my', auth, transactionController.getUserTransactions);
 router.get('/my/:propertyId', auth, transactionController.getUserPropertyTransactions);
-router.put('/my/:id', auth, [
-  body('status').isIn(['pending', 'cancelled']).withMessage('Invalid status')
-], transactionController.updateUserTransaction);
+
+// Добавьте маршрут для обновления admin_notes
+router.put('/:id/admin-notes', adminAuth, transactionController.updateAdminNotes);
 
 // Маршруты для администраторов
 router.post('/', adminAuth, [

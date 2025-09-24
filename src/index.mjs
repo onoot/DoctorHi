@@ -5,12 +5,12 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
-import { initializeDatabase } from './config/database.mjs';
 import clientRoutes from './routes/clientRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 import authRoutes from './routes/authRoutes.mjs';
 import userRoutes from './routes/userRoutes.mjs';
 import transactionRoutes from './routes/transactionRoutes.mjs';
+import propertyRoutes from './routes/propertyRoutes.mjs'
 import {
   limiter,
   securityHeaders,
@@ -456,9 +456,10 @@ app.use(handleCSRFError);
 app.use('/uploads/receipts', adminAuth, express.static(path.join(uploadsPath, 'receipts')));
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/client', clientRoutes);
-app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/admin/users', userRoutes);
 app.use('/api/v1/admin/transactions', transactionRoutes);
+app.use('/api/v1/admin/units', propertyRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // Endpoint для проверки здоровья системы
 app.get('/health', async (req, res) => {

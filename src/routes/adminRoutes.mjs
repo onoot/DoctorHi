@@ -1,8 +1,8 @@
 import express from 'express';
-import { getUsers, updateUserStatus, updateTransactionStatus, clearTransactionHistory } from '../controllers/adminController.mjs';
+import { updateUserStatus, updateTransactionStatus, clearTransactionHistory } from '../controllers/adminController.mjs';
 import { adminAuth } from '../middlewares/auth.mjs';
 import { body } from 'express-validator';
-import { create, getAll, getById, update, remove } from '../controllers/userController.mjs';
+import { create, updatePassword, getAll, getById, update, remove } from '../controllers/userController.mjs';
 import transactionController from '../controllers/transactionController.mjs';
 import Transaction from '../models/Transaction.mjs';
 import pool from '../config/database.mjs';
@@ -30,7 +30,11 @@ router.post('/users', [
         .isLength({ max: 255 }).withMessage('Address should not exceed 255 characters')
 ], create);
 
-router.get('/users', adminAuth, getUsers);
+router.put('/users/:id/password', [
+    adminAuth,
+    body('newPassword').isLength({ min: 4 }).withMessage('Password must be at least 4 characters')
+], updatePassword);
+
 router.put('/users/:userId', [
     adminAuth,
     body('status').isIn(['active', 'blocked']).withMessage('Invalid status')
@@ -86,83 +90,6 @@ router.post('/transactions/history/clear', [
         .custom(value => value.every(status => ['approved', 'rejected', 'cancelled'].includes(status)))
         .withMessage('Invalid statuses')
 ], clearTransactionHistory);
-
-router.put('/transfer-requests/:id', [
-    adminAuth,
-    body('status').isIn(['approved', 'rejected']).withMessage('Invalid status'),
-    body('admin_notes').optional().isString().withMessage('Notes must be a string')
-], async (req, res) => {
-    try {
-        const { status, admin_notes } = req.body;
-        const requestId = parseInt(req.params.id);
-
-        // Получаем информацию о запросе перед обновлением
-        const [transferRequest] = await pool.query(
-            'SELECT * FROM transfer_requests WHERE id = ?',
-            [requestId]
-        );
-
-        if (!transferRequest || transferRequest.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Transfer request not found'
-            });
-        }
-
-        const success = await Transaction.updateTransferRequestStatus(
-            requestId,
-            status,
-            admin_notes
-        );
-
-        if (success && status === 'approved') {
-            // Если запрос одобрен, создаем новую транзакцию
-            const request = transferRequest[0];
-
-            // Получаем текущего владельца
-            const [currentOwner] = await pool.query(`
-                SELECT owner_id 
-                FROM ownership_history 
-                WHERE property_id = ? 
-                ORDER BY from_date DESC 
-                LIMIT 1
-            `, [request.property_id]);
-
-            // Создаем транзакцию
-            const transactionData = {
-                property_id: request.property_id,
-                previous_owner_id: currentOwner[0]?.owner_id || null,
-                new_owner_id: request.requester_id,
-                status: 'pending',
-                total_amount: 0 // Администратор установит сумму позже
-            };
-
-            const transactionId = await Transaction.create(transactionData);
-
-            res.json({
-                success: true,
-                message: `Transfer request ${status} successfully and transaction created`,
-                transaction_id: transactionId
-            });
-        } else if (success) {
-            res.json({
-                success: true,
-                message: `Transfer request ${status} successfully`
-            });
-        } else {
-            res.status(404).json({
-                success: false,
-                message: 'Transfer request not found'
-            });
-        }
-    } catch (error) {
-        console.error('Error updating transfer request:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating transfer request'
-        });
-    }
-});
 
 // Маршруты для работы со свидетелями транзакции
 router.get('/transactions/:transactionId/witnesses', adminAuth, async (req, res) => {

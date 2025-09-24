@@ -1521,9 +1521,9 @@
                         <input type="text" id="object_sell" name="object_sell" disabled required>
                     </div>
 
-                    <div class="form-actions">
+                    <!-- <div class="form-actions">
                         <button type="button" id="reload" class="cancel-btn">Reload</button>
-                    </div>
+                    </div> -->
                 </form>
             </div>
 
@@ -1547,8 +1547,8 @@
                                 <td class="date-cell"></td>
                                 <td class="filename-cell"></td>
                             </tr>
-                            <tr id="receiptRow">
-                                <td>Receipt File</td>
+                            <tr id="proofRow">
+                                <td>Proof Document File</td>
                                 <td class="status-cell"></td>
                                 <td class="date-cell"></td>
                                 <td class="filename-cell"></td>
@@ -1562,6 +1562,30 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            <div class="documents-section">
+                <h2>Payments</h2>
+                <!-- Таблица платежей -->
+                <table id="paymentsTable" class="table_admin">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Notes</th>
+                            <th>Receipt</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Строки с данными будут добавляться сюда JavaScript'ом -->
+                    </tbody>
+                </table>
+                <!-- Элементы для отображения сводки по суммам -->
+                <p><strong>Total Amount:</strong> <span id="totalAmount"></span></p>
+                <p><strong>Paid Amount:</strong> <span id="paidAmount"></span></p>
+                <p><strong>Remaining Amount:</strong> <span id="remainingAmount"></span></p>
             </div>
 
             <!-- Информация о свидетелях -->
@@ -1596,7 +1620,7 @@
             </div>
 
             <!-- История владельцев -->
-            <div class="documents-section">
+            <!-- <div class="documents-section">
                 <h2>Ownership History</h2>
                 <table id="ownershipHistoryTable">
                     <thead>
@@ -1608,10 +1632,9 @@
                         </tr>
                     </thead>
                     <tbody id="ownershipHistoryBody">
-                        <!-- Data will be added via JavaScript -->
                     </tbody>
                 </table>
-            </div>
+            </div> -->
         </div>
 
         <script defer src="./client/public/js/client.js"></script>
@@ -1648,111 +1671,6 @@
                                                             data-quiz-summery="false" data-save-progress="false"
                                                             data-form-type="general-form" data-stop-vertical-effect="">
                                                         </div>
-
-
-                                                        <!----------------------------- 
-    * controls_data : find the the props passed indie of data attribute
-    * props.SubmitResponseMarkup : contains the markup of error or success message
-    * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals
---------------------------- -->
-
-                                                        <script type="text/mf" class="mf-template">
-    function controls_data (value){
-        let currentWrapper = "mf-response-props-id-175";
-        let currentEl = document.getElementById(currentWrapper);
-        
-        return currentEl ? currentEl.dataset[value] : false
-    }
-
-
-    let is_edit_mode = '' ? true : false;
-    let message_position = controls_data('messageposition') || 'top';
-
-    
-    let message_successIcon = controls_data('successicon') || '';
-    let message_errorIcon = controls_data('erroricon') || '';
-    let message_editSwitch = controls_data('editswitchopen') === 'yes' ? true : false;
-    let message_proClass = controls_data('editswitchopen') === 'yes' ? 'mf_pro_activated' : '';
-    
-    let is_dummy_markup = is_edit_mode && message_editSwitch ? true : false;
-
-    
-    return html`
-        <form
-            className="metform-form-content"
-            ref=${parent.formContainerRef}
-            onSubmit=${ validation.handleSubmit( parent.handleFormSubmit ) }
-        
-            >
-    
-    
-            ${is_dummy_markup ? message_position === 'top' ?  props.ResponseDummyMarkup(message_successIcon, message_proClass) : '' : ''}
-            ${is_dummy_markup ? ' ' :  message_position === 'top' ? props.SubmitResponseMarkup`${parent}${state}${message_successIcon}${message_errorIcon}${message_proClass}` : ''}
-
-            <!--------------------------------------------------------
-            *** IMPORTANT / DANGEROUS ***
-            ${html``} must be used as in immediate child of "metform-form-main-wrapper"
-            class otherwise multistep form will not run at all
-            ---------------------------------------------------------->
-
-            <div className="metform-form-main-wrapper" key=${'hide-form-after-submit'} ref=${parent.formRef}>
-            ${html`
-                        <div data-elementor-type="wp-post" key="2" data-elementor-id="175" className="elementor elementor-175">
-        <div className="elementor-element elementor-element-1db96f37 e-con-full e-flex e-con e-parent" data-id="1db96f37" data-element_type="container">
-<div className="elementor-element elementor-element-540a520c e-con-full e-flex e-con e-child" data-id="540a520c" data-element_type="container">
-        <div className="elementor-element elementor-element-4f16628a elementor-widget elementor-widget-mf-email" data-id="4f16628a" data-element_type="widget" data-settings="{&quot;mf_input_name&quot;:&quot;mf-email&quot;}" data-widget_type="mf-email.default">
-        <div className="elementor-widget-container">
-            
-<div className="mf-input-wrapper">
-    
-    <input 
-        type="email" 
-         
-        defaultValue="" 
-        className="mf-input " 
-        id="mf-input-email-4f16628a" 
-        name="mf-email" 
-        placeholder="${ parent.decodeEntities(`Email address`) } " 
-         
-        onBlur=${parent.handleChange} onFocus=${parent.handleChange} aria-invalid=${validation.errors['mf-email'] ? 'true' : 'false' } 
-        ref=${el=> parent.activateValidation({"message":"This field is required.","emailMessage":"Please enter a valid Email address","minLength":1,"maxLength":"","type":"none","required":true,"expression":"null"}, el)}
-                    />
-
-                <${validation.ErrorMessage} 
-        errors=${validation.errors} 
-        name="mf-email" 
-        as=${html`<span className="mf-error-message"></span>`}
-    />
-    
-            </div>
-
-        </div>
-        </div>
-        </div>
-<div className="elementor-element elementor-element-7f8cc6ce e-con-full e-flex e-con e-child" data-id="7f8cc6ce" data-element_type="container">
-        <div className="elementor-element elementor-element-345c6c39 mf-btn--right mf-btn--mobile-center elementor-widget elementor-widget-mf-button" data-id="345c6c39" data-element_type="widget" data-widget_type="mf-button.default">
-        <div className="elementor-widget-container">
-                                <input type="hidden" name="mf-hidden-input-name" className="mf_hidden_input_class" value="mf_hidden_input_value" ref=${parent.setDefault} />
-                <div className="mf-btn-wraper " data-mf-form-conditional-logic-requirement="">
-                    <button type="submit" className="metform-btn metform-submit-btn " id="">
-            <span>${ parent.decodeEntities(`Subscribe`) } </span>
-        </button>
-            </div>
-                </div>
-        </div>
-        </div>
-        </div>
-        </div>
-                    `}
-            </div>
-
-            ${is_dummy_markup ? message_position === 'bottom' ? props.ResponseDummyMarkup(message_successIcon, message_proClass) : '' : ''}
-            ${is_dummy_markup ? ' ' : message_position === 'bottom' ? props.SubmitResponseMarkup`${parent}${state}${message_successIcon}${message_errorIcon}${message_proClass}` : ''}
-        
-        </form>
-    `
-</script>
-
                                                     </div>
                                                 </div>
                                             </div>

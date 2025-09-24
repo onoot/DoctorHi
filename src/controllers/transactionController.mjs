@@ -7,6 +7,8 @@ import fs from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import jwt from 'jsonwebtoken';
+import User from '../models/User.mjs';
+import Units from '../models/Units.mjs';
 
 // Возвращает относительный путь от UPLOAD_PATH
 function getRelativePath(absolutePath) {
@@ -100,108 +102,36 @@ export const upload = multer({
   }
 });
 
-// Предопределенные объекты недвижимости
-const properties = {
-  'Parking': [
-    { id: 'DH01', name: 'Parking DH01', type: 'parking' },
-    { id: 'DH02', name: 'Parking DH02', type: 'parking' },
-    { id: 'DH03', name: 'Parking DH03', type: 'parking' }
-  ],
-  "Lower Basement": [
-    { "id": "LB01", "name": "Parking LB01", "type": "parking" },
-    { "id": "LB02", "name": "Parking LB02", "type": "parking" },
-    { "id": "LB03", "name": "Parking LB03", "type": "parking" },
-    { "id": "LB04", "name": "Parking LB04", "type": "parking" },
-    { "id": "LB05", "name": "Parking LB05", "type": "parking" },
-    { "id": "LB06", "name": "Parking LB06", "type": "parking" },
-    { "id": "LB07", "name": "Parking LB07", "type": "parking" },
-    { "id": "LB08", "name": "Parking LB08", "type": "parking" },
-    { "id": "LB09", "name": "Parking LB09", "type": "parking" },
-    { "id": "LB10", "name": "Parking LB10", "type": "parking" },
-    { "id": "LB11", "name": "Parking LB11", "type": "parking" },
-    { "id": "LB12", "name": "Parking LB12", "type": "parking" }
-  ],
-  "Upper Basement": [
-    { "id": "UB01", "name": "Parking UB01", "type": "parking" },
-    { "id": "UB02", "name": "Parking UB02", "type": "parking" },
-    { "id": "UB03", "name": "Parking UB03", "type": "parking" },
-    { "id": "UB04", "name": "Parking UB04", "type": "parking" },
-    { "id": "UB05", "name": "Parking UB05", "type": "parking" },
-    { "id": "UB06", "name": "Parking UB06", "type": "parking" },
-    { "id": "UB07", "name": "Parking UB07", "type": "parking" },
-    { "id": "UB08", "name": "Parking UB08", "type": "parking" },
-    { "id": "UB09", "name": "Parking UB09", "type": "parking" },
-    { "id": "UB10", "name": "Parking UB10", "type": "parking" },
-    { "id": "UB11", "name": "Parking UB11", "type": "parking" },
-    { "id": "UB12", "name": "Parking UB12", "type": "parking" }
-  ],
-  'Ground Floor': [
-    { id: 'DH01', name: 'Shop DH01', type: 'commercial' },
-    { id: 'DH02', name: 'Shop DH02', type: 'commercial' },
-    { id: 'DH03', name: 'Shop DH03', type: 'commercial' }
-  ],
-  '1st Floor': [
-    { id: 'DH101', name: 'Office DH101', type: 'commercial' },
-    { id: 'DH102', name: 'Office DH102', type: 'commercial' },
-    { id: 'DH103', name: 'Office DH103', type: 'commercial' }
-  ],
-  '2nd Floor': [
-    { id: 'DH201', name: 'Office DH201', type: 'commercial' },
-    { id: 'DH202', name: 'Office DH202', type: 'commercial' },
-    { id: 'DH203', name: 'Office DH203', type: 'commercial' }
-  ],
-  '3rd Floor': [
-    { id: 'DH301', name: 'Apartment DH301 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH302', name: 'Apartment DH302 (973.7 Sft)', type: 'residential' },
-    { id: 'DH303', name: 'Apartment DH303 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH304', name: 'Apartment DH304 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH305', name: 'Apartment DH305 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH306', name: 'Apartment DH306 (1,686.00 Sft)', type: 'residential' }
-  ],
-  '4th Floor': [
-    { id: 'DH401', name: 'Apartment DH401 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH402', name: 'Apartment DH402 (973.7 Sft)', type: 'residential' },
-    { id: 'DH403', name: 'Apartment DH403 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH404', name: 'Apartment DH404 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH405', name: 'Apartment DH405 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH406', name: 'Apartment DH406 (1,686.00 Sft)', type: 'residential' }
-  ],
-  '5th Floor': [
-    { id: 'DH501', name: 'Apartment DH501 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH502', name: 'Apartment DH502 (973.7 Sft)', type: 'residential' },
-    { id: 'DH503', name: 'Apartment DH503 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH504', name: 'Apartment DH504 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH505', name: 'Apartment DH505 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH506', name: 'Apartment DH506 (1,686.00 Sft)', type: 'residential' }
-  ],
-  '6th Floor': [
-    { id: 'DH601', name: 'Apartment DH601 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH602', name: 'Apartment DH602 (973.7 Sft)', type: 'residential' },
-    { id: 'DH603', name: 'Apartment DH603 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH604', name: 'Apartment DH604 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH605', name: 'Apartment DH605 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH606', name: 'Apartment DH606 (1,686.00 Sft)', type: 'residential' }
-  ],
-  '7th Floor': [
-    { id: 'DH701', name: 'Apartment DH701 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH702', name: 'Apartment DH702 (973.7 Sft)', type: 'residential' },
-    { id: 'DH703', name: 'Apartment DH703 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH704', name: 'Apartment DH704 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH705', name: 'Apartment DH705 (1,198.3 Sft)', type: 'residential' },
-    { id: 'DH706', name: 'Apartment DH706 (1,686.00 Sft)', type: 'residential' }
-  ],
-  'Penthouse': [
-    { id: 'PH', name: 'Penthouse (7,350.00 Sft)', type: 'penthouse' }
-  ]
-};
-
-// Функция для проверки существования объекта недвижимости
-function getPropertyById(propertyId) {
-  for (const category of Object.values(properties)) {
-    const property = category.find(p => p.id === propertyId);
-    if (property) return property;
+const units = async ()=>{
+  try{
+    return await Units.getAll()
+  }catch(e){
+    console.log(e);
+    throw e;
   }
-  return null;
+}
+
+// Обновленная функция для поиска объекта недвижимости по ID
+async function getPropertyById(propertyId) {
+  try {
+    // Используем модель Unit для поиска по original_id
+    // Предполагается, что `property_id` в таблице `transactions` соответствует `original_id` в таблице `units`
+    const unit = await Unit.findByOriginalIdAndCategory(propertyId, ''); // Второй параметр category можно опустить, если ищем по всем категориям
+    // Или, если в вашей модели нет метода findByOriginalIdAndCategory, создайте его или используйте findById, если propertyId соответствует уникальному ID
+    if (unit) {
+      // Возвращаем объект в формате, ожидаемом контроллером
+      return {
+        id: unit.original_id, // или unit.id, в зависимости от того, что хранится в transactions
+        name: unit.name,
+        type: unit.type
+        // area: unit.area // опционально
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching property by ID:', error);
+    return null; // или пробросить ошибку дальше
+  }
 }
 
 // Get previous owner from ownership history
@@ -402,15 +332,16 @@ const transactionController = {
       const total = totalRows[0].count;
       const totalPages = Math.ceil(total / limit);
 
-      // Добавляем информацию о свойствах
-      const enrichedTransactions = transactions.map(transaction => {
-        const property = getPropertyById(transaction.property_id);
+      // Внутри async getAll(req, res)
+      const enrichedTransactions = await Promise.all(transactions.map(async (transaction) => {
+        // Используем await для получения данных о свойстве
+        const property = await getPropertyById(transaction.property_id);
         return {
           ...transaction,
           property_name: property ? property.name : 'Unknown Property',
           property_type: property ? property.type : 'unknown'
         };
-      });
+      }));
 
       res.json({
         success: true,
@@ -425,6 +356,118 @@ const transactionController = {
     }
   },
 
+  /**
+ * Получение детальной информации о транзакции для клиента
+ * Включает рассчитанный график платежей
+ */
+async getUserTransactionDetails(req, res) {
+  try {
+    const userId = req.user.id; // Получаем ID пользователя из токена (после auth)
+    const transactionId = req.params.id;
+
+    // 1. Получаем транзакцию с проверкой принадлежности пользователю
+    // Предполагается, что модель Transaction имеет метод findByIdAndUser
+    const transaction = await Transaction.findByIdAndUser(transactionId, userId);
+
+    if (!transaction) {
+      return res.status(404).json({
+        success: false,
+        message: 'Transaction not found or access denied'
+      });
+    }
+
+    // 2. Получаем совершенные платежи из БД
+    const payments = await Payment.findByTransactionId(transactionId);
+
+    // 3. Рассчитываем полный график платежей
+    let fullPaymentSchedule = [];
+
+    if (transaction.payment_type === 'full') {
+      // Для полной оплаты график состоит из одного платежа
+      fullPaymentSchedule = [{
+        installment: 1,
+        amount: transaction.total_amount,
+        due_date: transaction.full_payment_deadline,
+        status: payments.length > 0 ? 'paid' : 'pending', // Упрощение
+        payment_id: payments.length > 0 ? payments[0].id : null,
+        payment_date: payments.length > 0 ? payments[0].payment_date : null,
+        payment_method: payments.length > 0 ? payments[0].payment_method : null,
+        // ... другие поля платежа
+      }];
+    } else if (transaction.payment_type === 'schedule') {
+      // Для оплаты по расписанию рассчитываем график
+      if (transaction.payment_schedule) {
+        // Если график уже сохранен в БД (JSON)
+        fullPaymentSchedule = transaction.payment_schedule;
+      } else {
+        // Если нужно рассчитать "на лету"
+        // Вам понадобится функция, аналогичная calculateScheduleLocally из JS, но на сервере
+        // Например: import { calculateSchedule } from '../utils/scheduleCalculator.mjs';
+        // fullPaymentSchedule = calculateSchedule(transaction);
+        
+        // Пока что просто возьмем платежи из БД как есть и добавим их в график
+        // Это временное решение, пока логика расчета не перенесена на сервер
+        fullPaymentSchedule = payments.map(p => ({
+          installment: p.installment_number || p.id, // Предполагаем, что есть поле installment_number
+          amount: p.amount,
+          due_date: p.due_date || p.payment_date, // Предполагаем, что есть поле due_date
+          status: p.status,
+          payment_id: p.id,
+          payment_date: p.payment_date,
+          payment_method: p.payment_method,
+        }));
+      }
+
+      // Обогащаем рассчитанный график данными из совершенных платежей
+      fullPaymentSchedule = fullPaymentSchedule.map(scheduleItem => {
+        // Ищем соответствующий платеж в списке совершенных
+        const paidPayment = payments.find(p => 
+          // Сравниваем по номеру платежа или дате/сумме, в зависимости от структуры БД
+          p.installment_number === scheduleItem.installment ||
+          (new Date(p.due_date).getTime() === new Date(scheduleItem.due_date).getTime() && 
+           parseFloat(p.amount).toFixed(2) === parseFloat(scheduleItem.amount).toFixed(2))
+        );
+
+        if (paidPayment) {
+          return {
+            ...scheduleItem,
+            status: paidPayment.status, // Может быть 'paid' или 'confirmed'
+            payment_id: paidPayment.id,
+            payment_date: paidPayment.payment_date,
+            payment_method: paidPayment.payment_method,
+            // ... другие поля из платежа
+          };
+        }
+        // Если платеж не найден, оставляем статус из графика (например, 'pending')
+        return scheduleItem;
+      });
+    }
+
+    // 4. Получаем файлы транзакции (документы)
+    const files = await TransactionFile.findByTransactionId(transactionId);
+
+    // 5. Получаем свидетелей транзакции
+    const witnesses = await TransactionWitness.findByTransactionId(transactionId);
+
+    res.json({
+      success: true,
+      transaction: {
+        ...transaction, // Основные данные транзакции
+        files, // Документы
+        witnesses, // Свидетели
+      },
+      payments: fullPaymentSchedule, // Передаем ПОЛНЫЙ график, включая совершенные
+      // ownership_history: ownershipHistory 
+    });
+
+  } catch (error) {
+    console.error('Error getting user transaction details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+},
 
   async deletePayment(req, res) {
     try {
@@ -534,22 +577,23 @@ const transactionController = {
           property_name: property ? property.name : 'Unknown Property',
           property_type: property ? property.type : 'unknown',
           previous_owner_id: transaction.previous_owner_id,
-          previous_owner_name: transaction.previous_owner_name || 'Unknown User',
+          previous_owner_name: transaction.previous_owner_name || 'N/A',
           new_owner_id: transaction.new_owner_id,
-          new_owner_name: transaction.new_owner_name || 'Unknown User',
+          new_owner_name: transaction.new_owner_name || 'ERROR',
           status: transaction.status,
+          admin_notes: transaction.admin_notes,
           created_at: transaction.created_at,
           updated_at: transaction.updated_at
         };
       });
-
+      const properties = await units()
       res.json({
         success: true,
         success: true,
         transactions: enrichedTransactions,
         total,
         page: parseInt(page),
-        properties,
+        properties: properties,
         totalPages: Math.ceil(total / limit)
       });
     } catch (error) {
@@ -560,6 +604,56 @@ const transactionController = {
       });
     }
   },
+  // Обновление примечаний администратора для транзакции
+async updateAdminNotes(req, res) {
+  try {
+    const transactionId = parseInt(req.params.id);
+    const { admin_notes } = req.body; // admin_notes может быть null или строкой
+
+    // Проверка прав доступа
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    if (!transactionId) {
+      return res.status(400).json({ success: false, message: 'Transaction ID is required' });
+    }
+
+    // Проверяем, существует ли колонка admin_notes, и добавляем её, если нет
+    try {
+      await pool.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN admin_notes TEXT NULL
+      `);
+      console.log('[TRANSACTION] Added admin_notes column to transactions table');
+    } catch (alterError) {
+      // ER_DUP_FIELDNAME означает, что колонка уже существует - это нормально
+      if (alterError.code !== 'ER_DUP_FIELDNAME') {
+        console.error('[TRANSACTION] Error ensuring admin_notes column exists:', alterError);
+        // Не прерываем выполнение, так как колонка может уже существовать
+      }
+    }
+
+    // Обновление примечаний администратора
+    const [result] = await pool.query(
+      'UPDATE transactions SET admin_notes = ? WHERE id = ?',
+      [admin_notes, transactionId] // admin_notes может быть null
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Transaction not found' });
+    }
+
+    res.json({ success: true, message: 'Administrator notes updated successfully' });
+  } catch (error) {
+    console.error('Error updating admin notes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      details: error.message
+    });
+  }
+},
 
   // Получение сделки по ID (только админ)
   async getById(req, res) {
@@ -678,83 +772,86 @@ const transactionController = {
   },
 
   // Обновление статуса транзакции
+async update(req, res) {
+  try {
+    const transactionId = parseInt(req.params.id);
+    const { status, reason } = req.body; // reason вместо admin_notes
 
-  // Обновление статуса транзакции
-  async update(req, res) {
+    // Проверка прав доступа
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    // Валидация статуса
+    const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+
+    // Сначала добавим колонку admin_notes если её нет
     try {
-      const transactionId = parseInt(req.params.id);
-      const { status, admin_notes } = req.body;
-
-      // Проверка прав доступа
-      if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Forbidden' });
+      await pool.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN admin_notes TEXT NULL
+      `);
+      console.log('Added admin_notes column to transactions table');
+    } catch (e) {
+      // Колонка уже существует - это нормально
+      if (e.code !== 'ER_DUP_FIELDNAME') {
+        console.error('Error adding admin_notes column:', e);
       }
+    }
 
-      // Валидация статуса
-      const validStatuses = ['pending', 'approved', 'rejected', 'cancelled'];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ success: false, message: 'Invalid status' });
-      }
+    // Обновление транзакции
+    const [result] = await pool.query(
+      'UPDATE transactions SET status = ?, admin_notes = ? WHERE id = ?',
+      [status, reason || null, transactionId] // reason вместо admin_notes
+    );
 
-      // Обновление транзакции
-      const [result] = await pool.query(
-        'UPDATE transactions SET status = ?, admin_notes = ? WHERE id = ?',
-        [status, admin_notes, transactionId]
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    // Если транзакция одобрена, создаем запись в истории владения
+    if (status === 'approved') {
+      const [transaction] = await pool.query(
+        'SELECT * FROM transactions WHERE id = ?',
+        [transactionId]
       );
 
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ message: 'Transaction not found' });
-      }
-
-      // Если транзакция одобрена, создаем запись в истории владения
-      if (status === 'approved') {
-        const [transaction] = await pool.query(
-          'SELECT * FROM transactions WHERE id = ?',
-          [transactionId]
-        );
-
-        if (transaction.length > 0) {
-          // Проверяем, что у транзакции есть необходимые данные
-          if (transaction[0].property_id && transaction[0].new_owner_id) {
-            const newOwnership = {
-              property_id: transaction[0].property_id,
-              owner_id: transaction[0].new_owner_id,
-              from_date: new Date(),
-              to_date: null
-            };
-
-            await pool.query(
-              'INSERT INTO ownership_history SET ?',
-              [newOwnership]
-            );
-          } else {
-            console.error('Transaction data incomplete for ownership history', transaction[0]);
-            return res.status(500).json({
-              message: 'Transaction data incomplete for ownership history'
-            });
-          }
+      if (transaction.length > 0) {
+        // Проверяем, что у транзакции есть необходимые данные
+        if (transaction[0].property_id && transaction[0].new_owner_id) {
+          const newOwnership = {
+            property_id: transaction[0].property_id,
+            owner_id: transaction[0].new_owner_id,
+            from_date: new Date(),
+            to_date: null
+          };
+          
+          // Здесь должен быть код для вставки в ownership_history
+          // await pool.query('INSERT INTO ownership_history SET ?', [newOwnership]);
         } else {
-          console.error('Transaction not found after update', transactionId);
-          return res.status(500).json({
-            message: 'Transaction not found after update'
-          });
+          console.error('Transaction data incomplete for ownership history', transaction[0]);
+          // Не возвращаем ошибку, просто логируем
         }
       }
-
-      res.json({ success: true, message: 'Transaction updated successfully' });
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      console.error('Request details:', {
-        params: req.params,
-        body: req.body,
-        user: req.user
-      });
-      res.status(500).json({
-        message: 'Internal server error',
-        details: error.message
-      });
     }
-  },
+
+    res.json({ success: true, message: 'Transaction updated successfully' });
+  } catch (error) {
+    console.error('Error updating transaction:', error);
+    console.error('Request details:', {
+      params: req.params,
+      body: req.body,
+      user: req.user
+    });
+    res.status(500).json({
+      message: 'Internal server error',
+      details: error.message
+    });
+  }
+},
 
   async uploadFiles(req, res) {
     try {
@@ -953,104 +1050,219 @@ const transactionController = {
     }
   },
 
-  async create(req, res) {
-    try {
-      const { property_id, new_owner_id, total_amount, witnesses } = req.body;
+// Создание новой транзакции
+async create(req, res) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
 
-      // Проверяем, что свойство существует
-      const property = getPropertyById(property_id);
-      if (!property) {
-        console.log('Property not found:', property_id);
-        return res.status(404).json({ success: false, message: 'Property not found' });
-      }
+    // === НОВАЯ ЛОГИКА: Получение данных типа оплаты ===
+    const { 
+      property_id, 
+      new_owner_id, 
+      total_amount, 
+      witnesses, 
+      admin_notes,
+      payment_type, // 'full' или 'schedule'
+      full_payment_deadline, // для 'full'
+      schedule_payment_day, // для 'schedule' (число 1-31)
+      min_payment_amount // для 'schedule'
+      // payment_schedule // если отправляете рассчитанное расписание
+    } = req.body;
+    // === КОНЕЦ НОВОЙ ЛОГИКИ ===
 
-      // Проверяем наличие активной транзакции для этого объекта
-      const [activeTransactions] = await pool.query(
-        'SELECT id FROM transactions WHERE property_id = ? AND status IN (?, ?)',
-        [property_id, 'pending', 'approved']
-      );
-      if (activeTransactions.length > 0) {
-        return res.status(400).json({ success: false, message: 'There is already an active transaction for this object.' });
-      }
-
-      // Проверка диапазона total_amount (например, DECIMAL(12,2) — максимум 9999999999.99)
-      const MAX_TOTAL_AMOUNT = 9999999999.99;
-      if (isNaN(total_amount) || Number(total_amount) > MAX_TOTAL_AMOUNT) {
-        return res.status(400).json({ success: false, message: `The transaction amount is maximum allowed (${MAX_TOTAL_AMOUNT})` });
-      }
-
-      // Получаем предыдущего владельца
-      const previous_owner_id = await getPreviousOwner(property_id);
-
-      // СОЗДАЕМ ТРАНЗАКЦИЮ СНАЧАЛА
-      const [result] = await pool.query(
-        `INSERT INTO transactions 
-       (property_id, previous_owner_id, new_owner_id, status, total_amount, paid_amount)
-       VALUES (?, ?, ?, 'pending', ?, 0)`,
-        [property_id, previous_owner_id, new_owner_id, total_amount]
-      );
-
-      const transactionId = result.insertId;
-
-      if (witnesses) {
-        const connection = await pool.getConnection();
-        try {
-          await connection.beginTransaction();
-
-          // Удаляем существующих свидетелей (на случай повторной попытки)
-          await connection.query(
-            'DELETE FROM transaction_witnesses WHERE transaction_id = ?',
-            [transactionId]
-          );
-
-          // Обработка первого свидетеля
-          if (witnesses.witness1) {
-            const { name, cnic, phone } = witnesses.witness1;
-
-            // ДОБАВЛЯЕМ СВИДЕТЕЛЯ НАПРЯМУЮ С transaction_id
-            await connection.query(
-              `INSERT INTO transaction_witnesses 
-             (transaction_id, witness_type, name, cnic, phone) 
-             VALUES (?, 'witness1', ?, ?, ?)`,
-              [transactionId, name, cnic, phone || null]
-            );
-          }
-
-          // Обработка второго свидетеля
-          if (witnesses.witness2) {
-            const { name, cnic, phone } = witnesses.witness2;
-
-            // ДОБАВЛЯЕМ СВИДЕТЕЛЯ НАПРЯМУЮ С transaction_id
-            await connection.query(
-              `INSERT INTO transaction_witnesses 
-             (transaction_id, witness_type, name, cnic, phone) 
-             VALUES (?, 'witness2', ?, ?, ?)`,
-              [transactionId, name, cnic, phone || null]
-            );
-          }
-
-          await connection.commit();
-        } catch (error) {
-          await connection.rollback();
-          throw error;
-        } finally {
-          connection.release();
-        }
-      }
-
-      res.status(201).json({
-        success: true,
-        message: 'Transaction created successfully',
-        transaction_id: transactionId
-      });
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error creating transaction',
+    // Валидация входных данных
+    if (!property_id || !new_owner_id || !total_amount || !witnesses || !payment_type) {
+      await connection.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: property_id, new_owner_id, total_amount, witnesses, payment_type' 
       });
     }
-  },
+
+    // Валидация типа оплаты
+    if (payment_type !== 'full' && payment_type !== 'schedule') {
+       await connection.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid payment_type. Must be "full" or "schedule".' 
+      });
+    }
+
+    if (payment_type === 'full' && !full_payment_deadline) {
+       await connection.rollback();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'full_payment_deadline is required for full payment type.' 
+      });
+    }
+
+    if (payment_type === 'schedule') {
+      if (!schedule_payment_day || schedule_payment_day < 1 || schedule_payment_day > 31) {
+         await connection.rollback();
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Valid schedule_payment_day (1-31) is required for schedule payment type.' 
+        });
+      }
+      if (!min_payment_amount || min_payment_amount <= 0) {
+         await connection.rollback();
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Valid min_payment_amount is required for schedule payment type.' 
+        });
+      }
+      if (parseFloat(min_payment_amount) > parseFloat(total_amount)) {
+         await connection.rollback();
+        return res.status(400).json({ 
+          success: false, 
+          message: 'min_payment_amount cannot be greater than total_amount.' 
+        });
+      }
+    }
+
+    // Проверяем, существуют ли необходимые колонки, и добавляем их, если нет
+    try {
+      await connection.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN payment_type ENUM('full', 'schedule') NOT NULL DEFAULT 'full'
+      `);
+      console.log('[TRANSACTION] Ensured payment_type column exists');
+    } catch (alterError) {
+      if (alterError.code !== 'ER_DUP_FIELDNAME') {
+        console.error('[TRANSACTION] Error ensuring payment_type column exists:', alterError);
+      }
+    }
+
+    try {
+      await connection.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN full_payment_deadline DATE NULL
+      `);
+      console.log('[TRANSACTION] Ensured full_payment_deadline column exists');
+    } catch (alterError) {
+      if (alterError.code !== 'ER_DUP_FIELDNAME') {
+        console.error('[TRANSACTION] Error ensuring full_payment_deadline column exists:', alterError);
+      }
+    }
+
+    try {
+      await connection.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN schedule_payment_day TINYINT UNSIGNED NULL
+      `);
+      console.log('[TRANSACTION] Ensured schedule_payment_day column exists');
+    } catch (alterError) {
+      if (alterError.code !== 'ER_DUP_FIELDNAME') {
+        console.error('[TRANSACTION] Error ensuring schedule_payment_day column exists:', alterError);
+      }
+    }
+
+    // Убедимся, что admin_notes колонка существует
+    try {
+      await connection.query(`
+        ALTER TABLE transactions 
+        ADD COLUMN admin_notes TEXT NULL
+      `);
+      console.log('[TRANSACTION] Ensured admin_notes column exists');
+    } catch (alterError) {
+      if (alterError.code !== 'ER_DUP_FIELDNAME') {
+        console.error('[TRANSACTION] Error ensuring admin_notes column exists:', alterError);
+      }
+    }
+
+    // === НОВАЯ ЛОГИКА: Подготовка данных для вставки ===
+    const transactionData = {
+      property_id,
+      new_owner_id: parseInt(new_owner_id),
+      total_amount: parseFloat(total_amount),
+      status: 'pending',
+      admin_notes: admin_notes || null,
+      payment_type: payment_type,
+      full_payment_deadline: payment_type === 'full' ? full_payment_deadline : null,
+      schedule_payment_day: payment_type === 'schedule' ? parseInt(schedule_payment_day) : null,
+      min_payment_amount: payment_type === 'schedule' ? parseFloat(min_payment_amount) : null,
+      // payment_schedule: payment_type === 'schedule' ? JSON.stringify(payment_schedule) : null,
+      payment_status: 'not_started', // Инициализируем статус платежа
+      paid_amount: 0.00 // Инициализируем оплаченную сумму
+    };
+    // === КОНЕЦ НОВОЙ ЛОГИКИ ===
+
+    // Создаем запись транзакции
+    const [transactionResult] = await connection.execute(
+      `INSERT INTO transactions 
+       (property_id, new_owner_id, total_amount, status, admin_notes, 
+        payment_type, full_payment_deadline, schedule_payment_day, min_payment_amount, 
+        payment_status, paid_amount, created_at) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        transactionData.property_id,
+        transactionData.new_owner_id,
+        transactionData.total_amount,
+        transactionData.status,
+        transactionData.admin_notes,
+        transactionData.payment_type,
+        transactionData.full_payment_deadline,
+        transactionData.schedule_payment_day,
+        transactionData.min_payment_amount,
+        transactionData.payment_status,
+        transactionData.paid_amount
+      ]
+    );
+
+    const transactionId = transactionResult.insertId;
+
+    // Сохраняем данные свидетелей
+    if (witnesses.witness1) {
+      await connection.execute(
+        `INSERT INTO transaction_witnesses 
+         (transaction_id, name, cnic, phone, witness_number) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          transactionId,
+          witnesses.witness1.name,
+          witnesses.witness1.cnic,
+          witnesses.witness1.phone || null,
+          1
+        ]
+      );
+    }
+
+    if (witnesses.witness2) {
+      await connection.execute(
+        `INSERT INTO transaction_witnesses 
+         (transaction_id, name, cnic, phone, witness_number) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          transactionId,
+          witnesses.witness2.name,
+          witnesses.witness2.cnic,
+          witnesses.witness2.phone || null,
+          2
+        ]
+      );
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      success: true,
+      message: 'Transaction created successfully',
+      transactionId
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error creating transaction:', error);
+    // Более информативная ошибка для клиента
+    res.status(500).json({ 
+      success: false,
+      message: 'Internal server error while creating transaction',
+      // details: process.env.NODE_ENV === 'development' ? error.message : undefined // Только в dev
+    });
+  } finally {
+    connection.release();
+  }
+},
 
   // Получение сделок пользователя по конкретному объекту
   async getUserPropertyTransactions(req, res) {
@@ -1112,50 +1324,6 @@ const transactionController = {
     } catch (error) {
       console.error('Ошибка при получении сделок:', error);
       return res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
-    }
-  },
-
-  // Обновление статуса транзакции пользователем
-  async updateUserTransaction(req, res) {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      const { status } = req.body;
-      const transactionId = req.params.id;
-      const userId = req.user.id;
-
-      // Check if user is a participant in the transaction
-      const [transaction] = await pool.query(
-        'SELECT * FROM transactions WHERE id = ? AND (previous_owner_id = ? OR new_owner_id = ?)',
-        [transactionId, userId, userId]
-      );
-
-      if (transaction.length === 0) {
-        return res.status(404).json({ message: 'Transaction not found or you do not have permission to modify it' });
-      }
-
-      // Check current transaction status
-      if (transaction[0].status !== 'pending') {
-        return res.status(400).json({ success: false, message: 'Only transactions in pending status can be modified' });
-      }
-
-      // Update status
-      const [result] = await pool.query(
-        'UPDATE transactions SET status = ? WHERE id = ?',
-        [status, transactionId]
-      );
-
-      if (result.affectedRows === 0) {
-        return res.status(404).json({ message: 'Failed to update transaction' });
-      }
-
-      res.json({ success: true, message: 'Transaction status updated successfully' });
-    } catch (error) {
-      console.error('Error updating transaction:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
     }
   },
 
@@ -1315,6 +1483,7 @@ const transactionController = {
       res.status(500).json({ success: false, message: 'Внутренняя ошибка сервера' });
     }
   },
+
   async updatePayment(req, res) {
     try {
       const errors = validationResult(req);
@@ -1438,6 +1607,7 @@ const transactionController = {
       });
     }
   },
+  
   /**
    * Получение истории транзакций объекта
    */

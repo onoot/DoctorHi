@@ -147,6 +147,45 @@ function attachTransactionActionHandlers() {
 }
 
 /**
+ * Обновляет примечания администратора для транзакции
+ * @param {string} transactionId - ID транзакции
+ * @param {string} notes - Новые примечания
+ */
+async function updateAdminNotes(transactionId, notes) {
+    try {
+        const response = await apiRequest(`/v1/admin/transactions/${transactionId}/admin-notes`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ admin_notes: notes || null }) // Отправляем null, если пусто
+        });
+
+        if (response && response.success) {
+            showNotification('success', 'Administrator notes updated successfully');
+
+            // Обновляем отображение
+            displayAdminNotes(notes);
+
+            // Обновляем данные в глобальной переменной
+            if (window.currentTransactionDetails) {
+                window.currentTransactionDetails.admin_notes = notes || null;
+            }
+
+            // Опционально: обновить список транзакций в таблице
+            // loadTransactions(); // Если нужно сразу отразить изменения в списке
+
+        } else {
+            const errorMessage = response?.message || 'Failed to update administrator notes';
+            throw new Error(errorMessage);
+        }
+    } catch (error) {
+        console.error('Error updating admin notes:', error);
+        showNotification('error', `Error updating notes: ${error.message}`);
+    }
+}
+
+/**
  * Открываем модальное окно просмотра транзакции
  */
 function openViewTransactionModal(transactionId) {
@@ -170,6 +209,42 @@ function openViewTransactionModal(transactionId) {
 
     // Повторно назначаем обработчик для кнопки редактирования суммы (если она появилась динамически)
     setTimeout(() => {
+        // === НОВАЯ ЛОГИКА: Обработчики для Admin Notes ===
+        const displayEl = document.getElementById('adminNotesDisplay');
+        const editContainer = document.getElementById('adminNotesEditContainer');
+        const inputEl = document.getElementById('adminNotesInput');
+        const saveBtn = document.getElementById('saveAdminNotesBtn');
+        const cancelBtn = document.getElementById('cancelAdminNotesBtn');
+
+        if (displayEl) {
+            // Клик по отображаемому тексту для перехода в режим редактирования
+            displayEl.addEventListener('click', () => {
+                if (editContainer) {
+                    editContainer.style.display = 'block';
+                    if (inputEl) {
+                        inputEl.focus();
+                    }
+                }
+            });
+        }
+
+        if (cancelBtn) {
+            // Кнопка отмены редактирования
+            cancelBtn.addEventListener('click', () => {
+                 // Перезагружаем отображение с текущими данными
+                if (window.currentTransactionDetails) {
+                    displayAdminNotes(window.currentTransactionDetails.admin_notes || '');
+                }
+            });
+        }
+
+        if (saveBtn) {
+            // Кнопка сохранения примечаний
+            saveBtn.addEventListener('click', async () => {
+                const newNotes = inputEl ? inputEl.value.trim() : '';
+                await updateAdminNotes(transactionId, newNotes);
+            });
+        }
         const editAmountBtn = document.getElementById('editAmountBtn');
         if (editAmountBtn) {
             editAmountBtn.replaceWith(editAmountBtn.cloneNode(true));
@@ -366,25 +441,57 @@ function openViewTransactionModal(transactionId) {
 }
 
 /**
+ * Отображает примечания администратора
+ * @param {string} notes - Текст примечаний
+ */
+function displayAdminNotes(notes) {
+    const displayEl = document.getElementById('adminNotesDisplay');
+    const inputEl = document.getElementById('adminNotesInput');
+    const editContainer = document.getElementById('adminNotesEditContainer');
+
+    if (displayEl) {
+        displayEl.textContent = notes || 'No notes added.';
+        // Если примечаний нет, можно добавить стиль "пусто"
+        if (!notes) {
+            displayEl.style.fontStyle = 'italic';
+            displayEl.style.color = '#888';
+        } else {
+            displayEl.style.fontStyle = 'normal';
+            displayEl.style.color = '#000';
+        }
+    }
+
+    if (inputEl) {
+        inputEl.value = notes || '';
+    }
+
+    if (editContainer) {
+        editContainer.style.display = 'none'; // Скрываем поле редактирования при загрузке
+    }
+}
+
+/**
  * Загружает детали транзакции и сохраняет properties в localStorage
  */
 async function loadTransactionDetails(transactionId) {
     try {
         const response = await apiRequest(`/v1/admin/transactions/${transactionId}`);
-        
         if (response && response.id) {
             const transaction = response;
             
+            // Сохраняем текущие детали транзакции в глобальной переменной
+            window.currentTransactionDetails = transaction; // Добавлено для доступа в других функциях
+
             // 🔥 ЗАДАЧА 1 и 2: Сохраняем properties в localStorage — КЛЮЧЕВОЙ ШАГ
             if (response.properties) {
                 localStorage.setItem('transactionProperties', JSON.stringify(response.properties));
             }
-            
+
             // 🔥 ЗАГРУЖАЕМ ПОЛЬЗОВАТЕЛЕЙ — ЕСЛИ ИХ НЕТ В localStorage — ЗАГРУЖАЕМ ИЗ API
             if (!localStorage.getItem('users')) {
                 loadUsers(); // Это будет вызвано только один раз при первом открытии транзакции
             }
-            
+
             // Заполняем поля
             const transactionIdEl = document.getElementById('transactionId');
             const propertyNameEl = document.getElementById('propertyName');
@@ -401,7 +508,7 @@ async function loadTransactionDetails(transactionId) {
                 console.error('One or more transaction detail elements not found');
                 return;
             }
-            
+
             transactionIdEl.textContent = transaction.id;
             propertyNameEl.textContent = transaction.property_name || transaction.property_id || 'N/A';
             previousOwnerEl.textContent = transaction.previous_owner_name || 'N/A';
@@ -424,13 +531,17 @@ async function loadTransactionDetails(transactionId) {
             const newAmount = parseFloat(transaction.total_amount);
             totalAmountViewEl.textContent = formatPKR(newAmount);
             paidAmountEl.textContent = formatPKR(transaction.paid_amount);
-            
             const remainingAmount = newAmount - parseFloat(transaction.paid_amount);
             remainingAmountEl.textContent = formatPKR(remainingAmount);
-            
+
             displayWitnesses(transaction);
             displayTransactionDocuments(transaction);
-            displayPayments(transaction?.id ,transaction.payments);
+            displayPayments(transaction?.id, transaction.payments);
+
+            // === НОВАЯ ЛОГИКА: Отображение Admin Notes ===
+            displayAdminNotes(transaction.admin_notes || '');
+            // ===========================================
+
         } else {
             console.error('Invalid transaction data format:', response);
             showNotification('error', 'Failed to load transaction details');
@@ -443,13 +554,41 @@ async function loadTransactionDetails(transactionId) {
 
 /**
  * Загружает пользователей из API и сохраняет в localStorage
+ * @param {string} status - Фильтр по статусу: 'active' или 'archived'
+ * @param {number} page - Номер страницы
+ * @param {number} limit - Количество на странице
+ * @param {string} search - Поисковый запрос
  */
-async function loadUsers() {
+async function loadUsers(status = 'active', page = 1, limit = 10, search = '') {
     try {
-        const response = await apiRequest('/v1/admin/users');
-        if (response.success && Array.isArray(response.users)) {
+        // Формируем query-параметры
+        const params = new URLSearchParams({
+            status,
+            page: page.toString()||"1",
+            limit: limit.toString()||"1",
+            search: search||""
+        });
+        
+        if (search) {
+            params.append('search', search);
+        }
+
+        console.log(`[USERS] Loading users with params: ${params.toString()}`);
+        
+        const response = await apiRequest(`/v1/admin/users?${params.toString()}`);
+
+        // Проверяем структуру ответа
+        if (response && Array.isArray(response.users)) {
+            // Сохраняем ТОЛЬКО массив пользователей в localStorage
             localStorage.setItem('users', JSON.stringify(response.users));
             console.log('[USERS] Loaded and saved to localStorage:', response.users.length, 'users');
+            
+            // Опционально: можно сохранить и мета-данные
+            localStorage.setItem('usersMeta', JSON.stringify({
+                total: response.total,
+                page: response.page,
+                totalPages: response.totalPages
+            }));
         } else {
             console.warn('[USERS] Invalid users data received:', response);
             localStorage.setItem('users', JSON.stringify([]));
@@ -1224,7 +1363,7 @@ async function updateTransactionStatus(transactionId, status) {
     try {
         let notes = null;
         if (status === 'rejected') {
-            notes = prompt('Please provide a reason for rejection:');
+            notes = prompt('Please provide a admin_notes for rejection:');
             if (notes === null) return; // Пользователь нажал Cancel в prompt
         }
 
@@ -1232,7 +1371,7 @@ async function updateTransactionStatus(transactionId, status) {
             method: 'PUT',
             body: JSON.stringify({
                 status,
-                reason: notes
+                admin_notes: notes
             })
         });
 
@@ -1397,14 +1536,15 @@ async function createTransaction() {
     const propertyId = document.getElementById('createTransactionModal_propertyId')?.value;
     const newOwnerId = document.getElementById('createTransactionModal_newOwnerId')?.value;
     const totalAmountInput = document.getElementById('createTransactionModal_totalAmount');
+    const adminNotesInput = document.getElementById('createTransactionModal_adminNotes'); // Новое поле
     const witness1Name = document.getElementById('createTransactionModal_witness1Name')?.value.trim();
     const witness1CNIC = document.getElementById('createTransactionModal_witness1CNIC')?.value.trim();
     const witness1Phone = document.getElementById('createTransactionModal_witness1Phone')?.value.trim();
     const witness2Name = document.getElementById('createTransactionModal_witness2Name')?.value.trim();
     const witness2CNIC = document.getElementById('createTransactionModal_witness2CNIC')?.value.trim();
     const witness2Phone = document.getElementById('createTransactionModal_witness2Phone')?.value.trim();
-
     const totalAmount = parseNumber(totalAmountInput?.value || '0');
+    const adminNotes = adminNotesInput?.value.trim() || null; // Получаем значение примечаний
 
     if (!propertyId || !newOwnerId || isNaN(totalAmount) || totalAmount <= 0 ||
         !witness1Name || !witness1CNIC || !witness2Name || !witness2CNIC) {
@@ -1414,31 +1554,45 @@ async function createTransaction() {
     }
 
     try {
+        const requestBody = {
+            property_id: propertyId,
+            new_owner_id: newOwnerId,
+            total_amount: totalAmount,
+            witnesses: {
+                witness1: {
+                    name: witness1Name,
+                    cnic: witness1CNIC,
+                    phone: witness1Phone || null
+                },
+                witness2: {
+                    name: witness2Name,
+                    cnic: witness2CNIC,
+                    phone: witness2Phone || null
+                }
+            }
+        };
+
+        // Добавляем admin_notes, если оно есть
+        if (adminNotes !== null) {
+             requestBody.admin_notes = adminNotes;
+        }
+
         const response = await apiRequest('/v1/admin/transactions', {
             method: 'POST',
-            body: JSON.stringify({
-                property_id: propertyId,
-                new_owner_id: newOwnerId,
-                total_amount: totalAmount,
-                witnesses: {
-                    witness1: {
-                        name: witness1Name,
-                        cnic: witness1CNIC,
-                        phone: witness1Phone || null
-                    },
-                    witness2: {
-                        name: witness2Name,
-                        cnic: witness2CNIC,
-                        phone: witness2Phone || null
-                    }
-                }
-            })
+            headers: {
+                 'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
         });
 
         if (response.success) {
             showNotification('success', 'Transaction created successfully');
             closeModal('createTransactionModal');
-            loadTransactions();
+            // Очищаем форму после успешного создания
+            if (document.getElementById('createTransactionForm')) {
+                document.getElementById('createTransactionForm').reset();
+            }
+            loadTransactions(); // Обновляем список транзакций
         } else {
             throw new Error(response.message || 'Failed to create transaction');
         }

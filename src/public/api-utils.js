@@ -26,6 +26,21 @@ const isLoginPage = window.location.pathname.endsWith('/login.html') ||
                    window.location.pathname.includes('login');
 
 /**
+ * Получает CSRF-токен из куки XSRF-TOKEN
+ * @returns {string|null} - CSRF-токен или null
+ */
+function getCsrfToken() {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.startsWith('XSRF-TOKEN=')) {
+            return cookie.substring('XSRF-TOKEN='.length);
+        }
+    }
+    return null;
+}
+
+/**
  * Функция для отображения уведомлений
  * @param {string} type - Тип уведомления (error, warning, info, success)
  * @param {string} message - Текст уведомления
@@ -166,6 +181,15 @@ async function apiRequest(url, options = {}) {
         credentials: 'include',
         ...options
     };
+    
+    // 👇 КРИТИЧЕСКИЙ ШАГ: ДОБАВЛЯЕМ CSRF-ТОКЕН В ЗАГОЛОВКИ
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+        requestOptions.headers['X-XSRF-TOKEN'] = csrfToken;
+        requestOptions.headers['X-CSRF-Token'] = csrfToken; // Для совместимости с разными фреймворками
+    } else {
+        console.warn('[API] CSRF token not found in cookies. Request may fail.');
+    }
     
     try {
         const response = await fetch(window.API_BASE_URL + url, requestOptions);

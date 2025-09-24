@@ -2089,3 +2089,235 @@ body {
 .close{
     padding: 15px;
 }
+/* новое */
+
+/* Стили для секции выбора типа оплаты */
+.payment-type-fields {
+    transition: all 0.3s ease-in-out;
+    padding: 10px 0;
+}
+
+.payment-type-fields h4 {
+    margin-top: 0;
+    color: var(--dark);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.schedule-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: var(--font-size-sm);
+}
+
+.schedule-preview-table th,
+.schedule-preview-table td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.schedule-preview-table th {
+    background-color: #e9ecef;
+    font-weight: var(--font-weight-semibold);
+}
+
+.schedule-preview-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.schedule-preview-table tr:hover {
+    background-color: #e2e6ea;
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #6c757d;
+}
+/* календарииии */
+
+/* Стили для секции выбора типа оплаты */
+.payment-type-fields {
+    transition: all 0.3s ease-in-out;
+    padding: 10px 0;
+}
+
+.payment-type-fields h4 {
+    margin-top: 0;
+    color: var(--dark);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.schedule-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: var(--font-size-sm);
+    box-shadow: var(--shadow-sm);
+    border-radius: var(--rounded-md);
+    overflow: hidden;
+}
+
+.schedule-preview-table th,
+.schedule-preview-table td {
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    text-align: left;
+}
+
+.schedule-preview-table th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    font-weight: var(--font-weight-semibold);
+    color: var(--dark);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.schedule-preview-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.schedule-preview-table tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.schedule-preview-table .installment-cell {
+    font-weight: var(--font-weight-medium);
+    color: var(--primary);
+}
+
+.schedule-preview-table .amount-cell {
+    font-weight: var(--font-weight-semibold);
+}
+
+.schedule-preview-table .date-cell {
+    color: var(--secondary);
+}
+
+.schedule-preview-table .status-cell .status-pending {
+    background-color: rgba(255, 209, 102, 0.2);
+    color: #856404;
+    border: 1px solid rgba(255, 209, 102, 0.5);
+}
+
+.schedule-preview-table .status-cell .status-paid {
+    background-color: rgba(6, 214, 160, 0.15);
+    color: #056640;
+    border: 1px solid rgba(6, 214, 160, 0.3);
+}
+
+.schedule-preview-table .status-cell .status-overdue {
+    background-color: rgba(239, 71, 111, 0.15);
+    color: #7a1c2d;
+    border: 1px solid rgba(239, 71, 111, 0.3);
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #6c757d;
+}
+
+/* Стилизация поля ввода даты (календаря) */
+input[type="date"].form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4V.5zM2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1H2V3zm12 10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5h12v8zm-2-6H4v1h8V7z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 16px;
+    padding-right: 2.5rem;
+}
+
+input[type="date"].form-control::-webkit-calendar-picker-indicator {
+    /* Скрываем дефолтный индикатор в Webkit */
+    opacity: 0;
+    cursor: pointer;
+}
+
+input[type="date"].form-control:focus {
+    /* Убираем дефолтный outline и добавляем свой */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.25);
+    border-color: var(--primary);
+}
+
+/* Стилизация поля ввода числа/деньги */
+input[type="number"].form-control,
+input[type="text"][inputmode="decimal"].form-control {
+    /* Убираем стрелки в полях number */
+    -moz-appearance: textfield;
+}
+
+input[type="number"].form-control::-webkit-outer-spin-button,
+input[type="number"].form-control::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Улучшаем отображение option в select */
+.form-control option {
+    padding: 5px;
+}
+
+/* Стили для подсказок под полями */
+.form-text {
+    transition: opacity 0.2s ease;
+}
+
+.form-text.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Стили для контейнера превью расписания */
+#schedulePreviewContainer {
+    border: 1px dashed var(--border-color);
+    border-radius: var(--rounded-md);
+    background-color: #f9f9f9; /* var(--card-bg) если определен */
+    padding: 15px;
+    margin-top: 15px;
+    transition: all 0.3s ease;
+}
+
+#schedulePreviewContainer h4 {
+    margin-top: 0;
+    color: var(--dark);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+/* Стили для таблицы превью с прокруткой на маленьких экранах */
+.schedule-preview-wrapper {
+    overflow-x: auto;
+    margin-top: 10px;
+}
+
+.schedule-preview-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.schedule-preview-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.schedule-preview-wrapper::-webkit-scrollbar-thumb {
+    background: #c5c5c5;
+    border-radius: 4px;
+}
+
+.schedule-preview-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

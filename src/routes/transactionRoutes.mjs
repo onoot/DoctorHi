@@ -99,15 +99,14 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024 // 100 MB
   }
 });
-
 // === Маршруты ===
 
 // Маршруты для пользователей
-router.get('/my', auth, transactionController.getUserTransactions);
-router.get('/my/:propertyId', auth, transactionController.getUserPropertyTransactions);
+router.get('/my', auth, transactionController.getUserTransactions.bind(transactionController));
+router.get('/my/:propertyId', auth, transactionController.getUserPropertyTransactions.bind(transactionController));
 
 // Добавьте маршрут для обновления admin_notes
-router.put('/:id/admin-notes', adminAuth, transactionController.updateAdminNotes);
+router.put('/:id/admin-notes', adminAuth, transactionController.updateAdminNotes.bind(transactionController));
 
 // Маршруты для администраторов
 router.post('/', adminAuth, [
@@ -116,45 +115,55 @@ router.post('/', adminAuth, [
   body('total_amount')
     .isNumeric().withMessage('Valid total amount is required')
     .custom(val => Number(val) > 0).withMessage('Amount must be greater than 0.')
-], transactionController.create);
+], transactionController.create.bind(transactionController));
 
-router.get('/', adminAuth, transactionController.getAll);
-router.get('/:id', adminAuth, transactionController.getById);
+router.get('/', adminAuth, transactionController.getAll.bind(transactionController));
+router.get('/:id', adminAuth, transactionController.getById.bind(transactionController));
 
 router.put('/:id', adminAuth, [
   body('status').isIn(['pending', 'approved', 'rejected', 'cancelled']).withMessage('Invalid status'),
   body('admin_notes').optional().isString().withMessage('Notes must be a string')
-], transactionController.update);
+], transactionController.update.bind(transactionController));
 
 // Загрузка документов и видео
-router.post('/:id/documents', adminAuth, upload.any(), transactionController.uploadFiles);
-router.get('/:id/documents', adminAuth, upload.any(), transactionController.getFiles);
-router.delete('/:id/documents/:fileId', adminAuth, upload.any(), transactionController.deleteFile);
+router.post('/:id/documents', adminAuth, upload.any(), transactionController.uploadFiles.bind(transactionController));
+router.get('/:id/documents', adminAuth, upload.any(), transactionController.getFiles.bind(transactionController));
+router.delete('/:id/documents/:fileId', adminAuth, upload.any(), transactionController.deleteFile.bind(transactionController));
 
 // Маршруты для работы с платежами
-router.get('/:id/payments', adminAuth, transactionController.getPayments);
+router.get('/:id/payments', adminAuth, transactionController.getPayments.bind(transactionController));
 // Получение конкретного платежа
-router.get('/:id/payments/:paymentId', adminAuth, transactionController.getPaymentById);
-// Создание платежа с загрузкой чека
-router.post('/:id/payments', adminAuth, upload.fields([{ name: 'receipt', maxCount: 1 }]), transactionController.createPayment);
-// Валидация для создания платежа: amount > 0
-router.post('/:id/payments',
+router.get('/:id/payments/:paymentId', adminAuth, transactionController.getPaymentById.bind(transactionController));
+
+// ВАЖНО: Исправляем дублирование маршрута для создания платежа
+// Убираем дублирующийся POST маршрут и оставляем один с правильной обработкой файлов
+router.post('/:id/payments', 
   adminAuth,
-  body('amount')
-    .isNumeric().withMessage('Valid amount is required')
-    .custom(val => Number(val) > 0).withMessage('Amount must be greater than 0.'),
-  upload.single('receipt'),
-  transactionController.createPayment
+  upload.fields([{ name: 'receipt', maxCount: 1 }]),
+  [
+    body('amount')
+      .isNumeric().withMessage('Valid amount is required')
+      .custom(val => Number(val) > 0).withMessage('Amount must be greater than 0.')
+  ],
+  transactionController.createPayment.bind(transactionController)
 );
 
 // Обновление платежа с возможной новой загрузкой чека
-router.put('/:id/payments/:paymentId', adminAuth, upload.single('receipt'), [
-  body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),
-  body('notes').optional().isString().withMessage('Notes must be a string')
-], transactionController.updatePayment);
+router.put('/:id/payments/:paymentId', 
+  adminAuth, 
+  upload.single('receipt'), 
+  [
+    body('status').isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid status'),
+    body('notes').optional().isString().withMessage('Notes must be a string')
+  ], 
+  transactionController.updatePayment.bind(transactionController)
+);
+
+// Удаление транзакции
+router.delete('/:id', adminAuth, transactionController.deleteTransaction.bind(transactionController));
 
 // Удаление платежа
-router.delete('/:id/payments/:paymentId', adminAuth, transactionController.deletePayment);
+router.delete('/:id/payments/:paymentId', adminAuth, transactionController.deletePayment.bind(transactionController));
 
 // === Обработчик ошибок Multer (должен быть ПОСЛЕ всех маршрутов) ===
 router.use((error, req, res, next) => {

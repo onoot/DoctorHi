@@ -9,6 +9,63 @@ import pool from '../config/database.mjs';
 
 const router = express.Router();
 
+// Кэш для курса валют
+let exchangeRateCache = {
+    rate: null,
+    timestamp: null,
+    CACHE_DURATION: 12 * 60 * 60 * 1000 // 12 часов в миллисекундах
+};
+
+// Функция для получения курса валют с кэшированием
+const getExchangeRateWithCache = async () => {
+    const now = Date.now();
+    
+    // Если кэш валиден, возвращаем сохраненный курс
+    if (exchangeRateCache.rate && exchangeRateCache.timestamp && 
+        (now - exchangeRateCache.timestamp) < exchangeRateCache.CACHE_DURATION) {
+        console.log('Returning cached exchange rate:', exchangeRateCache.rate);
+        return exchangeRateCache.rate;
+    }
+    
+    // Иначе запрашиваем новый курс
+    try {
+        console.log('Fetching new exchange rate from API...');
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR');
+        
+        if (!response.ok) {
+            throw new Error(`API responded with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+
+        if (!data || !data.rates || typeof data.rates.USD === 'undefined') {
+            throw new Error('Invalid response structure from external API');
+        }
+
+        // Сохраняем в кэш
+        exchangeRateCache = {
+            rate: data.rates.USD,
+            timestamp: now,
+            CACHE_DURATION: exchangeRateCache.CACHE_DURATION
+        };
+        
+        console.log('New exchange rate cached:', data.rates.USD);
+        return data.rates.USD;
+    } catch (e) {
+        console.error('Error fetching exchange rate:', e);
+        
+        // Если есть устаревший кэш, возвращаем его как fallback
+        if (exchangeRateCache.rate) {
+            console.log('Returning stale cache as fallback:', exchangeRateCache.rate);
+            return exchangeRateCache.rate;
+        }
+        
+        // Если нет кэша, возвращаем значение по умолчанию
+        console.log('Using default exchange rate');
+        return 0.00357; // Значение по умолчанию
+    }
+};
+
 // Маршруты для работы с пользователями
 router.post('/users', [
     adminAuth,
@@ -151,7 +208,6 @@ router.put('/transactions/:transactionId/witnesses', [
 
             // Обработка первого свидетеля
             if (witness1) {
-                // Вставляем свидетеля прямо с привязкой к транзакции
                 await connection.query(
                     `INSERT INTO transaction_witnesses 
                     (transaction_id, witness_type, name, cnic, phone) 
@@ -167,7 +223,6 @@ router.put('/transactions/:transactionId/witnesses', [
 
             // Обработка второго свидетеля
             if (witness2) {
-                // Вставляем свидетеля прямо с привязкой к транзакции
                 await connection.query(
                     `INSERT INTO transaction_witnesses 
                     (transaction_id, witness_type, name, cnic, phone) 
@@ -203,30 +258,16 @@ router.put('/transactions/:transactionId/witnesses', [
     }
 });
 
+// Обновленный маршрут для получения курса валют с кэшированием
 router.get('/latest/PKR', async (req, res) => {
     try {
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PKR  ');
-
-        if (!response.ok) {
-            return res.status(502).json({
-                success: false,
-                message: `External API error: ${response.status}`
-            });
-        }
-
-        const data = await response.json();
-
-        // Добавляем проверку структуры ответа
-        if (!data || !data.rates || typeof data.rates.USD === 'undefined') {
-            return res.status(502).json({
-                success: false,
-                message: 'Invalid response structure from external API'
-            });
-        }
-
+        const rate = await getExchangeRateWithCache();
+        
         return res.json({
             success: true,
-            USD: data.rates.USD
+            USD: rate,
+            cached: exchangeRateCache.timestamp ? (Date.now() - exchangeRateCache.timestamp) < exchangeRateCache.CACHE_DURATION : false,
+            timestamp: exchangeRateCache.timestamp
         });
     } catch (e) {
         console.error(e);
@@ -235,7 +276,29 @@ router.get('/latest/PKR', async (req, res) => {
             message: e.message
         });
     }
-})
+});
+
+// Маршрут для принудительного обновления кэша (опционально)
+router.post('/latest/PKR/refresh', adminAuth, async (req, res) => {
+    try {
+        // Сбрасываем timestamp, чтобы принудительно обновить кэш
+        exchangeRateCache.timestamp = null;
+        
+        const rate = await getExchangeRateWithCache();
+        
+        return res.json({
+            success: true,
+            USD: rate,
+            message: 'Exchange rate cache refreshed successfully'
+        });
+    } catch (e) {
+        console.error(e);
+        return res.status(500).json({
+            success: false,
+            message: e.message
+        });
+    }
+});
 
 // Payment status update route
 router.put('/transactions/:transactionId/payment-status', [
@@ -295,5 +358,4 @@ router.put('/transactions/:transactionId/payment-status', [
     }
 });
 
-
-export default router; 
+export default router;

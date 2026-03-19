@@ -1,3 +1,5 @@
+// User.mjs - обновленная версия с поддержкой login и email
+
 import pool from '../config/database.mjs';
 import bcrypt from 'bcryptjs';
 
@@ -7,15 +9,25 @@ class User {
       throw new Error('Invalid user data provided');
     }
 
-    const { name, email, password, cnic, phone, address } = userData;
+    const { name, login, email, password, cnic, phone, address } = userData;
 
-    if (!name || !email || !password || !cnic) {
-      throw new Error('Missing required fields');
+    // Проверяем, что передан хотя бы один из: login или email
+    if (!login && !email) {
+      throw new Error('Either login or email is required');
     }
+
+    if (!name || !password || !cnic) {
+      throw new Error('Missing required fields: name, password, cnic are required');
+    }
+
+    // Используем login для входа, если он предоставлен, иначе email
+    const userLogin = login || email;
+    const userEmail = email || null;
 
     const [result] = await pool.execute(
       `INSERT INTO users (
         name,
+        login,
         email,
         password,
         cnic,
@@ -24,10 +36,11 @@ class User {
         status,
         role,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         name,
-        email,
+        userLogin,
+        userEmail,
         password,
         cnic,
         phone || null,
@@ -37,6 +50,19 @@ class User {
       ]
     );
     return result.insertId;
+  }
+
+  static async findByLogin(login) {
+    if (!login) {
+      throw new Error('Login is required for search');
+    }
+    
+    // Ищем по логину или email (для обратной совместимости)
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE login = ? OR email = ? LIMIT 1',
+      [login, login]
+    );
+    return rows[0];
   }
 
   static async findByEmail(email) {
@@ -84,26 +110,37 @@ class User {
       updates.push('name = ?');
       values.push(userData.name.trim());
     }
-    if (userData.email) {
-      updates.push('email = ?');
-      values.push(userData.email.trim().toLowerCase());
+    
+    if (userData.login) {
+      updates.push('login = ?');
+      values.push(userData.login.trim());
     }
+    
+    if (userData.email !== undefined) {
+      updates.push('email = ?');
+      values.push(userData.email ? userData.email.trim().toLowerCase() : null);
+    }
+    
     if (userData.password) {
       updates.push('password = ?');
       values.push(await bcrypt.hash(userData.password, 10));
     }
+    
     if (userData.cnic) {
       updates.push('cnic = ?');
       values.push(userData.cnic.trim());
     }
-    if (userData.phone) {
+    
+    if (userData.phone !== undefined) {
       updates.push('phone = ?');
-      values.push(userData.phone.trim());
+      values.push(userData.phone ? userData.phone.trim() : null);
     }
-    if (userData.address) {
+    
+    if (userData.address !== undefined) {
       updates.push('address = ?');
-      values.push(userData.address.trim());
+      values.push(userData.address ? userData.address.trim() : null);
     }
+    
     if (userData.status) {
       updates.push('status = ?');
       values.push(userData.status);
@@ -134,7 +171,6 @@ class User {
     return result.affectedRows > 0;
   }
 
-
   static async getAll(filters = {}) {
     let query = 'SELECT * FROM users WHERE role = "user"';
     const values = [];
@@ -146,9 +182,9 @@ class User {
       }
 
       if (filters.search) {
-        query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
+        query += ' AND (name LIKE ? OR cnic LIKE ? OR login LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
         const searchTerm = `%${filters.search}%`;
-        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
       query += ' ORDER BY created_at DESC';
@@ -163,9 +199,14 @@ class User {
       console.log('Executing query:', query);
       console.log('With values:', values);
 
-      // Используем query вместо execute
       const [rows] = await pool.query(query, values);
-      return rows;
+      
+      // Удаляем пароли из результатов
+      return rows.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
     } catch (e) {
       console.error('User.getAll ERROR:', {
         message: e.message,
@@ -180,29 +221,25 @@ class User {
   }
 
   static async count(filters = {}) {
-    let query = ''; // Объявляем query вне try
-    const values = []; // Объявляем values вне try
+    let query = 'SELECT COUNT(*) as count FROM users WHERE role = "user"';
+    const values = [];
 
     try {
-      query = 'SELECT COUNT(*) as count FROM users WHERE role = "user"';
-
       if (filters.status) {
         query += ' AND status = ?';
         values.push(filters.status);
       }
 
       if (filters.search) {
-        query += ' AND (name LIKE ? OR cnic LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
+        query += ' AND (name LIKE ? OR cnic LIKE ? OR login LIKE ? OR email LIKE ? OR phone LIKE ? OR address LIKE ?)';
         const searchTerm = `%${filters.search}%`;
-        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+        values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
       }
 
       const [rows] = await pool.execute(query, values);
       return rows[0].count;
     } catch (e) {
-      console.log(e);
-      console.log("Query that failed:", query); // Теперь query доступен
-      console.log("Values that failed:", values); // Теперь values доступен
+      console.error('User.count ERROR:', e);
       throw e;
     }
   }
@@ -220,7 +257,7 @@ class User {
       // Подготавливаем поля для обновления
       const updates = [];
       const values = [];
-      const allowedFields = ['name', 'email', 'password', 'cnic', 'phone', 'address', 'status'];
+      const allowedFields = ['name', 'login', 'email', 'password', 'cnic', 'phone', 'address', 'status'];
 
       // Проверяем и добавляем разрешенные поля для обновления
       for (const field of allowedFields) {
@@ -233,7 +270,10 @@ class User {
           } else if (field === 'email') {
             // Приводим email к нижнему регистру
             updates.push(`${field} = ?`);
-            values.push(userData[field].trim().toLowerCase());
+            values.push(userData[field] ? userData[field].trim().toLowerCase() : null);
+          } else if (field === 'login') {
+            updates.push(`${field} = ?`);
+            values.push(userData[field].trim());
           } else {
             updates.push(`${field} = ?`);
             values.push(userData[field]);
@@ -264,7 +304,9 @@ class User {
 
       // Возвращаем обновленного пользователя
       const updatedUser = await this.findById(id);
-      return updatedUser;
+      // Удаляем пароль из результата
+      const { password, ...userWithoutPassword } = updatedUser;
+      return userWithoutPassword;
 
     } catch (error) {
       console.error('Error in findByIdAndUpdate:', error);
@@ -273,4 +315,4 @@ class User {
   }
 }
 
-export default User; 
+export default User;

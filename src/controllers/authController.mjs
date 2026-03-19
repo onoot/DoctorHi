@@ -14,7 +14,10 @@ const authController = {
 
       const { login, password } = req.body;
       
-      const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [login]);
+      const [users] = await pool.query(
+  'SELECT * FROM users WHERE email = ? OR login = ?', 
+  [login, login]
+);
       const user = users[0];
 
       if (!user || user.status === 'blocked') {

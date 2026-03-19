@@ -1,13 +1,11 @@
 User-agent: *
-# Запрещаем индексацию служебных каталогов WordPress и других
 Disallow: /wp-admin/
+Disallow: /build/
 Disallow: /wp-includes/
 Disallow: /wp-content/plugins/
 Disallow: /wp-content/themes/
-# Запрещаем индексацию других потенциально ненужных каталогов
 Disallow: /cgi-bin/
 Disallow: /tmp/
-# Предполагая, что логи и файлы конфигурации тоже не нужны в индексе
 Disallow: /logs/
 Disallow: /admin-panel.html
 Disallow: /login.html
@@ -29,6 +27,7 @@ Disallow: /wp-admin/
 Disallow: /wp-includes/
 Disallow: /wp-content/plugins/
 Disallow: /wp-content/themes/
+Disallow: /build/
 Disallow: /cgi-bin/
 Disallow: /tmp/
 Disallow: /logs/

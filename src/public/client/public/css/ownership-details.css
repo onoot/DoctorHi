@@ -294,6 +294,7 @@
         }
 
         .download-btn {
+            min-height: 20px;
             padding: 8px 15px;
             background: #F8DC78;
             border: none;

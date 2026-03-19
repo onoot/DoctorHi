@@ -26,24 +26,35 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Маршруты для администраторов
+// userRoutes.mjs - обновленная валидация
+
 router.post('/', adminAuth, [
   body('name').notEmpty().withMessage('Enter name'),
-  body('login').notEmpty().withMessage('Enter login'),
+  // Проверяем, что передан хотя бы один из: login или email
+  body().custom((value, { req }) => {
+    if (!req.body.login && !req.body.email) {
+      throw new Error('Either login or email is required');
+    }
+    return true;
+  }),
+  body('login').optional().isLength({ min: 3 }).withMessage('Login must be at least 3 characters'),
+  body('email').optional().isEmail().withMessage('Invalid email format'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('cnic').notEmpty().withMessage('Enter CNIC'),
-  body('phone').notEmpty().withMessage('Enter phone number') // Только обязательность
+  body('phone').notEmpty().withMessage('Enter phone number')
 ], create);
+
+router.put('/:id', adminAuth, [
+  body('name').optional().notEmpty().withMessage('Name cannot be empty'),
+  body('login').optional().isLength({ min: 3 }).withMessage('Login must be at least 3 characters'),
+  body('email').optional().isEmail().withMessage('Invalid email format'),
+  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('cnic').optional().notEmpty().withMessage('CNIC cannot be empty'),
+  body('status').optional().isIn(['active', 'blocked', 'archived']).withMessage('Invalid status')
+], update);
 
 router.get('/', adminAuth, getAll);
 router.get('/:id', adminAuth, getById);
-
-router.put('/:id', adminAuth, [
-  body('name').optional().notEmpty().withMessage('Enter name'),
-  body('login').optional().notEmpty().withMessage('Enter login'),
-  body('password').optional().isLength({ min: 4 }).withMessage('Password must be at least 6 characters'),
-  body('cnic').optional().notEmpty().withMessage('Enter CNIC'),
-  body('status').optional().isIn(['active', 'blocked', 'archived']).withMessage('Invalid status')
-], update);
 
 router.delete('/:id', adminAuth, remove);
 
@@ -120,6 +131,51 @@ router.post('/:id/unarchive', adminAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error unarchiving user'
+    });
+  }
+});
+
+router.get('/:id/units', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Проверяем существование пользователя
+    const [userRows] = await pool.execute(
+      'SELECT id FROM users WHERE id = ? AND status = "active"',
+      [id]
+    );
+    
+    if (userRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Получаем все units пользователя из ownership_history
+    const [units] = await pool.execute(`
+      SELECT 
+        u.*,
+        oh.from_date,
+        oh.to_date
+      FROM ownership_history oh
+      JOIN units u ON oh.property_id = u.id
+      WHERE oh.owner_id = ? 
+        AND (oh.to_date IS NULL OR oh.to_date > NOW())
+      ORDER BY oh.from_date DESC
+    `, [id]);
+    
+    res.json({
+      success: true,
+      units: units || []
+    });
+    
+  } catch (error) {
+    console.error('Error fetching user units:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user units',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

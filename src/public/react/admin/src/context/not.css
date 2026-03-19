@@ -1,0 +1,97 @@
+/* Контейнер для уведомлений */
+#notification-container,
+.notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 400px;
+}
+
+/* Стили для отдельного уведомления */
+.notification {
+  padding: 15px 20px;
+  border-radius: var(--rounded-lg);
+  color: white;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-md);
+  min-width: 300px;
+  max-width: 100%;
+}
+
+/* Анимация появления */
+.notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Цвета фона для разных типов */
+.notification.notification-success {
+  background-color: var(--success, #28a745); /* Зелёный */
+}
+
+.notification.notification-error {
+  background-color: var(--danger, #dc3545); /* Красный */
+}
+
+.notification.notification-warning {
+  background-color: var(--warning, #ffc107); /* Жёлтый */
+  color: black; /* Текст может быть чёрным для контраста */
+}
+
+.notification.notification-info {
+  background-color: var(--info, #17a2b8); /* Голубой */
+}
+
+/* Иконка */
+.notification i {
+  font-size: 1.2em;
+}
+
+/* Кнопка закрытия */
+.notification-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.2em;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-close:hover {
+  opacity: 1;
+}
+
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --success: #28a745;
+  --danger: #dc3545;
+  --warning: #ffc107;
+  --info: #17a2b8;
+  --dark: #343a40;
+  --light: #f8f9fa;
+  --rounded-lg: 8px;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --font-size-sm: 0.875rem;
+}

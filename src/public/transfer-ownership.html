@@ -171,19 +171,6 @@
             margin-left: 15px;
         }
 
-        .download-btn {
-            padding: 8px 15px;
-            background: #F8DC78;
-            border: none;
-            border-radius: 5px;
-            color: #333;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .download-btn:hover {
-            background: #f5d25c;
-        }
 
         @media (max-width: 768px) {
             .files-grid {
@@ -2060,6 +2047,13 @@
                                                                     class="fa fa-angle-right"
                                                                     aria-hidden="true"></i></a>
                                                         </li>
+                                                        
+														<li id="menu-item-89"
+															class="menu-item menu-item-type-post_type menu-item-object-page menu-item-89">
+															<a onclick="localStorage.removeItem('client_token'); window.location.href='/transfer-ownership.html'">Logout<i class="fa fa-angle-right"
+																	aria-hidden="true"></i></a>
+																	
+														</li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -2110,6 +2104,13 @@
                                                         <a href="../contact/index.html">Contact<i
                                                                 class="fa fa-angle-right" aria-hidden="true"></i></a>
                                                     </li>
+                                                    
+														<li id="menu-item-89"
+															class="menu-item menu-item-type-post_type menu-item-object-page menu-item-89">
+															<a onclick="localStorage.removeItem('client_token'); window.location.href='/transfer-ownership.html'">Logout<i class="fa fa-angle-right"
+																	aria-hidden="true"></i></a>
+																	
+														</li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -2251,7 +2252,7 @@
                     <h2>Login to Access Transfer Form</h2>
                     <form id="userLoginForm" class="login-form">
                         <div class="form-group">
-                            <label for="email">Email*</label>
+                            <label for="email">Email or login*</label>
                             <input type="text" id="email" name="email" required>
                         </div>
                         <div class="form-group">
@@ -2898,7 +2899,7 @@
     }
 
    document.addEventListener('DOMContentLoaded', function () {
-    const baseURL = `https://${window?.location?.host}`;
+    const baseURL = `http://${window?.location?.host}`;
     const token = localStorage.getItem('client_token');
 
     // Создаем контейнер для сообщения об отсутствии транзакций (если его еще нет)
@@ -2967,7 +2968,7 @@
 
         // Валидация полей
         if (!login) {
-            showNotification('error', "Please enter your email");
+            showNotification('error', "Please enter your email or login");
             loginForm.email.focus();
             return;
         }
@@ -2995,7 +2996,7 @@
             // Исправлено: Проверяем loginResponse.ok вместо loginResponse.success
             if (!loginResponse.ok) {
                 const errorData = await loginResponse.json().catch(() => ({}));
-                showNotification('error', errorData.message || "Invalid email or password");
+                showNotification('error', errorData.message || "Invalid email/login or password");
                 return;
             }
 
@@ -3003,7 +3004,7 @@
 
             // Проверяем успешный ответ
             if (!loginResponseData?.success) {
-                showNotification('error', loginResponseData.message || "Invalid email or password");
+                showNotification('error', loginResponseData.message || "Invalid email/login or password");
                 return;
             }
 

@@ -2,28 +2,30 @@ import pool from '../config/database.mjs';
 
 class Payment {
     static async create(paymentData) {
-        const {
-            transaction_id,
-            amount,
-            payment_date,
-            payment_method,
-            notes,
-            receipt_file_id
-        } = paymentData;
-
-        const [result] = await pool.execute(
-            `INSERT INTO transaction_payments (
+            const {
                 transaction_id,
                 amount,
                 payment_date,
+                planned_payment_date,
                 payment_method,
                 notes,
-                receipt_file_id,
-                status
-            ) VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-            [transaction_id, amount, payment_date, payment_method, notes, receipt_file_id]
-        );
-        return result.insertId;
+                receipt_file_id
+            } = paymentData;
+
+            const [result] = await pool.execute(
+                `INSERT INTO transaction_payments (
+                    transaction_id,
+                    amount,
+                    payment_date,
+                    planned_payment_date,
+                    payment_method,
+                    notes,
+                    receipt_file_id,
+                    status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+                [transaction_id, amount, payment_date, planned_payment_date, payment_method, notes, receipt_file_id]
+            );
+            return result.insertId;
     }
 
     static async getById(id) {
@@ -41,18 +43,38 @@ class Payment {
     }
 
     static async update(id, updateData) {
-        const {
-            status,
-            notes
-        } = updateData;
+        // Обработка receipt_file_id, payment_method, planned_payment_date
+        const fields = [];
+        const values = [];
+
+        if (updateData.status) {
+            fields.push('status = ?');
+            values.push(updateData.status);
+        }
+        if (updateData.notes !== undefined) {
+            fields.push('notes = ?');
+            values.push(updateData.notes);
+        }
+        if (updateData.payment_method !== undefined) {
+            fields.push('payment_method = ?');
+            values.push(updateData.payment_method);
+        }
+        if (updateData.planned_payment_date !== undefined) {
+            fields.push('planned_payment_date = ?');
+            values.push(updateData.planned_payment_date);
+        }
+        if (updateData.receipt_file_id !== undefined && updateData.receipt_file_id !== null) {
+            fields.push('receipt_file_id = ?');
+            values.push(updateData.receipt_file_id);
+        }
+        fields.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+
+        if (fields.length === 1) return false; // Нет данных для обновления
 
         const [result] = await pool.execute(
-            `UPDATE transaction_payments 
-            SET status = ?,
-                notes = ?,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?`,
-            [status, notes, id]
+            `UPDATE transaction_payments SET ${fields.join(', ')} WHERE id = ?`,
+            values
         );
         return result.affectedRows > 0;
     }

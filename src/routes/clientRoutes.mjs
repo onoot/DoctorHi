@@ -16,17 +16,16 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-router.get('/transactions', auth, transactionController.getUserTransactions);
-router.get('/transactions/:id/details', authLocale, transactionController.getTransactionDetails);
+// Используем bind для привязки контекста контроллеров
+router.get('/transactions', auth, transactionController.getUserTransactions.bind(transactionController));
+router.get('/transactions/:id/details', authLocale, transactionController.getTransactionDetails.bind(transactionController));
 
-router.get('/transactions/my', transactionController.getUserTransactions);
-router.get('/my/:propertyId', authLocale, transactionController.getUserPropertyTransactions);
+// Исправляем дублирующиеся роуты
+router.get('/transactions/my', authLocale, transactionController.getUserTransactions.bind(transactionController));
+router.get('/my/:propertyId', authLocale, transactionController.getUserPropertyTransactions.bind(transactionController));
 
-// Получение списка транзакций пользователя
-router.get('/transactions/my', authLocale, transactionController.getUserTransactions);
-
-// Получение детальной информации о транзакции пользователя С ОБНОВЛЕННЫМ КОНТРОЛЛЕРОМ
-router.get('/transactions/:id/details', authLocale, transactionController.getUserTransactionDetails);
+// Получение детальной информации о транзакции пользователя
+router.get('/transactions/:id/details', authLocale, transactionController.getUserTransactionDetails.bind(transactionController));
 
 // Роут для скачивания файла по ID
 router.get('/files/:id', authLocale, async (req, res) => {
@@ -37,7 +36,7 @@ router.get('/files/:id', authLocale, async (req, res) => {
     }
 
     try {
-        // Получаем информацию о файле из БД — через pool.query
+        // Получаем информацию о файле из БД
         const [files] = await pool.query(
             `SELECT file_name, original_name, file_type, file_path FROM transaction_files WHERE id = ?`,
             [fileId]
@@ -50,28 +49,39 @@ router.get('/files/:id', authLocale, async (req, res) => {
         const fileInfo = files[0];
         let filePath = fileInfo.file_path;
 
+        // Определяем корневую директорию проекта
+        const projectRoot = path.resolve(__dirname, '../..'); // поднимаемся из src/routes на два уровня вверх
+        
         // Нормализуем путь
-        if (filePath.startsWith('../../../')) {
-            filePath = path.join(__dirname, '..', '..', filePath.replace('../../../', ''));
+        if (filePath.startsWith('../../')) {
+            // Убираем '../' из пути и соединяем с projectRoot
+            const relativePath = filePath.replace(/^\.\.\/\.\.\//, '');
+            filePath = path.join(projectRoot, relativePath);
         } else if (filePath.startsWith('../')) {
-            filePath = path.join(__dirname, '..', filePath);
+            const relativePath = filePath.replace(/^\.\.\//, '');
+            filePath = path.join(projectRoot, relativePath);
         } else {
-            filePath = path.join(__dirname, filePath);
+            filePath = path.join(projectRoot, filePath);
         }
 
         // Проверяем существование файла
         try {
             await fs.access(filePath);
-        } catch {
-            return res.status(404).json({ success: false, message: 'File not found on disk' });
+        } catch (error) {
+            console.error('File not found at path:', filePath);
+            return res.status(404).json({ 
+                success: false, 
+                message: 'File not found on disk',
+                path: filePath // для отладки, в продакшне уберите
+            });
         }
 
         // Устанавливаем заголовки
         res.setHeader('Content-Type', fileInfo.file_type);
         res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileInfo.original_name)}"`);
 
-        // Потоковая передача — ИСПРАВЛЕНО
-        const fileStream = createReadStream(filePath); // <-- ВОТ ТУТ ИСПРАВЛЕНИЕ
+        // Потоковая передача
+        const fileStream = createReadStream(filePath);
         fileStream.pipe(res);
 
         fileStream.on('error', (err) => {

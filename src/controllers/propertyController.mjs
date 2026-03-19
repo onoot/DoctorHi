@@ -10,7 +10,7 @@ class PropertyController {
    */
   async getAll(req, res) {
     try {
-      const [rows] = await pool.execute('SELECT * FROM properties ORDER BY category, id');
+      const [rows] = await pool.execute('SELECT * FROM units ORDER BY category, id');
       res.json({
         success: true,
         properties: rows
@@ -39,7 +39,7 @@ class PropertyController {
         });
       }
 
-      const [rows] = await pool.execute('SELECT * FROM properties WHERE id = ?', [id]);
+      const [rows] = await pool.execute('SELECT * FROM units WHERE id = ?', [id]);
       const property = rows[0];
 
       if (!property) {
@@ -80,7 +80,7 @@ class PropertyController {
       }
 
       // Проверка на существование
-      const [existing] = await pool.execute('SELECT id FROM properties WHERE id = ?', [id]);
+      const [existing] = await pool.execute('SELECT id FROM units WHERE id = ?', [id]);
       if (existing.length > 0) {
         return res.status(409).json({
           success: false,
@@ -89,7 +89,7 @@ class PropertyController {
       }
 
       const [result] = await pool.execute(
-        'INSERT INTO properties (id, name, type, category, area) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO units (id, name, type, category, area) VALUES (?, ?, ?, ?, ?)',
         [id, name, type, category, area || null] // area может быть null
       );
 
@@ -130,7 +130,7 @@ class PropertyController {
       }
 
       // Проверка на существование
-      const [existing] = await pool.execute('SELECT id FROM properties WHERE id = ?', [id]);
+      const [existing] = await pool.execute('SELECT id FROM units WHERE id = ?', [id]);
       if (existing.length === 0) {
         return res.status(404).json({
           success: false,
@@ -139,7 +139,7 @@ class PropertyController {
       }
 
       const [result] = await pool.execute(
-        'UPDATE properties SET name = ?, type = ?, category = ?, area = ? WHERE id = ?',
+        'UPDATE units SET name = ?, type = ?, category = ?, area = ? WHERE id = ?',
         [name, type, category, area || null, id]
       );
 
@@ -179,7 +179,7 @@ class PropertyController {
       }
 
       // Проверка на существование
-      const [existing] = await pool.execute('SELECT id FROM properties WHERE id = ?', [id]);
+      const [existing] = await pool.execute('SELECT id FROM units WHERE id = ?', [id]);
       if (existing.length === 0) {
         return res.status(404).json({
           success: false,
@@ -196,7 +196,7 @@ class PropertyController {
         });
       }
 
-      const [result] = await pool.execute('DELETE FROM properties WHERE id = ?', [id]);
+      const [result] = await pool.execute('DELETE FROM units WHERE id = ?', [id]);
 
       if (result.affectedRows === 1) {
         res.json({

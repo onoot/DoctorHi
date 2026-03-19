@@ -1,5 +1,5 @@
 // client.js
-const baseURL = `https://${window?.location?.host}`;
+const baseURL = `http://${window?.location?.host}`;
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -150,197 +150,113 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    async function getObject() {
-        try {
-            const token = localStorage.getItem('client_token');
-            if (!token) {
-                showNotification('error', 'Authentication required. Please log in.');
-                // window.location.href = '/login.html'; // Опционально
-                return;
-            }
-
-            const transactionsResponse = await fetch(`${baseURL}/api/v1/client/transactions/my`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!transactionsResponse.ok) {
-                if (transactionsResponse.status === 401 || transactionsResponse.status === 403) {
-                     showNotification('error', 'Session expired. Please log in again.');
-                     logout();
-                     return;
-                }
-                throw new Error(`Failed to fetch transactions (${transactionsResponse.status})`);
-            }
-
-            const responseData = await transactionsResponse.json();
-
-            if (!responseData.success || !Array.isArray(responseData.transactions)) {
-                throw new Error('Invalid response format for transactions');
-            }
-
-            const transactions = responseData.transactions;
-            const activeTransactions = transactions.filter(transaction =>
-                transaction.status === 'approved' || transaction.status === 'pending'
-            );
-
-            if (activeTransactions.length === 0) {
-                console.log("No active transactions found");
-                // Исправлена ошибка в URL
-                window.location.href = `transfer-ownership.html`; // Или другая подходящая страница
-                return;
-            }
-
-            const transaction = activeTransactions[0];
-
-            const response = await fetch(`${baseURL}/api/v1/client/transactions/${transaction.id}/details`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                 if (response.status === 401 || response.status === 403) {
-                     showNotification('error', 'Session expired. Please log in again.');
-                     logout();
-                     return;
-                 }
-                console.log("Failed to fetch transaction details");
-                throw new Error(`Failed to fetch object data (${response.status})`);
-            }
-
-            const data = await response.json();
-
-            if (!data.success) {
-                throw new Error(data.message || 'Failed to get transaction details');
-            }
-
-            console.log("Transaction details:", data);
-
-            updateDocumentsTable(data.transaction.files || []);
-            updateWitnessesTable(data.transaction.witnesses || {});
-
-            // === ОБНОВЛЕНИЕ: Передаем ПОЛНЫЙ график платежей ===
-            // Предполагается, что data.payments - это массив с полным графиком
-            // включая совершенные ({status: 'paid', payment_date: ...}) и
-            // предстоящие ({status: 'pending', due_date: ...})
-            updatePaymentsTable(
-                data.payments || [], // Передаем полный график
-                data.transaction.total_amount
-            );
-            // === КОНЕЦ ОБНОВЛЕНИЯ ===
-
-            // updateOwnershipHistory(data.ownership_history || []); // Закомментировано, как в исходном коде
-
-            const hasActiveTransaction = data.transaction &&
-                (data.transaction.status === 'approved' || data.transaction.status === 'pending');
-
-            if (transferForm) {
-                const nameInput = document.getElementById('name');
-                const cnicInput = document.getElementById('cnic');
-                const submitBtn = transferForm.querySelector('.submit-btn');
-
-                if (hasActiveTransaction) {
-                    if (nameInput) nameInput.disabled = true;
-                    if (cnicInput) cnicInput.disabled = true;
-                    if (submitBtn) submitBtn.style.display = 'none';
-                } else {
-                    if (nameInput) nameInput.disabled = false;
-                    if (cnicInput) cnicInput.disabled = false;
-                    if (submitBtn) submitBtn.style.display = 'block';
-                }
-            }
-
-        } catch (error) {
-            console.error('Error fetching object data:', error);
-            showNotification('error', error.message || 'Failed to load transaction details');
-            // В случае критической ошибки можно рассмотреть logout()
-            // logout();
-        }
-    }
-
-    function updateDocumentsTable(files) {
-        const agreementRow = document.getElementById('agreementRow');
-        const receiptRow = document.getElementById('receiptRow');
-        const meetingVideoRow = document.getElementById('meetingVideoRow');
-
-        const resetRow = (row) => {
-            if (!row) return;
-            const statusCell = row.querySelector('.status-cell');
-            const dateCell = row.querySelector('.date-cell');
-            const filenameCell = row.querySelector('.filename-cell');
-
-            if (statusCell) statusCell.textContent = 'Not uploaded';
-            if (dateCell) dateCell.textContent = '-';
-            if (filenameCell) {
-                filenameCell.textContent = '-';
-                const oldButton = filenameCell.querySelector('.download-btn');
-                if (oldButton) oldButton.remove();
-            }
-        };
-
-        resetRow(agreementRow);
-        resetRow(receiptRow);
-        resetRow(meetingVideoRow);
-
-        if (!files || files.length === 0) {
+  async function getObject() {
+    try {
+        const token = localStorage.getItem('client_token');
+        if (!token) {
+            showNotification('error', 'Authentication required. Please log in.');
             return;
         }
 
-        files.forEach(file => {
-            let targetRow = null;
-
-            if (file.category === 'agreement') {
-                targetRow = agreementRow;
-            } else if (file.category === 'receipt') {
-                targetRow = receiptRow;
-            } else if (file.category === 'video') {
-                targetRow = meetingVideoRow;
-            }
-
-            if (targetRow) {
-                const statusCell = targetRow.querySelector('.status-cell');
-                const dateCell = targetRow.querySelector('.date-cell');
-                const filenameCell = targetRow.querySelector('.filename-cell');
-
-                if (statusCell) {
-                    statusCell.innerHTML = `<i class="fas fa-check-circle" style="color: green;"></i> Uploaded`;
-                }
-                if (dateCell) {
-                    dateCell.textContent = formatDate(file.created_at);
-                }
-
-                if (filenameCell) {
-                    filenameCell.textContent = '';
-                    const fileNameSpan = document.createElement('span');
-                    fileNameSpan.textContent = file.original_name || file.file_name;
-                    filenameCell.appendChild(fileNameSpan);
-
-                    const downloadBtn = document.createElement('button');
-                    downloadBtn.type = 'button';
-                    downloadBtn.className = 'download-btn';
-                    downloadBtn.style.marginLeft = '10px';
-                    downloadBtn.style.padding = '4px 8px';
-                    downloadBtn.style.fontSize = '12px';
-                    downloadBtn.style.border = 'none';
-                    downloadBtn.style.borderRadius = '4px';
-                    downloadBtn.style.backgroundColor = '#007bff';
-                    downloadBtn.style.color = 'white';
-                    downloadBtn.style.cursor = 'pointer';
-                    downloadBtn.textContent = 'Download';
-
-                    downloadBtn.addEventListener('click', function () {
-                        downloadFileById(file.id);
-                    });
-
-                    filenameCell.appendChild(downloadBtn);
-                }
+        const transactionsResponse = await fetch(`${baseURL}/api/v1/client/transactions/my`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
             }
         });
+
+        if (!transactionsResponse.ok) {
+            if (transactionsResponse.status === 401 || transactionsResponse.status === 403) {
+                 showNotification('error', 'Session expired. Please log in again.');
+                 logout();
+                 return;
+            }
+            throw new Error(`Failed to fetch transactions (${transactionsResponse.status})`);
+        }
+
+        const responseData = await transactionsResponse.json();
+
+        if (!responseData.success || !Array.isArray(responseData.transactions)) {
+            throw new Error('Invalid response format for transactions');
+        }
+
+        const transactions = responseData.transactions;
+        const activeTransactions = transactions.filter(transaction =>
+            transaction.status === 'approved' || transaction.status === 'pending'
+        );
+
+        if (activeTransactions.length === 0) {
+            console.log("No active transactions found");
+            window.location.href = `transfer-ownership.html`;
+            return;
+        }
+
+        const transaction = activeTransactions[0];
+
+        const response = await fetch(`${baseURL}/api/v1/client/transactions/${transaction.id}/details`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+             if (response.status === 401 || response.status === 403) {
+                 showNotification('error', 'Session expired. Please log in again.');
+                 logout();
+                 return;
+             }
+            console.log("Failed to fetch transaction details");
+            throw new Error(`Failed to fetch object data (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to get transaction details');
+        }
+
+        console.log("Transaction details:", data);
+
+        // ИСПРАВЛЕНО: Заполняем поле object_sell данными из API
+        const objectSell = document.getElementById('object_sell');
+        if (objectSell && data.transaction) {
+            // Формируем строку с информацией о объекте
+            const propertyInfo = `${data.transaction.property_name || ''} (${data.transaction.property_id || ''}) - ${data.transaction.property_type || ''}, Area: ${data.transaction.area || 'N/A'} sqft`;
+            objectSell.value = propertyInfo;
+        }
+
+        updateDocumentsTable(data.transaction.files || []);
+        updateWitnessesTable(data.transaction.witnesses || {});
+        console.log("SDF", data)
+        updatePaymentsTable(data.transaction.payments || [], data.transaction.total_amount);
+
+        const hasActiveTransaction = data.transaction &&
+            (data.transaction.status === 'approved' || data.transaction.status === 'pending');
+
+        if (transferForm) {
+            const nameInput = document.getElementById('name');
+            const cnicInput = document.getElementById('cnic');
+            const submitBtn = transferForm.querySelector('.submit-btn');
+
+            if (hasActiveTransaction) {
+                if (nameInput) nameInput.disabled = true;
+                if (cnicInput) cnicInput.disabled = true;
+                if (submitBtn) submitBtn.style.display = 'none';
+            } else {
+                if (nameInput) nameInput.disabled = false;
+                if (cnicInput) cnicInput.disabled = false;
+                if (submitBtn) submitBtn.style.display = 'block';
+            }
+        }
+
+    } catch (error) {
+        console.error('Error fetching object data:', error);
+        showNotification('error', error.message || 'Failed to load transaction details');
     }
+}
+
+ 
 
     function updateWitnessesTable(witnesses) {
         const witness1Row = document.getElementById('witness1Row');
@@ -383,127 +299,452 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    /**
-     * Обновление таблицы платежей с графиком
-     * @param {Array} fullPaymentSchedule - Полный график платежей (включая совершенные и предстоящие)
-     * @param {number} totalAmount - Общая сумма сделки
-     */
-    function updatePaymentsTable(fullPaymentSchedule, totalAmount) {
-        const paymentsTableBody = document.querySelector('#paymentsTable tbody');
-        if (!paymentsTableBody) {
-            console.error('Payments table body (#paymentsTable tbody) not found in DOM');
+    // Добавь это в начало файла, после определения baseURL
+let isLoading = false;
+
+// Функция для показа/скрытия прелоадера
+function showLoader(show) {
+    isLoading = show;
+    const loader = document.getElementById('globalLoader');
+    if (!loader && show) {
+        // Создаем прелоадер, если его нет
+        const loaderHTML = `
+            <div id="globalLoader" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                z-index: 9999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+            ">
+                <div style="
+                    width: 50px;
+                    height: 50px;
+                    border: 5px solid #f3f3f3;
+                    border-top: 5px solid #F8DC78;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                "></div>
+                <p style="margin-top: 20px; color: #333; font-weight: 500;">Loading transaction details...</p>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', loaderHTML);
+    } else if (loader && !show) {
+        loader.remove();
+    }
+}
+
+// Обновленная функция getObject с прелоадером
+async function getObject() {
+    try {
+        showLoader(true); // Показываем прелоадер
+        
+        const token = localStorage.getItem('client_token');
+        if (!token) {
+            showNotification('error', 'Authentication required. Please log in.');
+            showLoader(false);
             return;
         }
 
-        // Очищаем таблицу
-        paymentsTableBody.innerHTML = '';
+        const transactionsResponse = await fetch(`${baseURL}/api/v1/client/transactions/my`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
 
-        // Проверка наличия данных графика
-        if (!fullPaymentSchedule || fullPaymentSchedule.length === 0) {
-            paymentsTableBody.innerHTML = `
-            <tr>
-                <td colspan="7" style="text-align: center; padding: 15px;">
-                    No payment schedule available
-                </td>
-            </tr>
-            `;
-            updateAmountSummary(totalAmount, 0); // Обновляем суммы: всего 0 оплачено
+        if (!transactionsResponse.ok) {
+            if (transactionsResponse.status === 401 || transactionsResponse.status === 403) {
+                 showNotification('error', 'Session expired. Please log in again.');
+                 logout();
+                 return;
+            }
+            throw new Error(`Failed to fetch transactions (${transactionsResponse.status})`);
+        }
+
+        const responseData = await transactionsResponse.json();
+
+        if (!responseData.success || !Array.isArray(responseData.transactions)) {
+            throw new Error('Invalid response format for transactions');
+        }
+
+        const transactions = responseData.transactions;
+        const activeTransactions = transactions.filter(transaction =>
+            transaction.status === 'approved' || transaction.status === 'pending'
+        );
+
+        if (activeTransactions.length === 0) {
+            console.log("No active transactions found");
+            window.location.href = `transfer-ownership.html`;
             return;
         }
 
-        let paidAmount = 0;
-        let sortedSchedule = [];
+        const transaction = activeTransactions[0];
 
-        try {
-            // Сортируем график по дате (плана или оплаты)
-            sortedSchedule = [...fullPaymentSchedule].sort((a, b) => {
-                // Используем payment_date если есть, иначе due_date
-                const dateA_str = a.payment_date || a.due_date;
-                const dateB_str = b.payment_date || b.due_date;
-                if (!dateA_str && !dateB_str) return 0;
-                if (!dateA_str) return 1; // Элементы без даты в конец
-                if (!dateB_str) return -1;
-                return new Date(dateA_str) - new Date(dateB_str);
-            });
-        } catch (sortError) {
-            console.error('Error sorting payment schedule:', sortError);
-            sortedSchedule = fullPaymentSchedule; // Используем без сортировки
+        const response = await fetch(`${baseURL}/api/v1/client/transactions/${transaction.id}/details`, {
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+             if (response.status === 401 || response.status === 403) {
+                 showNotification('error', 'Session expired. Please log in again.');
+                 logout();
+                 return;
+             }
+            console.log("Failed to fetch transaction details");
+            throw new Error(`Failed to fetch object data (${response.status})`);
         }
 
-        // Перебираем отсортированный график
-        sortedSchedule.forEach((item, index) => {
-            // Номер в таблице (может отличаться от installment)
-            const displayInstallment = index + 1;
+        const data = await response.json();
 
-            const row = document.createElement('tr');
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to get transaction details');
+        }
 
-            // Сумма платежа
-            const amount = parseFloat(item.amount) || 0;
-            // Считаем оплаченную сумму
-            if (item.status === 'paid' || item.status === 'confirmed') {
-                paidAmount += amount;
+        console.log("Transaction details:", data);
+
+        // Заполняем поле object_sell данными из API
+        const objectSell = document.getElementById('object_sell');
+        if (objectSell && data.transaction) {
+            const propertyInfo = `${data.transaction.property_name || ''} (${data.transaction.property_id || ''}) - ${data.transaction.property_type || ''}, Area: ${data.transaction.area || 'N/A'} sqft`;
+            objectSell.value = propertyInfo;
+        }
+
+        updateDocumentsTable(data.transaction.files || []);
+        updateWitnessesTable(data.transaction.witnesses || {});
+        updatePaymentsTable(data.transaction.payments || [], data.transaction.total_amount);
+
+        const hasActiveTransaction = data.transaction &&
+            (data.transaction.status === 'approved' || data.transaction.status === 'pending');
+
+        if (transferForm) {
+            const nameInput = document.getElementById('name');
+            const cnicInput = document.getElementById('cnic');
+            const submitBtn = transferForm.querySelector('.submit-btn');
+
+            if (hasActiveTransaction) {
+                if (nameInput) nameInput.disabled = true;
+                if (cnicInput) cnicInput.disabled = true;
+                if (submitBtn) submitBtn.style.display = 'none';
+            } else {
+                if (nameInput) nameInput.disabled = false;
+                if (cnicInput) cnicInput.disabled = false;
+                if (submitBtn) submitBtn.style.display = 'block';
+            }
+        }
+
+        showLoader(false); // Скрываем прелоадер
+
+    } catch (error) {
+        console.error('Error fetching object data:', error);
+        showNotification('error', error.message || 'Failed to load transaction details');
+        showLoader(false); // Скрываем прелоадер в случае ошибки
+    }
+}
+
+// Обновленная функция updateDocumentsTable с выровненными кнопками
+function updateDocumentsTable(files) {
+    const agreementRow = document.getElementById('agreementRow');
+    const proofRow = document.getElementById('proofRow');
+    const meetingVideoRow = document.getElementById('meetingVideoRow');
+
+    const resetRow = (row) => {
+        if (!row) return;
+        const statusCell = row.querySelector('.status-cell');
+        const dateCell = row.querySelector('.date-cell');
+        const filenameCell = row.querySelector('.filename-cell');
+
+        if (statusCell) statusCell.innerHTML = 'Not uploaded';
+        if (dateCell) dateCell.textContent = '-';
+        if (filenameCell) {
+            filenameCell.innerHTML = '-';
+        }
+    };
+
+    resetRow(agreementRow);
+    resetRow(proofRow);
+    resetRow(meetingVideoRow);
+
+    if (!files || files.length === 0) {
+        return;
+    }
+
+    files.forEach(file => {
+        let targetRow = null;
+
+        if (file.category === 'agreement') {
+            targetRow = agreementRow;
+        } else if (file.category === 'proof_documents') {
+            targetRow = proofRow;
+        } else if (file.category === 'video') {
+            targetRow = meetingVideoRow;
+        }
+
+        if (targetRow) {
+            const statusCell = targetRow.querySelector('.status-cell');
+            const dateCell = targetRow.querySelector('.date-cell');
+            const filenameCell = targetRow.querySelector('.filename-cell');
+
+            if (statusCell) {
+                statusCell.innerHTML = '<i class="fas fa-check-circle" style="color: green;"></i> Uploaded';
+            }
+            if (dateCell) {
+                dateCell.textContent = formatDate(file.created_at);
             }
 
-            // Дата: фактическая или плановая
-            const displayDate = item.payment_date ? formatDate(item.payment_date) : (item.due_date ? formatDate(item.due_date) : 'N/A');
-
-            // Статус и класс для бейджа
-            const statusClass = getStatusClass(item.status);
-            const statusText = formatStatus(item.status);
-
-            // Метод оплаты (только для совершенных)
-            const paymentMethod = (item.payment_date || item.status === 'paid' || item.status === 'confirmed') ?
-                formatPaymentMethod(item.payment_method) : '-';
-
-            // Примечания/ноты (если есть)
-            const notes = item.notes || '-';
-
-            // Чек/квитанция (если есть)
-            let receiptCellContent = '-';
-            if (item.receipt_file_id) {
-                // Создаем кнопку скачивания, если есть ID файла чека
+            if (filenameCell) {
+                filenameCell.innerHTML = '';
+                
+                // Создаем контейнер для выравнивания
+                const contentWrapper = document.createElement('div');
+                contentWrapper.style.cssText = `
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    gap: 10px;
+                `;
+                
+                // Название файла с ограничением длины
+                const fileNameSpan = document.createElement('span');
+                let fileName = file.original_name || file.file_name;
+                if (fileName.length > 30) {
+                    fileName = fileName.substring(0, 27) + '...';
+                }
+                fileNameSpan.textContent = fileName;
+                fileNameSpan.style.cssText = `
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                    flex: 1;
+                `;
+                
+                // Кнопка скачивания фиксированного размера
                 const downloadBtn = document.createElement('button');
                 downloadBtn.type = 'button';
                 downloadBtn.className = 'download-btn';
-                downloadBtn.style.padding = '4px 8px';
-                downloadBtn.style.fontSize = '12px';
-                downloadBtn.style.border = 'none';
-                downloadBtn.style.borderRadius = '4px';
-                downloadBtn.style.backgroundColor = '#28a745';
-                downloadBtn.style.color = 'white';
-                downloadBtn.style.cursor = 'pointer';
-                downloadBtn.textContent = 'Download Receipt';
-                downloadBtn.setAttribute('data-file-id', item.receipt_file_id);
-                downloadBtn.addEventListener('click', function () {
-                    const id = this.getAttribute('data-file-id');
-                    if (id) downloadFileById(id);
+                downloadBtn.style.cssText = `
+                    margin-left: 10px;
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    border: none;
+                    border-radius: 4px;
+                    background-color: #007bff;
+                    color: white;
+                    cursor: pointer;
+                    min-width: 70px;
+                    height: 30px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s ease;
+                    flex-shrink: 0;
+                `;
+                downloadBtn.textContent = 'Download';
+                
+                downloadBtn.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#0056b3';
                 });
-                receiptCellContent = downloadBtn.outerHTML; // Преобразуем кнопку в HTML строку
-            } else if (item.file_path && !item.receipt_file_id) {
-                 // Старый способ, если file_path передается напрямую (менее предпочтителен)
-                 receiptCellContent = `<a href='${item.file_path.replace(/^\.\.\//, baseURL + '/')}' target='_blank'>${item.original_name || 'Receipt'}</a>`;
+                
+                downloadBtn.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '#007bff';
+                });
+
+                downloadBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    // Показываем загрузку на кнопке
+                    const originalText = this.textContent;
+                    this.textContent = '...';
+                    this.disabled = true;
+                    
+                    downloadFileById(file.id).finally(() => {
+                        this.textContent = originalText;
+                        this.disabled = false;
+                    });
+                });
+
+                contentWrapper.appendChild(fileNameSpan);
+                contentWrapper.appendChild(downloadBtn);
+                filenameCell.appendChild(contentWrapper);
             }
+        }
+    });
+}
 
-
-            row.innerHTML = `
-                <td>${displayInstallment}</td>
-                <td>${displayDate}</td>
-                <td>${formatPKR(amount)}</td>
-                <td>${paymentMethod}</td>
-                <td>${notes}</td>
-                <td>${receiptCellContent}</td>
-                <td>
-                    <span class="status-badge ${statusClass}">
-                        ${statusText}
-                    </span>
-                </td>
-            `;
-            paymentsTableBody.appendChild(row);
-        });
-
-        // Обновляем сводку по суммам
-        updateAmountSummary(totalAmount, paidAmount);
+// Обновленная функция updatePaymentsTable с выровненными кнопками
+function updatePaymentsTable(fullPaymentSchedule, totalAmount) {
+    const paymentsTableBody = document.querySelector('#paymentsTable tbody');
+    if (!paymentsTableBody) {
+        console.error('Payments table body (#paymentsTable tbody) not found in DOM');
+        return;
     }
+
+    paymentsTableBody.innerHTML = '';
+
+    if (!fullPaymentSchedule || fullPaymentSchedule.length === 0) {
+        paymentsTableBody.innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 15px;">
+                No payment schedule available
+            </td>
+        </tr>
+        `;
+        updateAmountSummary(totalAmount, 0);
+        return;
+    }
+
+    let paidAmount = 0;
+    let sortedSchedule = [];
+
+    try {
+        sortedSchedule = [...fullPaymentSchedule].sort((a, b) => {
+            const dateA_str = a.payment_date || a.due_date;
+            const dateB_str = b.payment_date || b.due_date;
+            if (!dateA_str && !dateB_str) return 0;
+            if (!dateA_str) return 1;
+            if (!dateB_str) return -1;
+            return new Date(dateA_str) - new Date(dateB_str);
+        });
+    } catch (sortError) {
+        console.error('Error sorting payment schedule:', sortError);
+        sortedSchedule = fullPaymentSchedule;
+    }
+
+    sortedSchedule.forEach((item, index) => {
+        const displayInstallment = index + 1;
+        const row = document.createElement('tr');
+        const amount = parseFloat(item.amount) || 0;
+
+        if (item.status === 'paid' || item.status === 'confirmed') {
+            paidAmount += amount;
+        }
+
+        const displayDate = item.payment_date ? formatDate(item.payment_date) : 
+                          (item.due_date ? formatDate(item.due_date) : 'N/A');
+
+        const statusClass = getStatusClass(item.status);
+        const statusText = formatStatus(item.status);
+        const paymentMethod = formatPaymentMethod(item.payment_method);
+        const notes = item.notes || '-';
+
+        // Создаем ячейку для квитанции с выровненной кнопкой
+        let receiptCell = '-';
+        if (item.receipt_file_id) {
+            receiptCell = `<button type="button" class="download-btn receipt-download-btn" data-file-id="${item.receipt_file_id}" style="padding: 6px 12px; font-size: 12px; border: none; border-radius: 4px; background-color: #28a745; color: white; cursor: pointer; min-width: 120px; height: 30px; display: inline-flex; align-items: center; justify-content: center;">Download Receipt</button>`;
+        } else if (item.file_path) {
+            receiptCell = '<span style="color: #28a745;">✓ Uploaded</span>';
+        }
+
+        row.innerHTML = `
+            <td style="text-align: center;">${displayInstallment}</td>
+            <td>${displayDate}</td>
+            <td style="text-align: right;">${formatPKR(amount)}</td>
+            <td>${paymentMethod}</td>
+            <td>${notes}</td>
+            <td style="text-align: center;">${receiptCell}</td>
+            <td style="text-align: center;">
+                <span class="status-badge ${statusClass}" style="display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                    ${statusText}
+                </span>
+            </td>
+        `;
+        paymentsTableBody.appendChild(row);
+    });
+
+    // Добавляем обработчики для кнопок скачивания с состоянием загрузки
+    paymentsTableBody.querySelectorAll('.receipt-download-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const fileId = this.getAttribute('data-file-id');
+            if (fileId) {
+                const originalText = this.textContent;
+                this.textContent = 'Downloading...';
+                this.disabled = true;
+                
+                downloadFileById(fileId).finally(() => {
+                    this.textContent = originalText;
+                    this.disabled = false;
+                });
+            }
+        });
+    });
+
+    updateAmountSummary(totalAmount, paidAmount);
+}
+
+// Добавляем стили для кнопок в CSS (можно добавить в существующий CSS)
+const buttonStyles = `
+    <style>
+        .download-btn {
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .download-btn:active {
+            transform: translateY(0);
+        }
+        
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .filename-cell {
+            vertical-align: middle;
+        }
+        
+        #paymentsTable td {
+            vertical-align: middle;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-paid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-cancelled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-overdue {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+`;
 
     /**
      * Обновление сводной информации по суммам
